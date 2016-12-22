@@ -1,23 +1,18 @@
 package org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers;
 
-import org.gooru.nucleus.handlers.insights.events.constants.MessageConstants;
-
 import java.sql.Timestamp;
 
 import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
-import org.gooru.nucleus.handlers.insights.events.processors.events.EventParser;
-import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.ProcessEventHandler;
-import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityReporting;
-import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponseFactory;
-import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult.ExecutionStatus;
-import org.javalite.activejdbc.Base;
 import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
+import org.gooru.nucleus.handlers.insights.events.processors.events.EventParser;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityReporting;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult;
+import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult.ExecutionStatus;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponse;
+import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponseFactory;
+import org.javalite.activejdbc.Base;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import io.vertx.core.json.JsonObject;
 
 /**
  * Created by mukul@gooru

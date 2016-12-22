@@ -3,7 +3,7 @@ package org.gooru.nucleus.handlers.insights.events.processors;
 import java.util.ResourceBundle;
 import java.util.UUID;
 
-import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
+import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.constants.MessageConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.events.EventParser;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.RepoBuilder;
@@ -24,53 +24,88 @@ class MessageProcessor implements Processor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Processor.class);
     private static final ResourceBundle RESOURCE_BUNDLE = ResourceBundle.getBundle("messages");
-    private final Message<Object> message;    
-    private String userId;
+    private Message<Object> message = null;  
+    private String messageObj = null;   
     private JsonObject request;
     private EventParser event;
+    private ProcessorContext context;   
 
     public MessageProcessor(Message<Object> message) {
         this.message = message;
     }
+    
+    public MessageProcessor(String message) {
+      this.messageObj = message;
+  }
 
     @Override
     public MessageResponse process() {
         MessageResponse result;
-        try {
-            // Validate the message itself
-            ExecutionResult<MessageResponse> validateResult = validateAndInitialize();
-            if (validateResult.isCompleted()) {
-                return validateResult.result();
-            }
-          
-            final String msgOp = message.headers().get(MessageConstants.MSG_HEADER_OP);           
-            switch (msgOp) {
-            case MessageConstants.MSG_OP_PROCESS_PLAY_EVENTS:
-                result = processPlayerEvents();
-                break;
-            default:
-                LOGGER.error("Invalid operation type passed in, not able to handle");
-                return MessageResponseFactory
-                    .createInvalidRequestResponse(RESOURCE_BUNDLE.getString("invalid.operation"));
-            }
-            return result;
-        } catch (Throwable e) {
+      try {
+        // Validate the message itself
+        ExecutionResult<MessageResponse> validateResult = validateAndInitialize();
+        if (validateResult.isCompleted()) {
+          return validateResult.result();
+        }
+        context = createContext();
+  
+        // final String msgOp =
+        // message.headers().get(MessageConstants.MSG_HEADER_OP);
+        final String eventName = event.getEventName();
+        switch (eventName) {
+        case EventConstants.COLLECTION_PLAY:
+          result = createBaseReport();
+          break;
+        case EventConstants.COLLECTION_RESOURCE_PLAY:
+          LOGGER.debug("Taxonomy IDs :  "+ event.getTaxonomyIds());
+          result = createBaseReport();
+          if (!event.getTaxonomyIds().isEmpty()) {
+            result = createTaxonomyReport();
+          }
+          break;
+        case EventConstants.REACTION_CREATE:
+          result = createBaseReport();
+          break;
+        case EventConstants.ITEM_DELETE:
+          result = reComputeUsageData();
+          break;
+        default:
+          LOGGER.error("Invalid operation type passed in, not able to handle");
+          return MessageResponseFactory.createInvalidRequestResponse(RESOURCE_BUNDLE.getString("invalid.operation"));
+        }
+        return result;
+      } catch (Throwable e) {
             LOGGER.error("Unhandled exception in processing", e);
             return MessageResponseFactory.createInternalErrorResponse();
         }
     }
 
-    private MessageResponse processPlayerEvents() {
+    private MessageResponse createBaseReport() {
         try {
-            ProcessorContext context = createContext();   
-            return RepoBuilder.buildBaseReportingRepo(context).insertPlayerEvents();            		            
+            return RepoBuilder.buildBaseReportingRepo(context).insertBaseReportData();            		            
         } catch (Throwable t) {
             LOGGER.error("Exception while processing Collection Play Event Data", t.getMessage());
             return MessageResponseFactory.createInternalErrorResponse(t.getMessage());
         }
     }
     
+    private MessageResponse reComputeUsageData() {
+      try {
+          return RepoBuilder.buildBaseReportingRepo(context).reComputeUsageData();                        
+      } catch (Throwable t) {
+          LOGGER.error("Exception while recomputation", t.getMessage());
+          return MessageResponseFactory.createInternalErrorResponse(t.getMessage());
+      }
+    }
    
+    private MessageResponse createTaxonomyReport() {
+      try {
+          return RepoBuilder.buildBaseReportingRepo(context).insertTaxonomyReportData();                 
+      } catch (Throwable t) {
+          LOGGER.error("Exception while create taxonomy report", t.getMessage());
+          return MessageResponseFactory.createInternalErrorResponse(t.getMessage());
+      }
+    }
     private ProcessorContext createContext() {
     	try {    		
 			event = new EventParser(request.toString());			
@@ -83,25 +118,27 @@ class MessageProcessor implements Processor {
         return new ProcessorContext(request, event);        
     }
 
-    private ExecutionResult<MessageResponse> validateAndInitialize() {    	
-        if (message == null || !(message.body() instanceof JsonObject)) {
-            LOGGER.error("Invalid message received, either null or body of message is not JsonObject ");
-            return new ExecutionResult<>(
-                MessageResponseFactory.createInvalidRequestResponse(RESOURCE_BUNDLE.getString("invalid.message")),
+    private ExecutionResult<MessageResponse> validateAndInitialize() {
+      if ((messageObj == null && message == null) || (message != null && !(message.body() instanceof JsonObject))
+              || (messageObj != null && !(new JsonObject(messageObj) instanceof JsonObject))) {
+        LOGGER.error("Invalid message received, either null or body of message is not JsonObject ");
+        return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse(RESOURCE_BUNDLE.getString("invalid.message")),
                 ExecutionResult.ExecutionStatus.FAILED);
-        }
-
-        request = ((JsonObject) message.body()).getJsonObject(MessageConstants.MSG_HTTP_BODY);       
-
-                if (request == null) {
-            LOGGER.error("Invalid JSON payload on Message Bus");
-            return new ExecutionResult<>(
-                MessageResponseFactory.createInvalidRequestResponse(RESOURCE_BUNDLE.getString("invalid.payload")),
+      }
+      if (message != null) {
+        request = ((JsonObject) message.body()).getJsonObject(MessageConstants.MSG_HTTP_BODY);
+      }
+      if (messageObj != null) {
+        request = (new JsonObject(messageObj));
+      }
+      if (request == null) {
+        LOGGER.error("Invalid JSON payload on Message Bus");
+        return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse(RESOURCE_BUNDLE.getString("invalid.payload")),
                 ExecutionResult.ExecutionStatus.FAILED);
-        }
-
-        // All is well, continue processing
-        return new ExecutionResult<>(null, ExecutionResult.ExecutionStatus.CONTINUE_PROCESSING);
+      }
+  
+      // All is well, continue processing
+      return new ExecutionResult<>(null, ExecutionResult.ExecutionStatus.CONTINUE_PROCESSING);
     }
 
     private boolean validateContext(ProcessorContext context) {

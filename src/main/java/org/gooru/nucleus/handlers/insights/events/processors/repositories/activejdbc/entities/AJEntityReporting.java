@@ -1,16 +1,12 @@
 package org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities;
 
 import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.List;
 
 import org.javalite.activejdbc.Model;
 import org.javalite.activejdbc.annotations.Table;
 import org.postgresql.util.PGobject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import io.vertx.core.json.JsonObject;
 
 
 /**
@@ -71,6 +67,17 @@ public class AJEntityReporting extends Model {
     public void setAnswerObject(String answerArray){
     	setPGObject(ANSWER_OBJECT, PGTYPE_TEXT, answerArray);
     }
+    /*************************** DELETE Queries For ReComputations Purpose *************************/
+    
+    public static final String DELETE_BASEREPORT_BY_COURSE = "DELETE FROM BaseReports WHERE classId = ? AND courseId = ?";
+   
+    public static final String DELETE_BASEREPORT_BY_UNIT = "DELETE FROM BaseReports WHERE classId = ? AND unitId = ?";
+    
+    public static final String DELETE_BASEREPORT_BY_LESSON = "DELETE FROM BaseReports WHERE classId = ? AND lessonId = ?";
+    
+    public static final String DELETE_BASEREPORT_BY_COLLECTION = "DELETE FROM BaseReports WHERE classId = ? AND collectionId = ?";
+    
+    /***************************/
     
     private void setPGObject(String field, String type, String value) {
         PGobject pgObject = new PGobject();

@@ -1,11 +1,26 @@
 {
-  "comment": "This is bundled JSON file. Idea is that we should externalize this also as part of build. Currently this is going to hold the dev env information",
-  "defaultDataSource": {
-    "nucleus.ds.type": "hikari",
-    "username": "nucleus",
-    "password": "nucleus",
-    "autoCommit": false,
-    "jdbcUrl": "jdbc:postgresql://localhost:5432/nucleus",
-    "maximumPoolSize": 20
-    }
+"comment":"This is bundled JSON file. Idea is that we should externalize this also as part of build. Currently this is going to hold the dev env information",
+"defaultDataSource":{
+"nucleus.ds.type":"hikari",
+"username":"nucleus",
+"password":"nucleus",
+"autoCommit":false,
+"jdbcUrl":"jdbc:postgresql://localhost:5432/nucleus",
+"maximumPoolSize":20
+},
+"cassandra":{     
+         "hosts":"localhost",
+         "keyspace":"event_logger_insights",
+         "cluster":"Test Cluster"
+},
+"org.gooru.nucleus.handlers.insights.events.bootstrap.InsightsWriteVerticle":{
+},
+"org.gooru.nucleus.handlers.insights.events.bootstrap.MessageConsumerVerticle":{
+"zookeeper.connect":"127.0.0.1:2181",
+"consumer.topic":"test",
+"group.id":"test",
+"zookeeper.session.timeout.ms":"6000",
+"zookeeper.sync.time.ms":"200",
+"auto.commit.interval.ms":"1000"
+}
 }

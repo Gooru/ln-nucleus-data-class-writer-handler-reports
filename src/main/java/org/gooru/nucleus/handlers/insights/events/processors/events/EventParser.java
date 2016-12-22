@@ -558,6 +558,8 @@ public final class EventParser {
 					} else if (answerStatus.equalsIgnoreCase(EventConstants.CORRECT)) {
 						this.score = 1;
 					}
+				}else{
+				  this.answerStatus = EventConstants.UNEVALUATED;
 				}				
 								
 			}

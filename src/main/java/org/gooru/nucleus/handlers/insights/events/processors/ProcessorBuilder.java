@@ -11,4 +11,8 @@ public final class ProcessorBuilder {
     public static Processor build(Message<Object> message) {
         return new MessageProcessor(message);
     }
+    
+    public static Processor build(String message) {
+      return new MessageProcessor(message);
+    }
 }
