@@ -1,0 +1,601 @@
+package org.gooru.nucleus.handlers.insights.events.processors.events;
+
+import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
+
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public final class EventParser {
+	
+		private JsonObject event;
+		
+		private static final Logger LOGGER = LoggerFactory.getLogger(EventParser.class);
+		
+		public EventParser(String json) throws Exception {
+			this.event = new JsonObject(json);
+			this.parse();
+		}
+
+		private String eventId;
+
+		private String eventName;
+
+		private JsonObject context;
+
+		private JsonObject user;
+
+		private JsonObject payLoadObject;
+
+		private JsonObject metrics;
+
+		private JsonObject session;
+
+		private JsonObject version;
+
+		private Long startTime;
+
+		private Long endTime;
+
+		private String apiKey;
+
+		private String contentGooruId;
+
+		private String fields;
+
+		private String parentEventId;
+
+		private String gooruUUID;
+
+		private String lessonGooruId;
+
+		private String unitGooruId;
+
+		private String courseGooruId;
+
+		private String classGooruId;
+
+		private String parentGooruId;
+
+		private String collectionItemId;
+
+		private String sessionId;
+
+		private String eventType;
+
+		private String collectionType;
+
+		private String questionType;
+
+		private String resourceType;
+
+		private JsonArray answerObject;
+
+		private String answerStatus;
+
+		private String gradeType;
+
+		private String gradeStatus;
+
+		private String teacherId;
+
+		private boolean isStudent;
+
+		private JsonObject taxonomyIds;
+
+		private String contentFormat;
+
+		private long eventTime;
+
+		private long score;
+
+		private long timespent;
+		
+		private long collectionTimespent;
+		
+		private long resourceTimespent;
+
+		private long views;
+		
+		private long collectionViews;
+		
+		private long resourceViews;
+
+		private int attempts;
+
+		private long reaction;
+
+		private String reportsContext;
+		
+		private int questionCount;
+
+		public String getEventId() {
+			return eventId;
+		}
+
+		public void setEventId(String eventId) {
+			this.eventId = eventId;
+		}
+
+		public String getEventName() {
+			return eventName;
+		}
+
+		public void setEventName(String eventName) {
+			this.eventName = eventName;
+		}
+
+		public JsonObject getContext() {
+			return context;
+		}
+
+		public void setContext(JsonObject context) {
+			this.context = context;
+		}
+
+		public JsonObject getUser() {
+			return user;
+		}
+
+		public void setUser(JsonObject user) {
+			this.user = user;
+		}
+
+		public JsonObject getPayLoadObject() {
+			return payLoadObject;
+		}
+
+		public void setPayLoadObject(JsonObject payLoadObject) {
+			this.payLoadObject = payLoadObject;
+		}
+
+		public JsonObject getMetrics() {
+			return metrics;
+		}
+
+		public void setMetrics(JsonObject metrics) {
+			this.metrics = metrics;
+		}
+
+		public JsonObject getSession() {
+			return session;
+		}
+
+		public void setSession(JsonObject session) {
+			this.session = session;
+		}
+
+		public Long getStartTime() {
+			return startTime;
+		}
+
+		public void setStartTime(Long startTime) {
+			this.startTime = startTime;
+		}
+
+		public Long getEndTime() {
+			return endTime;
+		}
+
+		public void setEndTime(Long endTime) {
+			this.endTime = endTime;
+		}
+
+		public String getApiKey() {
+			return apiKey;
+		}
+
+		public void setApiKey(String apiKey) {
+			this.apiKey = apiKey;
+		}
+
+		public String getContentGooruId() {
+			return contentGooruId;
+		}
+
+		public void setContentGooruId(String contentGooruId) {
+			this.contentGooruId = contentGooruId;
+		}
+
+		public String getFields() {
+			return fields;
+		}
+
+		public void setFields(String fields) {
+			this.fields = fields;
+		}
+
+		public JsonObject getVersion() {
+			return version;
+		}
+
+		public void setVersion(JsonObject version) {
+			this.version = version;
+		}
+
+		public String getGooruUUID() {
+			return gooruUUID;
+		}
+
+		public void setGooruUUID(String gooruUUID) {
+			this.gooruUUID = gooruUUID;
+		}
+
+		public JsonObject getEvent() {
+			return event;
+		}
+
+		public void setEvent(JsonObject event) {
+			this.event = event;
+		}
+
+		public String getLessonGooruId() {
+			return lessonGooruId;
+		}
+
+		public void setLessonGooruId(String lessonGooruId) {
+			this.lessonGooruId = lessonGooruId;
+		}
+
+		public String getUnitGooruId() {
+			return unitGooruId;
+		}
+
+		public void setUnitGooruId(String unitGooruId) {
+			this.unitGooruId = unitGooruId;
+		}
+
+		public String getCourseGooruId() {
+			return courseGooruId;
+		}
+
+		public void setCourseGooruId(String courseGooruId) {
+			this.courseGooruId = courseGooruId;
+		}
+
+		public String getClassGooruId() {
+			return classGooruId;
+		}
+
+		public void setClassGooruId(String classGooruId) {
+			this.classGooruId = classGooruId;
+		}
+
+		public String getParentGooruId() {
+			return parentGooruId;
+		}
+
+		public void setParentGooruId(String parentGooruId) {
+			this.parentGooruId = parentGooruId;
+		}
+
+		public String getCollectionItemId() {
+			return collectionItemId;
+		}
+
+		public void setCollectionItemId(String collectionItemId) {
+			this.collectionItemId = collectionItemId;
+		}
+
+		public String getSessionId() {
+			return sessionId;
+		}
+
+		public void setSessionId(String sessionId) {
+			this.sessionId = sessionId;
+		}
+
+		public String getEventType() {
+			return eventType;
+		}
+
+		public void setEventType(String eventType) {
+			this.eventType = eventType;
+		}
+
+		public String getCollectionType() {
+			return collectionType;
+		}
+
+		public void setCollectionType(String collectionType) {
+			this.collectionType = collectionType;
+		}
+
+		public String getQuestionType() {
+			return questionType;
+		}
+
+		public void setQuestionType(String questionType) {
+			this.questionType = questionType;
+		}
+
+		public String getResourceType() {
+			return resourceType;
+		}
+
+		public void setResourceType(String resourceType) {
+			this.resourceType = resourceType;
+		}
+
+		public JsonArray getAnswerObject() {
+			return answerObject;
+		}
+
+		public void setAnswerObject(JsonArray answerObject) {
+			this.answerObject = answerObject;
+		}
+
+		public String getAnswerStatus() {
+			return answerStatus;
+		}
+
+		public void setAnswerStatus(String answerStatus) {
+			this.answerStatus = answerStatus;
+		}
+
+		public String getGradeType() {
+			return gradeType;
+		}
+
+		public void setGradeType(String gradeType) {
+			this.gradeType = gradeType;
+		}
+
+		public JsonObject getTaxonomyIds() {
+			return taxonomyIds;
+		}
+
+		public void setTaxonomyIds(JsonObject taxonomyIds) {
+			this.taxonomyIds = taxonomyIds;
+		}
+
+		public long getEventTime() {
+			return eventTime;
+		}
+
+		public void setEventTime(long eventTime) {
+			this.eventTime = eventTime;
+		}
+
+		public long getScore() {
+			return score;
+		}
+
+		public void setScore(long score) {
+			this.score = score;
+		}
+
+		public long getTimespent() {
+			return timespent;
+		}
+
+		public long getCollectionTimespent () {
+			return collectionTimespent;
+			
+		}
+		
+		public long getResourceTimespent () {
+			return resourceTimespent;			
+		}
+		
+		public void setTimespent(long timespent) {
+			this.timespent = timespent;
+		}
+		
+		public void setCollectionTimespent(long colltimespent) {
+			this.collectionTimespent = colltimespent;
+		}
+		
+		public void setResourceTimespent(long restimespent) {
+			this.resourceTimespent = restimespent;
+		}
+
+		public long getViews() {
+			return views;
+		}
+		
+		public long getCollectionViews () {
+			return collectionViews;
+		}
+		
+		public long getResourceViews () {
+			return resourceViews;
+		}
+
+		public void setViews(long views) {
+			this.views = views;
+		}
+		
+		public void setCollectionViews(long collviews) {
+			this.collectionViews = collviews;
+		}
+		
+		public void setResourceViews(long resviews) {
+			this.resourceViews = resviews;
+		}
+		
+
+		public int getAttempts() {
+			return attempts;
+		}
+
+		public void setAttempts(int attempts) {
+			this.attempts = attempts;
+		}
+
+		public long getReaction() {
+			return reaction;
+		}
+
+		public void setReaction(long reaction) {
+			this.reaction = reaction;
+		}
+		public String getGradeStatus() {
+			return gradeStatus;
+		}
+
+		public void setGradeStatus(String gradeStatus) {
+			this.gradeStatus = gradeStatus;
+		}
+
+		public String getTeacherId() {
+			return teacherId;
+		}
+		
+		public void setTeacherId(String teacherId) {
+			this.teacherId = teacherId;
+		}
+
+		public void setQuestionCount(int qc) {
+			this.questionCount = qc;
+		}
+
+		public int getQuestionCount() {
+			return questionCount;
+		}
+
+		private EventParser parse() {
+			try {			
+								
+				this.context = this.event.getJsonObject(EventConstants.CONTEXT);
+				this.user = this.event.getJsonObject(EventConstants.USER);
+				this.payLoadObject = this.event.getJsonObject(EventConstants.PAY_LOAD);
+				this.metrics = this.event.getJsonObject(EventConstants.METRICS);
+				this.session = this.event.getJsonObject(EventConstants.SESSION);
+				this.version = this.event.getJsonObject(EventConstants.VERSION);
+				
+				this.startTime = this.event.getLong(EventConstants.START_TIME);
+				this.endTime = this.event.getLong(EventConstants.END_TIME);
+				this.eventId = this.event.getString(EventConstants.EVENT_ID);
+				this.eventName = this.event.getString(EventConstants.EVENT_NAME);
+				
+
+				this.apiKey = session.containsKey(EventConstants.API_KEY) ? session.getString(EventConstants.API_KEY) : EventConstants.NA;
+				this.contentGooruId = context.containsKey(EventConstants.CONTENT_GOORU_OID) ? context.getString(EventConstants.CONTENT_GOORU_OID) : EventConstants.NA;
+
+				this.gooruUUID = user.getString(EventConstants.GOORUID);
+				this.lessonGooruId = context.containsKey(EventConstants.LESSON_GOORU_OID) ? context.getString(EventConstants.LESSON_GOORU_OID) : EventConstants.NA;
+				this.unitGooruId = context.containsKey(EventConstants.UNIT_GOORU_OID) ? context.getString(EventConstants.UNIT_GOORU_OID) : EventConstants.NA;
+				this.courseGooruId = context.containsKey(EventConstants.COURSE_GOORU_OID) ? context.getString(EventConstants.COURSE_GOORU_OID) : EventConstants.NA;
+				this.classGooruId = context.containsKey(EventConstants.CLASS_GOORU_OID) ? context.getString(EventConstants.CLASS_GOORU_OID) : EventConstants.NA;
+				this.parentGooruId = context.containsKey(EventConstants.PARENT_GOORU_OID) ? context.getString(EventConstants.PARENT_GOORU_OID) : EventConstants.NA;
+				this.parentEventId = context.containsKey(EventConstants.PARENT_EVENT_ID) ? context.getString(EventConstants.PARENT_EVENT_ID) : EventConstants.NA;
+				if(context.containsKey(EventConstants.COLLECTION_TYPE)){
+					this.collectionType = context.getString(EventConstants.COLLECTION_TYPE).equals(EventConstants.COLLECTION) ? EventConstants.COLLECTION : EventConstants.ASSESSMENT;
+				}
+				this.resourceType = context.containsKey(EventConstants.RESOURCE_TYPE) ? context.getString(EventConstants.RESOURCE_TYPE) : EventConstants.NA;
+				this.eventType =  context.containsKey(EventConstants.TYPE) ? context.getString(EventConstants.TYPE) : EventConstants.NA;
+				this.sessionId = session.containsKey(EventConstants.SESSION_ID) ? session.getString(EventConstants.SESSION_ID) : EventConstants.NA;
+				this.questionType = payLoadObject.containsKey(EventConstants.QUESTION_TYPE) ? payLoadObject.getString(EventConstants.QUESTION_TYPE) : EventConstants.NA;				
+				if(payLoadObject.containsKey(EventConstants.ANSWER_OBECT) && payLoadObject.getValue(EventConstants.ANSWER_OBECT) instanceof JsonArray){
+					this.answerObject = payLoadObject.getJsonArray(EventConstants.ANSWER_OBECT);					
+				}else{
+					this.answerObject = new JsonArray();
+				}				
+				this.reportsContext = payLoadObject.containsKey(EventConstants.REPORTS_CONTEXT) ? payLoadObject.getString(EventConstants.REPORTS_CONTEXT) : EventConstants.PERFORMANCE;
+				this.gradeType = payLoadObject.containsKey(EventConstants.GRADE_TYPE) ? payLoadObject.getString(EventConstants.GRADE_TYPE) : EventConstants.SYSTEM;
+				this.gradeStatus = payLoadObject.containsKey(EventConstants.GRADE_STATUS) ? payLoadObject.getString(EventConstants.GRADE_STATUS) : EventConstants.NA;
+				this.teacherId = payLoadObject.containsKey(EventConstants.TEACHER_ID) ? payLoadObject.getString(EventConstants.TEACHER_ID) : EventConstants.NA;
+				this.contentFormat = payLoadObject.containsKey(EventConstants.CONTENT_FORMAT) ? payLoadObject.getString(EventConstants.CONTENT_FORMAT) : EventConstants.NA;
+				if(payLoadObject.containsKey(EventConstants.TAXONOMYIDS) && payLoadObject.getValue(EventConstants.TAXONOMYIDS) instanceof JsonObject){
+					this.taxonomyIds = payLoadObject.getJsonObject(EventConstants.TAXONOMYIDS);					
+				}else{
+					this.taxonomyIds = new JsonObject();
+				}
+				
+				this.setStudent(
+					(!payLoadObject.containsKey(EventConstants.IS_STUDENT)) || payLoadObject.getBoolean(EventConstants.IS_STUDENT));
+				this.eventTime = this.event.getLong(EventConstants.END_TIME);
+				this.collectionItemId = EventConstants.NA;
+				this.score = 0;
+				this.reaction = context.containsKey(EventConstants.REACTION_TYPE) ? context.getLong(EventConstants.REACTION_TYPE) : 0;
+
+				if (eventName.equals(EventConstants.COLLECTION_PLAY)){
+					LOGGER.debug("Inside Collection.Play");
+					processCollectionPlayEvents();
+				} else if (eventName.equals(EventConstants.COLLECTION_RESOURCE_PLAY)){
+					LOGGER.debug("Inside Collection.Resourse.Play");
+					processCollectionResourcePlayEvents();
+				}
+				
+			} catch (Exception e) {
+				LOGGER.debug(e.toString());
+			}			
+			
+			return this;
+		}
+		
+        public void processCollectionPlayEvents(){
+			
+			if (eventType.equals(EventConstants.START)) {
+				LOGGER.debug("Process Collection.Play Events - Start");
+				this.collectionViews = 1;
+				this.questionCount = context.containsKey(EventConstants.QUESTION_COUNT) ? context.getInteger(EventConstants.QUESTION_COUNT) : 0;				 
+			} else if (eventType.equals(EventConstants.STOP)) {
+				this.collectionTimespent = this.endTime - this.startTime;
+			}
+			
+		}
+        
+        
+		public void processCollectionResourcePlayEvents(){
+			
+			if (eventType.equals(EventConstants.START)) {
+				LOGGER.debug("Process Collection.Resource.Play Events - Start");
+				this.resourceViews = 1; 
+			} else if (eventType.equals(EventConstants.STOP)) {
+				this.resourceTimespent = this.endTime - this.startTime;			
+
+				if (EventConstants.QUESTION.equals(resourceType)) {
+					this.answerStatus = payLoadObject.containsKey(EventConstants.ATTEMPT_STATUS) ? payLoadObject.getString(EventConstants.ATTEMPT_STATUS) : EventConstants.ATTEMPTED;
+					
+					//Score - EVALUATED Case is not considered at this point
+					if(answerStatus.equalsIgnoreCase(EventConstants.ATTEMPTED)){						
+						this.score = 0;
+					} else if (answerStatus.equalsIgnoreCase(EventConstants.INCORRECT)) {
+						this.score = 0;
+					} else if (answerStatus.equalsIgnoreCase(EventConstants.CORRECT)) {
+						this.score = 1;
+					}
+				}				
+								
+			}
+		}
+		
+				
+		public String getParentEventId() {
+			return parentEventId;
+		}
+
+		public void setParentEventId(String parentEventId) {
+			this.parentEventId = parentEventId;
+		}
+
+		public String getContentFormat() {
+			return contentFormat;
+		}
+
+		public void setContentFormat(String contentFormat) {
+			this.contentFormat = contentFormat;
+		}
+
+		public String getReportsContext() {
+			return reportsContext;
+		}
+
+		public void setReportsContext(String reportsContext) {
+			this.reportsContext = reportsContext;
+		}
+
+		public boolean isStudent() {
+			return isStudent;
+		}
+
+		private void setStudent(boolean isStudent) {
+			this.isStudent = isStudent;
+		}
+
+	} // End Class
+
+    
