@@ -7,6 +7,10 @@ import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageRe
  */
 public interface BaseReportingRepo {
 	
-	MessageResponse insertPlayerEvents();    
+	MessageResponse insertBaseReportData();
+
+  MessageResponse reComputeUsageData();
+
+  MessageResponse insertTaxonomyReportData();    
 	
 }

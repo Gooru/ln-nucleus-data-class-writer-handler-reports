@@ -161,6 +161,8 @@ public class EventConstants {
 
 	public static final  String ATTEMPTED = "attempted";
 
+	public static final  String UNEVALUATED = "unevaluated";
+	
 	public static final  String OPTIONS = "options";
 
 	public static final  String COUNTER = "counter";

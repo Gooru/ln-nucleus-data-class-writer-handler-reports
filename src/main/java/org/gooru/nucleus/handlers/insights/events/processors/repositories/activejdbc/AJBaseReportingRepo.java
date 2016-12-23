@@ -17,8 +17,17 @@ class AJBaseReportingRepo implements BaseReportingRepo {
     }
  
     @Override
-    public MessageResponse insertPlayerEvents() {
+    public MessageResponse insertBaseReportData() {
         return TransactionExecutor.executeTransaction(DBHandlerBuilder.buildProcessEventHandler(context));
-    }   
+    }
+    
+    @Override
+    public MessageResponse reComputeUsageData() {
+        return TransactionExecutor.executeTransaction(DBHandlerBuilder.buildReComputeHandler(context));
+    }
      
+    @Override
+    public MessageResponse insertTaxonomyReportData() {
+        return TransactionExecutor.executeTransaction(DBHandlerBuilder.buildTaxonomyReportHandler(context));
+    }
 }
