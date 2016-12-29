@@ -14,13 +14,5 @@
          "cluster":"Test Cluster"
 },
 "org.gooru.nucleus.handlers.insights.events.bootstrap.InsightsWriteVerticle":{
-},
-"org.gooru.nucleus.handlers.insights.events.bootstrap.MessageConsumerVerticle":{
-"zookeeper.connect":"127.0.0.1:2181",
-"consumer.topic":"test",
-"group.id":"test",
-"zookeeper.session.timeout.ms":"6000",
-"zookeeper.sync.time.ms":"200",
-"auto.commit.interval.ms":"1000"
 }
 }
