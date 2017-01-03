@@ -28,13 +28,6 @@ public final class MessageConstants {
     public static final String MSG_OP_PROCESS_PLAY_EVENTS = "process.play.events";
 
     //configuration constants
-    public static final String CONFIG_ZK_CONNECT = "zookeeper.connect";
-    public static final String CONFIG_ZK_TOPIC = "consumer.topic";
-    public static final String CONFIG_ZK_GROUP = "group.id";
-    public static final String CONFIG_ZK_TIME_OUT = "zookeeper.session.timeout.ms";
-    public static final String CONFIG_ZK_SYNC_TIME = "zookeeper.sync.time.ms";
-    public static final String CONFIG_ZK_COMMIT_INTERVAL = "auto.commit.interval.ms";
-    
     public static final String COURSE = "course";
     public static final String UNIT = "unit";
     public static final String LESSON = "lesson";
