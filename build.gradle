@@ -64,14 +64,6 @@ dependencies {
     // active jdbc
     compile 'org.javalite:activejdbc:1.4.11'
     compile 'org.javalite:activejdbc-instrumentation:1.4.11'
-
-	// kafka_2.11
-	compile group: 'org.apache.kafka', name: 'kafka_2.11', version: '0.9.0.0'
-
-	//datstax driver
-    compile group: 'com.datastax.cassandra', name: 'cassandra-driver-core', version: '3.1.2'
-    
-
     
     // Test dependencies
     testCompile "junit:junit:${junitVersion}"
