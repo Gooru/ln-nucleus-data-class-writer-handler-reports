@@ -50,20 +50,54 @@ public class AJEntityReporting extends Model {
     //enum (correct / incorrect / skipped / unevaluated)​
     public static final String RESOURCE_ATTEMPT_STATUS = "resourceAttemptStatus";    
     public static final String SCORE = "score";
+    //Mukul - latest changes 25/01/17
+    public static final String COLLECTION_SCORE = "collectionScore";
+    //********************************************
     public static final String CREATE_TIMESTAMP = "createTimestamp";
     public static final String UPDATE_TIMESTAMP = "updateTimestamp";   
     
     public static final String SELECT_BASEREPORT_MAX_SEQUENCE_ID =
             "SELECT max(sequence_id) FROM BaseReports";
-   
+
+    public static final String GET_COLLECTION_SCORE = 
+        "SELECT SUM(score) as score from basereports "
+        + "WHERE classId = ? AND courseId = ? AND unitId = ? AND lessonId = ? AND collectionId = ? AND sessionId = ? AND actorId = ?";
+    
+    public static final String GET_QUESTION_COUNT = 
+        "SELECT question_count from basereports "
+        + "WHERE classId = ? AND courseId = ? AND unitId = ? AND lessonId = ? AND collectionId = ? "
+        + "AND sessionId = ? AND actorId = ? AND question_count IS NOT NULL";
+        
+    public static final String CHECK_DUP_RESOURCE_EVENT = 
+        "SELECT resourceTimeSpent, resourceViews from basereports "
+        + "WHERE classId = ? AND courseId = ? AND unitId = ? AND lessonId = ? AND "
+        + "collectionId = ? AND resourceId = ? AND sessionId = ? AND eventType = ? "
+        + "AND collectionType = ? AND actorId = ?";
     
     public static final String RESOURCE_ATTEMPT_STATUS_TYPE = "attempt_status";    
     public static final String PGTYPE_TEXT = "text";
+    public static final String PGTYPE_NUMERIC = "numeric";
+    public static final String PGTYPE_INT = "smallint";
     
     public void setResourceAttemptStatus(String answerStatus) {
         setPGObject(RESOURCE_ATTEMPT_STATUS, RESOURCE_ATTEMPT_STATUS_TYPE, answerStatus);
     }
-        
+    
+    public void setCollectionScore(String collScore){
+      setPGObject(COLLECTION_SCORE, PGTYPE_NUMERIC, collScore);
+    }
+    
+    //TODO: Need to revisit this. PGObject doesn't like any integer (int, smallint, bigInt) datatype passed to it.
+    //Throws an exception - org.javalite.activejdbc.DBException: org.postgresql.util.PSQLException: Unknown type smallint
+    //However, with Numeric proper data is stored in the PG for Datatype bigint.
+    public void setResourceViews(String resViews){
+      setPGObject(RESOURCE_VIEWS, PGTYPE_NUMERIC, resViews);
+    }
+    
+    public void setResourceTimeSpent(String resTS){
+      setPGObject(RESOURCE_TIMESPENT, PGTYPE_NUMERIC, resTS);
+    }
+    
     public void setAnswerObject(String answerArray){
     	setPGObject(ANSWER_OBJECT, PGTYPE_TEXT, answerArray);
     }
