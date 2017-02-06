@@ -63,39 +63,32 @@ class ProcessEventHandler implements DBHandler {
     	baseReport.set("sessionId", event.getSessionId());    	    	
     	baseReport.set("collectionType", event.getCollectionType());
     	baseReport.set("questionType", event.getQuestionType());
+      baseReport.set("resourcetype", event.getResourceType());
     	baseReport.set("reaction", event.getReaction());
     	baseReport.set("score", event.getScore());    	
     	baseReport.setResourceAttemptStatus(event.getAnswerStatus());    	    	    	
+    	baseReport.set("views", event.getViews());
+    	baseReport.set("timespent", event.getTimespent());
 
-    	if ((event.getEventName().equals(EventConstants.COLLECTION_PLAY)) && (event.getEventType().equals(EventConstants.START))){
+    	if ((event.getEventName().equals(EventConstants.COLLECTION_PLAY))){
     		baseReport.set("collectionId", event.getContentGooruId());
     		baseReport.set("question_count", event.getQuestionCount());
-    		baseReport.set("collectionViews", event.getCollectionViews());
+    		if(event.getEventType().equalsIgnoreCase(EventConstants.STOP)){
+    		  Object scoreObj =
+                  Base.firstCell(AJEntityReporting.COMPUTE_ASSESSMENT_SCORE, event.getSessionId());
+    		  baseReport.set("score", Math.round((double) (Integer.valueOf(scoreObj.toString()) *100) /event.getQuestionCount()));
+    		}
     	}
-
-    	if ((event.getEventName().equals(EventConstants.COLLECTION_PLAY)) && (event.getEventType().equals(EventConstants.STOP))){
-    		baseReport.set("collectionId", event.getContentGooruId());
-    		baseReport.set("collectionTimeSpent", event.getCollectionTimespent());
-    	} 
-
-    	
-    	if ((event.getEventName().equals(EventConstants.COLLECTION_RESOURCE_PLAY) ) && (event.getEventType().equals(EventConstants.START))){    		
-    		baseReport.set("collectionId", event.getParentGooruId());
-    		baseReport.set("resourceId", event.getContentGooruId());
-    		baseReport.set("resourceViews", event.getResourceViews());
-    	}
-    	
     	    	
-    	if ((event.getEventName().equals(EventConstants.COLLECTION_RESOURCE_PLAY)) && (event.getEventType().equals(EventConstants.STOP))) {
+    	if ((event.getEventName().equals(EventConstants.COLLECTION_RESOURCE_PLAY))) {
     		baseReport.set("collectionId", event.getParentGooruId());
     		baseReport.set("resourceId", event.getContentGooruId());    		
-    		baseReport.set("resourceTimeSpent", event.getResourceTimespent());
     		baseReport.setAnswerObject(event.getAnswerObject().toString());
     	}
     	
     	//Mukul - SetTimeStamp
-    	baseReport.set("createTimestamp", new Timestamp(System.currentTimeMillis()));
-    	baseReport.set("updateTimestamp", new Timestamp(System.currentTimeMillis())); 
+    	baseReport.set("createTimestamp", new Timestamp(event.getStartTime()));
+    	baseReport.set("updateTimestamp", new Timestamp(event.getEndTime())); 
     	
     	Object maxSequenceId =
                 Base.firstCell(AJEntityReporting.SELECT_BASEREPORT_MAX_SEQUENCE_ID);

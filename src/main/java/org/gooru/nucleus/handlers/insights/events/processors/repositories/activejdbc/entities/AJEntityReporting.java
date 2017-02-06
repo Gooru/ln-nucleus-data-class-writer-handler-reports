@@ -67,7 +67,11 @@ public class AJEntityReporting extends Model {
         "SELECT question_count from basereports "
         + "WHERE classId = ? AND courseId = ? AND unitId = ? AND lessonId = ? AND collectionId = ? "
         + "AND sessionId = ? AND actorId = ? AND question_count IS NOT NULL";
-        
+    
+    public static final String COMPUTE_ASSESSMENT_SCORE = "SELECT SUM(questionData.question_score) AS score  "
+              +"FROM  (SELECT DISTINCT ON (resourceid)  score AS question_score , sessionid FROM basereports "
+              +"WHERE eventname = 'collection.resource.play' AND eventtype = 'stop' AND sessionid = ?"
+              +"AND resourcetype = 'question' ORDER BY resourceid, updatetimestamp desc) questionData GROUP BY sessionid;";
     public static final String CHECK_DUP_RESOURCE_EVENT = 
         "SELECT resourceTimeSpent, resourceViews from basereports "
         + "WHERE classId = ? AND courseId = ? AND unitId = ? AND lessonId = ? AND "
