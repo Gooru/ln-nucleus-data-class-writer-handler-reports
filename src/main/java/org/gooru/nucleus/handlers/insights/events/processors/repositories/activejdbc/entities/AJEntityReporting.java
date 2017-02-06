@@ -41,17 +41,12 @@ public class AJEntityReporting extends Model {
     public static final String ANSWER_OBJECT = "answerObject";
     public static final String RESOURCE_ID = "resourceId";
     
-    public static final String RESOURCE_VIEWS = "resourceViews";
-    public static final String COLLECTION_VIEWS = "collectionViews";
-    public static final String RESOURCE_TIMESPENT = "resourceTimeSpent";
-    public static final String COLLECTION_TIMESPENT = "collectionTimeSpent";
+    public static final String TIMESPENT = "timespent";
     public static final String VIEWS = "views";
     public static final String REACTION = "reaction";
     //enum (correct / incorrect / skipped / unevaluated)​
     public static final String RESOURCE_ATTEMPT_STATUS = "resourceAttemptStatus";    
     public static final String SCORE = "score";
-    //Mukul - latest changes 25/01/17
-    public static final String COLLECTION_SCORE = "collectionScore";
     //********************************************
     public static final String CREATE_TIMESTAMP = "createTimestamp";
     public static final String UPDATE_TIMESTAMP = "updateTimestamp";   
@@ -71,7 +66,8 @@ public class AJEntityReporting extends Model {
     public static final String COMPUTE_ASSESSMENT_SCORE = "SELECT SUM(questionData.question_score) AS score  "
               +"FROM  (SELECT DISTINCT ON (resourceid)  score AS question_score , sessionid FROM basereports "
               +"WHERE eventname = 'collection.resource.play' AND eventtype = 'stop' AND sessionid = ?"
-              +"AND resourcetype = 'question' ORDER BY resourceid, updatetimestamp desc) questionData GROUP BY sessionid;";
+              +"AND resourcetype = 'question' ORDER BY resourceid, updatetimestamp desc) questionData GROUP BY sessionid";
+    
     public static final String CHECK_DUP_RESOURCE_EVENT = 
         "SELECT resourceTimeSpent, resourceViews from basereports "
         + "WHERE classId = ? AND courseId = ? AND unitId = ? AND lessonId = ? AND "
@@ -85,21 +81,6 @@ public class AJEntityReporting extends Model {
     
     public void setResourceAttemptStatus(String answerStatus) {
         setPGObject(RESOURCE_ATTEMPT_STATUS, RESOURCE_ATTEMPT_STATUS_TYPE, answerStatus);
-    }
-    
-    public void setCollectionScore(String collScore){
-      setPGObject(COLLECTION_SCORE, PGTYPE_NUMERIC, collScore);
-    }
-    
-    //TODO: Need to revisit this. PGObject doesn't like any integer (int, smallint, bigInt) datatype passed to it.
-    //Throws an exception - org.javalite.activejdbc.DBException: org.postgresql.util.PSQLException: Unknown type smallint
-    //However, with Numeric proper data is stored in the PG for Datatype bigint.
-    public void setResourceViews(String resViews){
-      setPGObject(RESOURCE_VIEWS, PGTYPE_NUMERIC, resViews);
-    }
-    
-    public void setResourceTimeSpent(String resTS){
-      setPGObject(RESOURCE_TIMESPENT, PGTYPE_NUMERIC, resTS);
     }
     
     public void setAnswerObject(String answerArray){
