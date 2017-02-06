@@ -92,18 +92,8 @@ public final class EventParser {
 
 		private long timespent;
 		
-		private long collectionTimespent;
-		
-		private long resourceTimespent;
-
 		private long views;
 		
-		private long collectionViews;
-		
-		private long resourceViews;
-
-		private int attempts;
-
 		private long reaction;
 
 		private String reportsContext;
@@ -369,61 +359,21 @@ public final class EventParser {
 		public long getTimespent() {
 			return timespent;
 		}
-
-		public long getCollectionTimespent () {
-			return collectionTimespent;
-			
-		}
-		
-		public long getResourceTimespent () {
-			return resourceTimespent;			
-		}
 		
 		public void setTimespent(long timespent) {
 			this.timespent = timespent;
 		}
 		
-		public void setCollectionTimespent(long colltimespent) {
-			this.collectionTimespent = colltimespent;
-		}
-		
-		public void setResourceTimespent(long restimespent) {
-			this.resourceTimespent = restimespent;
-		}
 
 		public long getViews() {
 			return views;
 		}
 		
-		public long getCollectionViews () {
-			return collectionViews;
-		}
-		
-		public long getResourceViews () {
-			return resourceViews;
-		}
 
 		public void setViews(long views) {
 			this.views = views;
 		}
 		
-		public void setCollectionViews(long collviews) {
-			this.collectionViews = collviews;
-		}
-		
-		public void setResourceViews(long resviews) {
-			this.resourceViews = resviews;
-		}
-		
-
-		public int getAttempts() {
-			return attempts;
-		}
-
-		public void setAttempts(int attempts) {
-			this.attempts = attempts;
-		}
-
 		public long getReaction() {
 			return reaction;
 		}
@@ -457,7 +407,7 @@ public final class EventParser {
 
 		private EventParser parse() {
 			try {			
-								
+							
 				this.context = this.event.getJsonObject(EventConstants.CONTEXT);
 				this.user = this.event.getJsonObject(EventConstants.USER);
 				this.payLoadObject = this.event.getJsonObject(EventConstants.PAY_LOAD);
@@ -470,7 +420,8 @@ public final class EventParser {
 				this.eventId = this.event.getString(EventConstants.EVENT_ID);
 				this.eventName = this.event.getString(EventConstants.EVENT_NAME);
 				
-
+				this.views = 0;
+				this.timespent = 0;
 				this.apiKey = session.containsKey(EventConstants.API_KEY) ? session.getString(EventConstants.API_KEY) : EventConstants.NA;
 				this.contentGooruId = context.containsKey(EventConstants.CONTENT_GOORU_OID) ? context.getString(EventConstants.CONTENT_GOORU_OID) : EventConstants.NA;
 
@@ -498,6 +449,7 @@ public final class EventParser {
 				this.gradeStatus = payLoadObject.containsKey(EventConstants.GRADE_STATUS) ? payLoadObject.getString(EventConstants.GRADE_STATUS) : EventConstants.NA;
 				this.teacherId = payLoadObject.containsKey(EventConstants.TEACHER_ID) ? payLoadObject.getString(EventConstants.TEACHER_ID) : EventConstants.NA;
 				this.contentFormat = payLoadObject.containsKey(EventConstants.CONTENT_FORMAT) ? payLoadObject.getString(EventConstants.CONTENT_FORMAT) : EventConstants.NA;
+	      this.questionCount = context.containsKey(EventConstants.QUESTION_COUNT) ? context.getInteger(EventConstants.QUESTION_COUNT) : 0;         
 				if(payLoadObject.containsKey(EventConstants.TAXONOMYIDS) && payLoadObject.getValue(EventConstants.TAXONOMYIDS) instanceof JsonObject){
 					this.taxonomyIds = payLoadObject.getJsonObject(EventConstants.TAXONOMYIDS);					
 				}else{
@@ -511,10 +463,10 @@ public final class EventParser {
 				this.score = 0;
 				this.reaction = context.containsKey(EventConstants.REACTION_TYPE) ? context.getLong(EventConstants.REACTION_TYPE) : 0;
 
-				if (eventName.equals(EventConstants.COLLECTION_PLAY)){
+				if (this.eventName.equals(EventConstants.COLLECTION_PLAY)){
 					LOGGER.debug("Inside Collection.Play");
 					processCollectionPlayEvents();
-				} else if (eventName.equals(EventConstants.COLLECTION_RESOURCE_PLAY)){
+				} else if (this.eventName.equals(EventConstants.COLLECTION_RESOURCE_PLAY)){
 					LOGGER.debug("Inside Collection.Resourse.Play");
 					processCollectionResourcePlayEvents();
 				}
@@ -522,18 +474,17 @@ public final class EventParser {
 			} catch (Exception e) {
 				LOGGER.debug(e.toString());
 			}			
-			
+		  LOGGER.debug("Event type : {} - TS : {}" + this.timespent, this.eventType);			
 			return this;
 		}
 		
         public void processCollectionPlayEvents(){
 			
-			if (eventType.equals(EventConstants.START)) {
+			if (this.eventType.equals(EventConstants.START)) {
 				LOGGER.debug("Process Collection.Play Events - Start");
-				this.collectionViews = 1;
-				this.questionCount = context.containsKey(EventConstants.QUESTION_COUNT) ? context.getInteger(EventConstants.QUESTION_COUNT) : 0;				 
-			} else if (eventType.equals(EventConstants.STOP)) {
-				this.collectionTimespent = this.endTime - this.startTime;
+				this.views = 1;
+			} else if (this.eventType.equals(EventConstants.STOP)) {
+				this.timespent = this.endTime - this.startTime;
 			}
 			
 		}
@@ -541,11 +492,11 @@ public final class EventParser {
         
 		public void processCollectionResourcePlayEvents(){
 			
-			if (eventType.equals(EventConstants.START)) {
+			if (this.eventType.equals(EventConstants.START)) {
 				LOGGER.debug("Process Collection.Resource.Play Events - Start");
-				this.resourceViews = 1; 
-			} else if (eventType.equals(EventConstants.STOP)) {
-				this.resourceTimespent = this.endTime - this.startTime;			
+				this.views = 1; 
+			} else if (this.eventType.equals(EventConstants.STOP)) {
+				this.timespent = this.endTime - this.startTime;			
 
 				if (EventConstants.QUESTION.equals(resourceType)) {
 					this.answerStatus = payLoadObject.containsKey(EventConstants.ATTEMPT_STATUS) ? payLoadObject.getString(EventConstants.ATTEMPT_STATUS) : EventConstants.ATTEMPTED;

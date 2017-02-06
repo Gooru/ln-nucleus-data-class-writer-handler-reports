@@ -41,29 +41,48 @@ public class AJEntityReporting extends Model {
     public static final String ANSWER_OBJECT = "answerObject";
     public static final String RESOURCE_ID = "resourceId";
     
-    public static final String RESOURCE_VIEWS = "resourceViews";
-    public static final String COLLECTION_VIEWS = "collectionViews";
-    public static final String RESOURCE_TIMESPENT = "resourceTimeSpent";
-    public static final String COLLECTION_TIMESPENT = "collectionTimeSpent";
+    public static final String TIMESPENT = "timespent";
     public static final String VIEWS = "views";
     public static final String REACTION = "reaction";
     //enum (correct / incorrect / skipped / unevaluated)​
     public static final String RESOURCE_ATTEMPT_STATUS = "resourceAttemptStatus";    
     public static final String SCORE = "score";
+    //********************************************
     public static final String CREATE_TIMESTAMP = "createTimestamp";
     public static final String UPDATE_TIMESTAMP = "updateTimestamp";   
     
     public static final String SELECT_BASEREPORT_MAX_SEQUENCE_ID =
             "SELECT max(sequence_id) FROM BaseReports";
-   
+
+    public static final String GET_COLLECTION_SCORE = 
+        "SELECT SUM(score) as score from basereports "
+        + "WHERE classId = ? AND courseId = ? AND unitId = ? AND lessonId = ? AND collectionId = ? AND sessionId = ? AND actorId = ?";
+    
+    public static final String GET_QUESTION_COUNT = 
+        "SELECT question_count from basereports "
+        + "WHERE classId = ? AND courseId = ? AND unitId = ? AND lessonId = ? AND collectionId = ? "
+        + "AND sessionId = ? AND actorId = ? AND question_count IS NOT NULL";
+    
+    public static final String COMPUTE_ASSESSMENT_SCORE = "SELECT SUM(questionData.question_score) AS score  "
+              +"FROM  (SELECT DISTINCT ON (resourceid)  score AS question_score , sessionid FROM basereports "
+              +"WHERE eventname = 'collection.resource.play' AND eventtype = 'stop' AND sessionid = ?"
+              +"AND resourcetype = 'question' ORDER BY resourceid, updatetimestamp desc) questionData GROUP BY sessionid";
+    
+    public static final String CHECK_DUP_RESOURCE_EVENT = 
+        "SELECT resourceTimeSpent, resourceViews from basereports "
+        + "WHERE classId = ? AND courseId = ? AND unitId = ? AND lessonId = ? AND "
+        + "collectionId = ? AND resourceId = ? AND sessionId = ? AND eventType = ? "
+        + "AND collectionType = ? AND actorId = ?";
     
     public static final String RESOURCE_ATTEMPT_STATUS_TYPE = "attempt_status";    
     public static final String PGTYPE_TEXT = "text";
+    public static final String PGTYPE_NUMERIC = "numeric";
+    public static final String PGTYPE_INT = "smallint";
     
     public void setResourceAttemptStatus(String answerStatus) {
         setPGObject(RESOURCE_ATTEMPT_STATUS, RESOURCE_ATTEMPT_STATUS_TYPE, answerStatus);
     }
-        
+    
     public void setAnswerObject(String answerArray){
     	setPGObject(ANSWER_OBJECT, PGTYPE_TEXT, answerArray);
     }
