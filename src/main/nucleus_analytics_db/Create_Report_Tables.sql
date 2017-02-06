@@ -59,3 +59,5 @@ reaction smallint,
 score smallint,
 time_spent bigint);
 
+--ALTER BaseReports table
+ALTER TABLE basereports ADD timespent bigint;
