@@ -11,6 +11,7 @@ import org.gooru.nucleus.handlers.insights.events.processors.responses.Execution
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponse;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponseFactory;
 import org.javalite.activejdbc.Base;
+import org.javalite.activejdbc.LazyList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,11 +49,12 @@ class ProcessEventHandler implements DBHandler {
     }
 
     @Override
+    @SuppressWarnings("rawtypes")
     public ExecutionResult<MessageResponse> executeRequest() {
-    	
     	baseReport = new AJEntityReporting();    	
     	event = context.getEvent();    	
-    	
+      LazyList<AJEntityReporting> duplicateRow = null;
+              
     	baseReport.set("eventName", event.getEventName());
     	baseReport.set("eventType", event.getEventType());
     	baseReport.set("actorId", event.getGooruUUID());
@@ -71,16 +73,17 @@ class ProcessEventHandler implements DBHandler {
     	baseReport.set("timespent", event.getTimespent());
 
     	if ((event.getEventName().equals(EventConstants.COLLECTION_PLAY))){
-    		baseReport.set("collectionId", event.getContentGooruId());
+    	  duplicateRow =  AJEntityReporting.findBySQL(AJEntityReporting.FIND_COLLECTION_EVENT,event.getSessionId(),event.getContentGooruId(),event.getEventType());
+    	  baseReport.set("collectionId", event.getContentGooruId());
     		baseReport.set("question_count", event.getQuestionCount());
-    		if(event.getEventType().equalsIgnoreCase(EventConstants.STOP)){
-    		  Object scoreObj =
-                  Base.firstCell(AJEntityReporting.COMPUTE_ASSESSMENT_SCORE, event.getSessionId());
-    		  baseReport.set("score", Math.round((double) (Integer.valueOf(scoreObj.toString()) *100) /event.getQuestionCount()));
-    		}
+        if (event.getEventType().equalsIgnoreCase(EventConstants.STOP)) {
+          Object scoreObj = Base.firstCell(AJEntityReporting.COMPUTE_ASSESSMENT_SCORE, event.getSessionId());
+          baseReport.set("score", Math.round((double) ((scoreObj != null ? Integer.valueOf(scoreObj.toString()) : 0 )* 100) / event.getQuestionCount()));
+        }
     	}
     	    	
     	if ((event.getEventName().equals(EventConstants.COLLECTION_RESOURCE_PLAY))) {
+    	  duplicateRow = AJEntityReporting.findBySQL(AJEntityReporting.FIND_RESOURCE_EVENT,event.getSessionId(),event.getContentGooruId(),event.getEventType());
     		baseReport.set("collectionId", event.getParentGooruId());
     		baseReport.set("resourceId", event.getContentGooruId());    		
     		baseReport.setAnswerObject(event.getAnswerObject().toString());
@@ -102,17 +105,42 @@ class ProcessEventHandler implements DBHandler {
             LOGGER.warn("errors in creating Base Report");            
         }
 
-    	LOGGER.info("Actually Inserting Records in DB");
-        if (baseReport.isValid()) {
-            if (baseReport.insert()) {
-                LOGGER.info("Record inserted successfully : " + context.request().toString());  
-                return new ExecutionResult<>(MessageResponseFactory.createCreatedResponse(),ExecutionStatus.SUCCESSFUL);
-            } else {
+          if (baseReport.isValid()) {
+            if (duplicateRow.isEmpty()) {
+              if (baseReport.insert()) {
+                LOGGER.info("Actually Inserting Records in DB");
+                LOGGER.info("Record inserted successfully : " + context.request().toString());
+                return new ExecutionResult<>(MessageResponseFactory.createCreatedResponse(), ExecutionStatus.SUCCESSFUL);
+              } else {
                 LOGGER.error("Error while inserting event: " + context.request().toString());
-                return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(),
-                        ExecutionStatus.FAILED);
+                return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(), ExecutionStatus.FAILED);
+              }
+            } else {
+              LOGGER.debug("Found duplicate row. so updating duplicate row.....");
+              if ((event.getEventName().equals(EventConstants.COLLECTION_RESOURCE_PLAY))) {
+                duplicateRow.forEach(dup -> {
+                  int id = Integer.valueOf(dup.get("id").toString());
+                  long view = (Long.valueOf(dup.get("views").toString()) + event.getViews());
+                  long ts = (Long.valueOf(dup.get("timespent").toString()) + event.getTimespent());
+                  long react = event.getReaction() != 0 ? event.getReaction() : 0;
+                  Object attmptStatus = dup.get(AJEntityReporting.RESOURCE_ATTEMPT_STATUS);
+                  Object ansObj = dup.get(AJEntityReporting.RESOURCE_ATTEMPT_STATUS);
+                  Base.exec(AJEntityReporting.UPDATE_RESOURCE_EVENT, view, ts, event.getScore(), react, attmptStatus, ansObj, id);
+                });
+      
+              }
+              if ((event.getEventName().equals(EventConstants.COLLECTION_PLAY))) {
+                duplicateRow.forEach(dup -> {
+                  int id = Integer.valueOf(dup.get("id").toString());
+                  long view = (Long.valueOf(dup.get("views").toString()) + event.getViews());
+                  long ts = (Long.valueOf(dup.get("timespent").toString()) + event.getTimespent());
+                  long react = event.getReaction() != 0 ? event.getReaction() : 0;
+                  Base.exec(AJEntityReporting.UPDATE_COLLECTION_EVENT, view, ts, event.getScore(), react,id);
+                });
+              }
+              return new ExecutionResult<>(MessageResponseFactory.createCreatedResponse(), ExecutionStatus.SUCCESSFUL);
             }
-        } else {
+          } else {
             LOGGER.warn("Event validation error");
             return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(),
                     ExecutionStatus.FAILED);

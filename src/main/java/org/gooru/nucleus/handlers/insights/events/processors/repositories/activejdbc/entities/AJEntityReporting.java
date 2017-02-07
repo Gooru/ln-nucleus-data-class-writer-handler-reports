@@ -74,6 +74,19 @@ public class AJEntityReporting extends Model {
         + "collectionId = ? AND resourceId = ? AND sessionId = ? AND eventType = ? "
         + "AND collectionType = ? AND actorId = ?";
     
+    public static final String FIND_COLLECTION_EVENT = "SELECT id,views,timespent,score,reaction,resourceattemptstatus,answerObject FROM basereports "
+            + "WHERE sessionid = ? AND collectionid = ? AND eventType = ?";
+    
+    public static final String UPDATE_COLLECTION_EVENT = "UPDATE basereports SET views = ?, timespent= ?, score = ?, "
+            + "reaction = ? WHERE id = ?";
+    
+    public static final String UPDATE_RESOURCE_EVENT = "UPDATE basereports SET views = ?, timespent= ?, score = ?, "
+            + "reaction = ?, resourceattemptstatus = CAST(? AS attempt_status), answerobject = ? WHERE id = ?";
+
+    
+    public static final String FIND_RESOURCE_EVENT = "SELECT id,views,timespent,score,reaction,resourceattemptstatus,answerObject FROM basereports "
+            + "WHERE sessionid = ? AND resourceid = ? AND eventType = ?";
+    
     public static final String RESOURCE_ATTEMPT_STATUS_TYPE = "attempt_status";    
     public static final String PGTYPE_TEXT = "text";
     public static final String PGTYPE_NUMERIC = "numeric";
