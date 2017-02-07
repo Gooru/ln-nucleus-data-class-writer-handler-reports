@@ -64,7 +64,9 @@ class MessageProcessor implements Processor {
           }
           break;
         case EventConstants.REACTION_CREATE:
-          result = createBaseReport();
+         //TODO: Don't Process this event for now. Reaction collection.resource.play itself.
+         //We may need to revist this in future.
+          result = MessageResponseFactory.createOkayResponse();
           break;
         case EventConstants.ITEM_DELETE:
           result = reComputeUsageData();
