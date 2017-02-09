@@ -73,7 +73,7 @@ class ProcessEventHandler implements DBHandler {
     	baseReport.set("timespent", event.getTimespent());
 
     	if ((event.getEventName().equals(EventConstants.COLLECTION_PLAY))){
-    	  duplicateRow =  AJEntityReporting.findBySQL(AJEntityReporting.FIND_COLLECTION_EVENT,event.getSessionId(),event.getContentGooruId(),event.getEventType());
+    	  duplicateRow =  AJEntityReporting.findBySQL(AJEntityReporting.FIND_COLLECTION_EVENT,event.getSessionId(),event.getContentGooruId(),event.getEventType(), event.getEventName());
     	  baseReport.set("collectionId", event.getContentGooruId());
     		baseReport.set("question_count", event.getQuestionCount());
         if (event.getEventType().equalsIgnoreCase(EventConstants.STOP)) {
@@ -124,7 +124,7 @@ class ProcessEventHandler implements DBHandler {
                   long ts = (Long.valueOf(dup.get("timespent").toString()) + event.getTimespent());
                   long react = event.getReaction() != 0 ? event.getReaction() : 0;
                   Object attmptStatus = dup.get(AJEntityReporting.RESOURCE_ATTEMPT_STATUS);
-                  Object ansObj = dup.get(AJEntityReporting.RESOURCE_ATTEMPT_STATUS);
+                  Object ansObj = dup.get(AJEntityReporting.ANSWER_OBJECT);
                   Base.exec(AJEntityReporting.UPDATE_RESOURCE_EVENT, view, ts, event.getScore(), react, attmptStatus, ansObj, id);
                 });
       
