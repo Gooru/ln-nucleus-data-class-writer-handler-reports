@@ -75,7 +75,7 @@ public class AJEntityReporting extends Model {
         + "AND collectionType = ? AND actorId = ?";
     
     public static final String FIND_COLLECTION_EVENT = "SELECT id,views,timespent,score,reaction,resourceattemptstatus,answerObject FROM basereports "
-            + "WHERE sessionid = ? AND collectionid = ? AND eventType = ?";
+            + "WHERE sessionid = ? AND collectionid = ? AND eventType = ? AND eventname = ? ";
     
     public static final String UPDATE_COLLECTION_EVENT = "UPDATE basereports SET views = ?, timespent= ?, score = ?, "
             + "reaction = ? WHERE id = ?";
