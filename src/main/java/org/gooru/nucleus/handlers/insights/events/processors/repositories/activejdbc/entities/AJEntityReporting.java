@@ -96,9 +96,6 @@ public class AJEntityReporting extends Model {
         setPGObject(RESOURCE_ATTEMPT_STATUS, RESOURCE_ATTEMPT_STATUS_TYPE, answerStatus);
     }
     
-    public void setAnswerObject(String answerArray){
-    	setPGObject(ANSWER_OBJECT, PGTYPE_TEXT, answerArray);
-    }
     /*************************** DELETE Queries For ReComputations Purpose *************************/
     
     public static final String DELETE_BASEREPORT_BY_COURSE = "DELETE FROM BaseReports WHERE classId = ? AND courseId = ?";

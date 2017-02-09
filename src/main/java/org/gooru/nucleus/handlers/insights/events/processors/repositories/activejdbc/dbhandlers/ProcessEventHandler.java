@@ -86,7 +86,7 @@ class ProcessEventHandler implements DBHandler {
     	  duplicateRow = AJEntityReporting.findBySQL(AJEntityReporting.FIND_RESOURCE_EVENT,event.getSessionId(),event.getContentGooruId(),event.getEventType());
     		baseReport.set("collectionId", event.getParentGooruId());
     		baseReport.set("resourceId", event.getContentGooruId());    		
-    		baseReport.setAnswerObject(event.getAnswerObject().toString());
+    		baseReport.set("answerObject", event.getAnswerObject().toString());
     	}
     	
     	//Mukul - SetTimeStamp
