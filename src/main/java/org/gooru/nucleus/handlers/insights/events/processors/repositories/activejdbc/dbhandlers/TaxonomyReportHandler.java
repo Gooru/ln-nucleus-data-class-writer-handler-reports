@@ -5,6 +5,7 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.constants.MessageConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.insights.events.processors.events.EventParser;
@@ -64,7 +65,7 @@ class TaxonomyReportHandler implements DBHandler {
         splitByTaxonomyCode(internalTaxonomyCode, taxObject);
         Base.addBatch(ps, sequenceId, event.getSessionId(), event.getGooruUUID(), taxObject.get(MessageConstants.SUBJECT),
                 taxObject.get(MessageConstants.COURSE), taxObject.get(MessageConstants.DOMAIN), taxObject.get(MessageConstants.STANDARDS),
-                taxObject.get(MessageConstants.LEARNING_TARGETS), displayCode, event.getParentGooruId(), event.getContentGooruId(),
+                taxObject.containsKey(MessageConstants.LEARNING_TARGETS) ? taxObject.containsKey(MessageConstants.LEARNING_TARGETS) : EventConstants.NA, displayCode, event.getParentGooruId(), event.getContentGooruId(),
                 event.getResourceType(), event.getQuestionType(), event.getAnswerObject().toString(), event.getAnswerStatus(), 1, 0, event.getScore(),
                 event.getTimespent());
         sequenceId = sequenceId + 1;
