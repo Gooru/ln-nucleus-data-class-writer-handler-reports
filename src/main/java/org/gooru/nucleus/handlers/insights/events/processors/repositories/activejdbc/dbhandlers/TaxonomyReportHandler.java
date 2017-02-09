@@ -65,7 +65,7 @@ class TaxonomyReportHandler implements DBHandler {
         splitByTaxonomyCode(internalTaxonomyCode, taxObject);
         Base.addBatch(ps, sequenceId, event.getSessionId(), event.getGooruUUID(), taxObject.get(MessageConstants.SUBJECT),
                 taxObject.get(MessageConstants.COURSE), taxObject.get(MessageConstants.DOMAIN), taxObject.get(MessageConstants.STANDARDS),
-                taxObject.containsKey(MessageConstants.LEARNING_TARGETS) ? taxObject.containsKey(MessageConstants.LEARNING_TARGETS) : EventConstants.NA, displayCode, event.getParentGooruId(), event.getContentGooruId(),
+                taxObject.containsKey(MessageConstants.LEARNING_TARGETS) ? taxObject.get(MessageConstants.LEARNING_TARGETS) : EventConstants.NA, displayCode, event.getParentGooruId(), event.getContentGooruId(),
                 event.getResourceType(), event.getQuestionType(), event.getAnswerObject().toString(), event.getAnswerStatus(), 1, 0, event.getScore(),
                 event.getTimespent());
         sequenceId = sequenceId + 1;
