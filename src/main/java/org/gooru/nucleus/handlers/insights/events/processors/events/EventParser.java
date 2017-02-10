@@ -478,7 +478,7 @@ public final class EventParser {
 		}
 		
         public void processCollectionPlayEvents(){
-			
+			LOGGER.debug("collectionType : {} ",this.collectionType);
 			if (this.eventType.equals(EventConstants.START) && this.collectionType.equalsIgnoreCase(EventConstants.COLLECTION)) {
 				LOGGER.debug("Process Collection.Play Events - Start");
 				this.views = 1;

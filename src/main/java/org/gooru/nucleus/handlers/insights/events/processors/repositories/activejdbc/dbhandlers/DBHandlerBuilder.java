@@ -20,5 +20,8 @@ public final class DBHandlerBuilder {
     } 
     public static DBHandler buildTaxonomyReportHandler(ProcessorContext context) {
       return new TaxonomyReportHandler(context);
+    }
+    public static DBHandler buildClassAuthorizedData(ProcessorContext context) {
+      return new ClassAuthorizedUsersBuilderHandler(context);
     } 
 }

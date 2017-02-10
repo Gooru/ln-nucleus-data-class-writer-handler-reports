@@ -1,7 +1,6 @@
 package org.gooru.nucleus.handlers.insights.events.processors;
 
 import java.util.ResourceBundle;
-import java.util.UUID;
 
 import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.constants.MessageConstants;
@@ -71,6 +70,9 @@ class MessageProcessor implements Processor {
         case EventConstants.ITEM_DELETE:
           result = reComputeUsageData();
           break;
+        case EventConstants.ITEM_CREATE:
+          result =  handleItemCreateEvent();
+          break;
         default:
           LOGGER.error("Invalid operation type passed in, not able to handle");
           return MessageResponseFactory.createInvalidRequestResponse(RESOURCE_BUNDLE.getString("invalid.operation"));
@@ -108,6 +110,21 @@ class MessageProcessor implements Processor {
           return MessageResponseFactory.createInternalErrorResponse(t.getMessage());
       }
     }
+
+    private MessageResponse handleItemCreateEvent() {
+      try {
+        if (event.getContentFormat().equalsIgnoreCase(EventConstants.CLASS)) {
+          return RepoBuilder.buildBaseReportingRepo(context).buildClassAuthorizedUser();
+        } else {
+          LOGGER.warn("Don't process now. Will revisit later");
+          return MessageResponseFactory.createOkayResponse();
+        }
+      } catch (Throwable t) {
+        LOGGER.error("Exception while create taxonomy report", t.getMessage());
+        return MessageResponseFactory.createInternalErrorResponse(t.getMessage());
+      }
+  
+    }
     private ProcessorContext createContext() {
     	try {    		
 			event = new EventParser(request.toString());			
@@ -142,30 +159,4 @@ class MessageProcessor implements Processor {
       // All is well, continue processing
       return new ExecutionResult<>(null, ExecutionResult.ExecutionStatus.CONTINUE_PROCESSING);
     }
-
-    private boolean validateContext(ProcessorContext context) {
-        // No Validation at this point
-        return true;
-    }
-
-    private boolean validateUser(String userId) {
-        return !(userId == null || userId.isEmpty()
-            || (userId.equalsIgnoreCase(MessageConstants.MSG_USER_ANONYMOUS)) && validateUuid(userId));
-    }
-
-    private boolean validateId(String id) {
-        return !(id == null || id.isEmpty()) && validateUuid(id);
-    }
-
-    private boolean validateUuid(String uuidString) {
-        try {
-            UUID uuid = UUID.fromString(uuidString);
-            return true;
-        } catch (IllegalArgumentException e) {
-            return false;
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
 }
