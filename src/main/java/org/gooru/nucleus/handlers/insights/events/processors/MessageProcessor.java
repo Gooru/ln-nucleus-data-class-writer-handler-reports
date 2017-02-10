@@ -120,7 +120,7 @@ class MessageProcessor implements Processor {
           return MessageResponseFactory.createOkayResponse();
         }
       } catch (Throwable t) {
-        LOGGER.error("Exception while create taxonomy report", t.getMessage());
+        LOGGER.error("Exception while build class authorizer table", t.getMessage());
         return MessageResponseFactory.createInternalErrorResponse(t.getMessage());
       }
   
