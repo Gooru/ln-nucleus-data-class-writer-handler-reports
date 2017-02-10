@@ -470,20 +470,23 @@ public final class EventParser {
 					LOGGER.debug("Inside Collection.Resourse.Play");
 					processCollectionResourcePlayEvents();
 				}
-				
+				LOGGER.debug("views : {} - timespent : {}", this.views,this.timespent);
 			} catch (Exception e) {
 				LOGGER.debug(e.toString());
 			}			
-		  LOGGER.debug("Event type : {} - TS : {}" + this.timespent, this.eventType);			
 			return this;
 		}
 		
         public void processCollectionPlayEvents(){
 			
-			if (this.eventType.equals(EventConstants.START)) {
+			if (this.eventType.equals(EventConstants.START) && this.collectionType.equalsIgnoreCase(EventConstants.COLLECTION)) {
 				LOGGER.debug("Process Collection.Play Events - Start");
 				this.views = 1;
 			} else if (this.eventType.equals(EventConstants.STOP)) {
+	       LOGGER.debug("Process Collection.Play Events - Stop");
+			  if(this.collectionType.equalsIgnoreCase(EventConstants.ASSESSMENT)){
+			    this.views = 1;
+			  }
 				this.timespent = this.endTime - this.startTime;
 			}
 			
@@ -492,12 +495,12 @@ public final class EventParser {
         
 		public void processCollectionResourcePlayEvents(){
 			
-			if (this.eventType.equals(EventConstants.START)) {
+			if (this.eventType.equals(EventConstants.START)){
 				LOGGER.debug("Process Collection.Resource.Play Events - Start");
 				this.views = 1; 
 			} else if (this.eventType.equals(EventConstants.STOP)) {
+	       LOGGER.debug("Process Collection.Resource.Play Events - Stop");
 				this.timespent = this.endTime - this.startTime;			
-
 				if (EventConstants.QUESTION.equals(resourceType)) {
 					this.answerStatus = payLoadObject.containsKey(EventConstants.ATTEMPT_STATUS) ? payLoadObject.getString(EventConstants.ATTEMPT_STATUS) : EventConstants.ATTEMPTED;
 					
