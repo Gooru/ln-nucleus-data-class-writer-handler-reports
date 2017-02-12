@@ -426,10 +426,10 @@ public final class EventParser {
 				this.contentGooruId = context.containsKey(EventConstants.CONTENT_GOORU_OID) ? context.getString(EventConstants.CONTENT_GOORU_OID) : EventConstants.NA;
 
 				this.gooruUUID = user.getString(EventConstants.GOORUID);
-				this.lessonGooruId = context.containsKey(EventConstants.LESSON_GOORU_OID) ? context.getString(EventConstants.LESSON_GOORU_OID) : EventConstants.NA;
-				this.unitGooruId = context.containsKey(EventConstants.UNIT_GOORU_OID) ? context.getString(EventConstants.UNIT_GOORU_OID) : EventConstants.NA;
-				this.courseGooruId = context.containsKey(EventConstants.COURSE_GOORU_OID) ? context.getString(EventConstants.COURSE_GOORU_OID) : EventConstants.NA;
-				this.classGooruId = context.containsKey(EventConstants.CLASS_GOORU_OID) ? context.getString(EventConstants.CLASS_GOORU_OID) : EventConstants.NA;
+				this.lessonGooruId = context.containsKey(EventConstants.LESSON_GOORU_OID) ? context.getString(EventConstants.LESSON_GOORU_OID) : null;
+				this.unitGooruId = context.containsKey(EventConstants.UNIT_GOORU_OID) ? context.getString(EventConstants.UNIT_GOORU_OID) : null;
+				this.courseGooruId = context.containsKey(EventConstants.COURSE_GOORU_OID) ? context.getString(EventConstants.COURSE_GOORU_OID) : null;
+				this.classGooruId = context.containsKey(EventConstants.CLASS_GOORU_OID) ? context.getString(EventConstants.CLASS_GOORU_OID) : null;
 				this.parentGooruId = context.containsKey(EventConstants.PARENT_GOORU_OID) ? context.getString(EventConstants.PARENT_GOORU_OID) : EventConstants.NA;
 				this.parentEventId = context.containsKey(EventConstants.PARENT_EVENT_ID) ? context.getString(EventConstants.PARENT_EVENT_ID) : EventConstants.NA;
 				if(context.containsKey(EventConstants.COLLECTION_TYPE)){
