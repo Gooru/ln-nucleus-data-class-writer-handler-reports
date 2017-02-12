@@ -46,8 +46,13 @@ class MessageProcessor implements Processor {
         if (validateResult.isCompleted()) {
           return validateResult.result();
         }
+        
         context = createContext();
   
+        if(!event.isStudent()){
+          LOGGER.warn("Receiving teacher activity in player. Ignoring teacher activity..");
+          return MessageResponseFactory.createInvalidRequestResponse("Don't process teacher palyer activity");
+        }
         // final String msgOp =
         // message.headers().get(MessageConstants.MSG_HEADER_OP);
         final String eventName = event.getEventName();
@@ -154,8 +159,7 @@ class MessageProcessor implements Processor {
         LOGGER.error("Invalid JSON payload on Message Bus");
         return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse(RESOURCE_BUNDLE.getString("invalid.payload")),
                 ExecutionResult.ExecutionStatus.FAILED);
-      }
-  
+      }  
       // All is well, continue processing
       return new ExecutionResult<>(null, ExecutionResult.ExecutionStatus.CONTINUE_PROCESSING);
     }
