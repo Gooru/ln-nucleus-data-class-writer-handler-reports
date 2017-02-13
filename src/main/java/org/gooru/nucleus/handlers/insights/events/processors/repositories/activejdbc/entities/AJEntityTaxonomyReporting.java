@@ -22,6 +22,7 @@ public class AJEntityTaxonomyReporting extends Model{
     public static final String SESSION_ID = "session_id";
     //actorId is userId or gooruuid
     public static final String GOORUUID = "actor_id";    
+    public static final String TENANT_ID = "tenant_id"; 
     
     public static final Object SUBJECT_ID = "subject_id";
     public static final String COURSE_ID = "course_id";
