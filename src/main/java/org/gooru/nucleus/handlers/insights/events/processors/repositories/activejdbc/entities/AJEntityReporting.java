@@ -26,6 +26,7 @@ public class AJEntityReporting extends Model {
 	public static final String EVENTTYPE = "eventType";
 	//actorId is userId or gooruuid
 	public static final String GOORUUID = "actorId";    
+	public static final String TENANT_ID = "tenantId";
     
 	public static final Object CLASS_GOORU_OID = "classId";
 	public static final String COURSE_GOORU_OID = "courseId";
