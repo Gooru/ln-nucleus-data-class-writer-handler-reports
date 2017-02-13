@@ -49,10 +49,10 @@ class MessageProcessor implements Processor {
         
         context = createContext();
   
-        if(!event.isStudent()){
+        /*if(!event.isStudent()){
           LOGGER.warn("Receiving teacher activity in player. Ignoring teacher activity..");
           return MessageResponseFactory.createInvalidRequestResponse("Don't process teacher activity in player");
-        }
+        }*/
         // final String msgOp =
         // message.headers().get(MessageConstants.MSG_HEADER_OP);
         final String eventName = event.getEventName();
