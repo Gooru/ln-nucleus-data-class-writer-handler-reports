@@ -100,6 +100,8 @@ public final class EventParser {
 		
 		private int questionCount;
 
+		private String tenantId;
+		
 		public String getEventId() {
 			return eventId;
 		}
@@ -426,6 +428,7 @@ public final class EventParser {
 				this.contentGooruId = context.containsKey(EventConstants.CONTENT_GOORU_OID) ? context.getString(EventConstants.CONTENT_GOORU_OID) : EventConstants.NA;
 
 				this.gooruUUID = user.getString(EventConstants.GOORUID);
+        this.tenantId = context.containsKey(EventConstants.TENANT_ID) ? context.getString(EventConstants.TENANT_ID) : null;
 				this.lessonGooruId = context.containsKey(EventConstants.LESSON_GOORU_OID) ? context.getString(EventConstants.LESSON_GOORU_OID) : null;
 				this.unitGooruId = context.containsKey(EventConstants.UNIT_GOORU_OID) ? context.getString(EventConstants.UNIT_GOORU_OID) : null;
 				this.courseGooruId = context.containsKey(EventConstants.COURSE_GOORU_OID) ? context.getString(EventConstants.COURSE_GOORU_OID) : null;
@@ -551,6 +554,14 @@ public final class EventParser {
 		private void setStudent(boolean isStudent) {
 			this.isStudent = isStudent;
 		}
+		
+    public String getTenantId() {
+      return tenantId;
+    }
+
+    public void setTenantId(String tenantId) {
+      this.tenantId = tenantId;
+    }
 
 	} // End Class
 

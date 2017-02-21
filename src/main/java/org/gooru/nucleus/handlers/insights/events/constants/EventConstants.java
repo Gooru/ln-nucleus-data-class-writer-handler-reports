@@ -53,6 +53,8 @@ public class EventConstants {
 
 	public static final  String EVENT_NAME = "eventName";
 
+	public static final  String TENANT_ID = "tenantId";
+	
 	public static final  String CONTENT_GOORU_OID = "contentGooruId";
 
 	public static final  String SOURCE_GOORU_OID = "sourceGooruId";
