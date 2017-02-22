@@ -4,6 +4,7 @@ import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageRe
 
 /**
  * Created by mukul@gooru
+ * Modified by daniel
  */
 public interface BaseReportingRepo {
 	
@@ -14,5 +15,7 @@ public interface BaseReportingRepo {
   MessageResponse insertTaxonomyReportData();    
 	
   MessageResponse buildClassAuthorizedUser();    
+  
+  MessageResponse buildClassCollectionCount();    
 
 }

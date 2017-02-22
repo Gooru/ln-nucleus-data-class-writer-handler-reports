@@ -1,6 +1,5 @@
 package org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers;
 
-import java.sql.Timestamp;
 import java.util.List;
 import java.util.Map;
 
@@ -23,7 +22,6 @@ class ClassAuthorizedUsersBuilderHandler implements DBHandler {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ClassAuthorizedUsersBuilderHandler.class);
     private final ProcessorContext context;
     private EventParser event;
-    private AJEntityClassAuthorizedUsers classAuthorizers;
 
     public ClassAuthorizedUsersBuilderHandler(ProcessorContext context) {
         this.context = context;

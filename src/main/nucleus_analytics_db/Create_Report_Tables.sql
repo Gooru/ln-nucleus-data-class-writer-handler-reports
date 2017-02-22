@@ -3,7 +3,7 @@
 -- This may have to check-in seperate repository. But initially let it be here. We can move this later.
 
 -- Resource Attempt status
-CREATE TYPE attempt_status AS ENUM ('correct', 'incorrect', 'skipped', 'unevaluated');
+CREATE TYPE attempt_status AS ENUM ('correct', 'incorrect', 'skipped', 'unevaluated', 'started');
 
 
 -- Store data for Class Analytics 
@@ -58,5 +58,17 @@ reaction smallint,
 score smallint,
 time_spent bigint);
 
---ALTER BaseReports table
-ALTER TABLE basereports ADD timespent bigint;
+-- Store Class Lookup data for Analytics 
+CREATE TABLE class_collection_count (
+class_id varchar(36) NOT NULL,
+course_id varchar(36) NOT NULL,
+unit_id varchar(36) NOT NULL,
+lesson_id varchar(36) NOT NULL,
+collection_count integer,
+assessment_count integer,
+ext_assessment_count integer,
+created_at timestamp NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'),
+updated_at timestamp NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'),
+PRIMARY KEY(class_id,course_id,unit_id,lesson_id)
+);
+

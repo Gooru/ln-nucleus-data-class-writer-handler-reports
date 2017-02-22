@@ -54,7 +54,7 @@ class ProcessEventHandler implements DBHandler {
     	baseReport = new AJEntityReporting();    	
     	event = context.getEvent();    	
       LazyList<AJEntityReporting> duplicateRow = null;
-              
+      LOGGER.info("Fields : {} ", event.getFields());
     	baseReport.set("eventName", event.getEventName());
     	baseReport.set("eventType", event.getEventType());
     	baseReport.set("actorId", event.getGooruUUID());
@@ -71,6 +71,7 @@ class ProcessEventHandler implements DBHandler {
     	baseReport.setResourceAttemptStatus(event.getAnswerStatus());    	    	    	
     	baseReport.set("views", event.getViews());
     	baseReport.set("timespent", event.getTimespent());
+    	baseReport.set("tenantId",event.getTenantId());
 
     	if ((event.getEventName().equals(EventConstants.COLLECTION_PLAY))){
     	  duplicateRow =  AJEntityReporting.findBySQL(AJEntityReporting.FIND_COLLECTION_EVENT,event.getSessionId(),event.getContentGooruId(),event.getEventType(), event.getEventName());

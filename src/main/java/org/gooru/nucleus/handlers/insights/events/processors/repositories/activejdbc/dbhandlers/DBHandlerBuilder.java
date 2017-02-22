@@ -23,5 +23,8 @@ public final class DBHandlerBuilder {
     }
     public static DBHandler buildClassAuthorizedData(ProcessorContext context) {
       return new ClassAuthorizedUsersBuilderHandler(context);
+    }
+    public static DBHandler buildClassCollectionCount(ProcessorContext context) {
+      return new ClassCollectionCountBuilder(context);
     } 
 }
