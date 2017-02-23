@@ -37,7 +37,7 @@ class AJBaseReportingRepo implements BaseReportingRepo {
     }
     
     @Override
-    public MessageResponse buildClassCollectionCount() {
-      return TransactionExecutor.executeTransaction(DBHandlerBuilder.buildClassCollectionCount(context));
+    public MessageResponse buildCourseCollectionCount() {
+      return TransactionExecutor.executeTransaction(DBHandlerBuilder.buildCourseCollectionCount(context));
     }
 }
