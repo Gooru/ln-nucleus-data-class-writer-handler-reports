@@ -16,6 +16,6 @@ public interface BaseReportingRepo {
 	
   MessageResponse buildClassAuthorizedUser();    
   
-  MessageResponse buildClassCollectionCount();    
+  MessageResponse buildCourseCollectionCount();    
 
 }

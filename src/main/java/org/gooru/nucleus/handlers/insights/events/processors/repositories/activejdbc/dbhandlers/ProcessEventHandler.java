@@ -54,7 +54,6 @@ class ProcessEventHandler implements DBHandler {
     	baseReport = new AJEntityReporting();    	
     	event = context.getEvent();    	
       LazyList<AJEntityReporting> duplicateRow = null;
-      LOGGER.info("Fields : {} ", event.getFields());
     	baseReport.set("eventName", event.getEventName());
     	baseReport.set("eventType", event.getEventType());
     	baseReport.set("actorId", event.getGooruUUID());
@@ -106,11 +105,12 @@ class ProcessEventHandler implements DBHandler {
             LOGGER.warn("errors in creating Base Report");            
         }
 
+    	LOGGER.info("Before insert: " + context.request().toString());
+    	
           if (baseReport.isValid()) {
             if (duplicateRow.isEmpty()) {
               if (baseReport.insert()) {
-                LOGGER.info("Actually Inserting Records in DB");
-                LOGGER.info("Record inserted successfully : " + context.request().toString());
+                LOGGER.info("Record inserted successfully");
                 return new ExecutionResult<>(MessageResponseFactory.createCreatedResponse(), ExecutionStatus.SUCCESSFUL);
               } else {
                 LOGGER.error("Error while inserting event: " + context.request().toString());

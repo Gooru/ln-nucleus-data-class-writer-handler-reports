@@ -60,7 +60,6 @@ time_spent bigint);
 
 -- Store Class Lookup data for Analytics 
 CREATE TABLE class_collection_count (
-class_id varchar(36) NOT NULL,
 course_id varchar(36) NOT NULL,
 unit_id varchar(36) NOT NULL,
 lesson_id varchar(36) NOT NULL,
@@ -69,6 +68,6 @@ assessment_count integer,
 ext_assessment_count integer,
 created_at timestamp NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'),
 updated_at timestamp NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'),
-PRIMARY KEY(class_id,course_id,unit_id,lesson_id)
+PRIMARY KEY(course_id,unit_id,lesson_id)
 );
 
