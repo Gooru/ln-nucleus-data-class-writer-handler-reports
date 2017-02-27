@@ -35,9 +35,4 @@ class AJBaseReportingRepo implements BaseReportingRepo {
     public MessageResponse buildClassAuthorizedUser() {
       return TransactionExecutor.executeTransaction(DBHandlerBuilder.buildClassAuthorizedData(context));
     }
-    
-    @Override
-    public MessageResponse buildCourseCollectionCount() {
-      return TransactionExecutor.executeTransaction(DBHandlerBuilder.buildCourseCollectionCount(context));
-    }
 }

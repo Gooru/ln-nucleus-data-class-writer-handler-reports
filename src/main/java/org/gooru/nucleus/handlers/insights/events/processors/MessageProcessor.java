@@ -75,16 +75,9 @@ class MessageProcessor implements Processor {
           break;
         case EventConstants.ITEM_DELETE:
           result = reComputeUsageData();
-          buildCourseCollectionCount();
           break;
         case EventConstants.ITEM_CREATE:
           result =  buildClassAuthorizedUser();
-          break;
-        case EventConstants.ITEM_COPY:
-          result = buildCourseCollectionCount();
-          break;
-        case EventConstants.ITEM_MOVE:
-          result = buildCourseCollectionCount();
           break;
         default:
           LOGGER.error("Invalid operation type passed in, not able to handle");
@@ -137,15 +130,6 @@ class MessageProcessor implements Processor {
         return MessageResponseFactory.createInternalErrorResponse(t.getMessage());
       }
   
-    }
-    
-    private MessageResponse buildCourseCollectionCount(){
-      try {
-          return RepoBuilder.buildBaseReportingRepo(context).buildCourseCollectionCount();
-      } catch (Throwable t) {
-        LOGGER.error("Exception while build class course_collection_count table", t.getMessage());
-        return MessageResponseFactory.createInternalErrorResponse(t.getMessage());
-      }
     }
 
     private ProcessorContext createContext() {

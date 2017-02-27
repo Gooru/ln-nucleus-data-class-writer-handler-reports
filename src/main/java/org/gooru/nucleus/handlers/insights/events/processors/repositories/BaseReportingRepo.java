@@ -15,7 +15,5 @@ public interface BaseReportingRepo {
   MessageResponse insertTaxonomyReportData();    
 	
   MessageResponse buildClassAuthorizedUser();    
-  
-  MessageResponse buildCourseCollectionCount();    
 
 }
