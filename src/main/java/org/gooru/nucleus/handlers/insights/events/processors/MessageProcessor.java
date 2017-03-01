@@ -73,12 +73,6 @@ class MessageProcessor implements Processor {
          //We may need to revist this in future.
           result = MessageResponseFactory.createOkayResponse();
           break;
-        case EventConstants.ITEM_DELETE:
-          result = reComputeUsageData();
-          break;
-        case EventConstants.ITEM_CREATE:
-          result =  buildClassAuthorizedUser();
-          break;
         default:
           LOGGER.error("Invalid operation type passed in, not able to handle");
           return MessageResponseFactory.createInvalidRequestResponse(RESOURCE_BUNDLE.getString("invalid.operation"));
@@ -98,16 +92,7 @@ class MessageProcessor implements Processor {
             return MessageResponseFactory.createInternalErrorResponse(t.getMessage());
         }
     }
-    
-    private MessageResponse reComputeUsageData() {
-      try {
-          return RepoBuilder.buildBaseReportingRepo(context).reComputeUsageData();                        
-      } catch (Throwable t) {
-          LOGGER.error("Exception while recomputation", t.getMessage());
-          return MessageResponseFactory.createInternalErrorResponse(t.getMessage());
-      }
-    }
-   
+       
     private MessageResponse createTaxonomyReport() {
       try {
           return RepoBuilder.buildBaseReportingRepo(context).insertTaxonomyReportData();                 
@@ -115,21 +100,6 @@ class MessageProcessor implements Processor {
           LOGGER.error("Exception while create taxonomy report", t.getMessage());
           return MessageResponseFactory.createInternalErrorResponse(t.getMessage());
       }
-    }
-
-    private MessageResponse buildClassAuthorizedUser() {
-      try {
-        if (event.getContentFormat().equalsIgnoreCase(EventConstants.CLASS)) {
-          return RepoBuilder.buildBaseReportingRepo(context).buildClassAuthorizedUser();
-        } else {
-          LOGGER.warn("Don't process now. Will revisit later");
-          return MessageResponseFactory.createOkayResponse();
-        }
-      } catch (Throwable t) {
-        LOGGER.error("Exception while build class authorizer table", t.getMessage());
-        return MessageResponseFactory.createInternalErrorResponse(t.getMessage());
-      }
-  
     }
 
     private ProcessorContext createContext() {

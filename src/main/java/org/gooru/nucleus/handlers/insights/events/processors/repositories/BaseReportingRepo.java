@@ -10,10 +10,6 @@ public interface BaseReportingRepo {
 	
 	MessageResponse insertBaseReportData();
 
-  MessageResponse reComputeUsageData();
-
   MessageResponse insertTaxonomyReportData();    
 	
-  MessageResponse buildClassAuthorizedUser();    
-
 }
