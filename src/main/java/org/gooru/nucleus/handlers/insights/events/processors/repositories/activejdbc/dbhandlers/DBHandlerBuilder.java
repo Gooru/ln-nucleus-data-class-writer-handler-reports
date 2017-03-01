@@ -14,14 +14,8 @@ public final class DBHandlerBuilder {
     public static DBHandler buildProcessEventHandler(ProcessorContext context) {
         return new ProcessEventHandler(context);
     }
-    
-    public static DBHandler buildReComputeHandler(ProcessorContext context) {
-      return new ReComputeHandler(context);
-    } 
+     
     public static DBHandler buildTaxonomyReportHandler(ProcessorContext context) {
       return new TaxonomyReportHandler(context);
-    }
-    public static DBHandler buildClassAuthorizedData(ProcessorContext context) {
-      return new ClassAuthorizedUsersBuilderHandler(context);
     }
 }
