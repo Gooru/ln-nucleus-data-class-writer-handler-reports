@@ -71,3 +71,13 @@ updated_at timestamp NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'),
 PRIMARY KEY(course_id,unit_id,lesson_id)
 );
 
+--Create class_authorized_users
+CREATE TABLE class_authorized_users (
+ class_id varchar(36) NOT NULL,
+ creator_id varchar(36) NOT NULL, 
+ collaborator_id varchar(36) DEFAULT NULL, 
+ modified timestamp NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'),
+ PRIMARY KEY (class_id) 
+);
+
+
