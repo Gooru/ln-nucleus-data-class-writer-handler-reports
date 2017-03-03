@@ -65,9 +65,6 @@ class MessageProcessor implements Processor {
       case EventConstants.COLLECTION_RESOURCE_PLAY:
         LOGGER.debug("Taxonomy IDs :  " + event.getTaxonomyIds());
         result = createBaseReport();
-        if (!event.getTaxonomyIds().isEmpty()) {
-          result = createTaxonomyReport();
-        }
         break;
       case EventConstants.REACTION_CREATE:
         // TODO: Don't Process this event for now. Reaction
@@ -95,14 +92,6 @@ class MessageProcessor implements Processor {
     }
   }
 
-  private MessageResponse createTaxonomyReport() {
-    try {
-      return RepoBuilder.buildBaseReportingRepo(context).insertTaxonomyReportData();
-    } catch (Throwable t) {
-      LOGGER.error("Exception while create taxonomy report", t.getMessage());
-      return MessageResponseFactory.createInternalErrorResponse(t.getMessage());
-    }
-  }
 
   private ProcessorContext createContext() {
     try {

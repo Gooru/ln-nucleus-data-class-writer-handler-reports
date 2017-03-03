@@ -1,11 +1,17 @@
 package org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers;
 
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
+import org.gooru.nucleus.handlers.insights.events.constants.MessageConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.insights.events.processors.events.EventParser;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityReporting;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityTaxonomyReporting;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult.ExecutionStatus;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponse;
@@ -139,17 +145,73 @@ class ProcessEventHandler implements DBHandler {
                   Base.exec(AJEntityReporting.UPDATE_COLLECTION_EVENT, view, ts, event.getScore(), react,id);
                 });
               }
-              return new ExecutionResult<>(MessageResponseFactory.createCreatedResponse(), ExecutionStatus.SUCCESSFUL);
             }
           } else {
             LOGGER.warn("Event validation error");
             return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(),
                     ExecutionStatus.FAILED);
         }
+       
+      //Taxonomy report...
+      if (!event.getTaxonomyIds().isEmpty()) {
+        PreparedStatement ps = Base.startBatch(AJEntityTaxonomyReporting.INSERT_TAXONOMY_REPORT);
+        Object maxSeqId = Base.firstCell(AJEntityTaxonomyReporting.SELECT_TAXONOMY_REPORT_MAX_SEQUENCE_ID);
+        int seqId = 1;
+        if (maxSequenceId != null) {
+          seqId = Integer.valueOf(maxSeqId.toString()) + 1;
+        }
+        for (String internalTaxonomyCode : event.getTaxonomyIds().fieldNames()) {
+          String displayCode = event.getTaxonomyIds().getString(internalTaxonomyCode);
+          Map<String, String> taxObject = new HashMap<>();
+          splitByTaxonomyCode(internalTaxonomyCode, taxObject);
+          Base.addBatch(ps, seqId, event.getSessionId(), event.getGooruUUID(), taxObject.get(MessageConstants.SUBJECT),
+                  taxObject.get(MessageConstants.COURSE), taxObject.get(MessageConstants.DOMAIN), taxObject.get(MessageConstants.STANDARDS),
+                  taxObject.containsKey(MessageConstants.LEARNING_TARGETS) ? taxObject.get(MessageConstants.LEARNING_TARGETS) : EventConstants.NA,
+                  displayCode, event.getParentGooruId(), event.getContentGooruId(), event.getResourceType(), event.getQuestionType(),
+                  event.getAnswerObject().toString(), event.getAnswerStatus(), 1, 0, event.getScore(), event.getTimespent());
+          seqId = seqId + 1;
+        }
+        Base.executeBatch(ps);
+        LOGGER.debug("Taxonomy report data inserted successfully:" + event.getSessionId());
+        try {
+          ps.close();
+        } catch (SQLException e) {
+          LOGGER.error("SQL exception while inserting event: {}", e);
+          return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(), ExecutionStatus.FAILED);
+        }
+      }else{
+        LOGGER.debug("No Taxonomy mapping..");
+      }
+        return new ExecutionResult<>(MessageResponseFactory.createCreatedResponse(), ExecutionStatus.SUCCESSFUL);
+
     }
 
     @Override
     public boolean handlerReadOnly() {
         return false;
+    }
+    
+    private void splitByTaxonomyCode(String taxonomyCode, Map<String, String> taxObject){
+      int index = 0;
+      for(String value : taxonomyCode.split(MessageConstants.HYPHEN)){
+           switch(index){
+           case 0:
+             taxObject.put(MessageConstants.SUBJECT, value);
+             break;
+           case 1:
+             taxObject.put(MessageConstants.COURSE, value);
+             break;
+           case 2:
+             taxObject.put(MessageConstants.DOMAIN, value);
+             break;
+           case 3:
+             taxObject.put(MessageConstants.STANDARDS, value);
+             break;
+           case 4:
+             taxObject.put(MessageConstants.LEARNING_TARGETS, value);
+             break;
+           }
+           index++;
+         }
     }
 }
