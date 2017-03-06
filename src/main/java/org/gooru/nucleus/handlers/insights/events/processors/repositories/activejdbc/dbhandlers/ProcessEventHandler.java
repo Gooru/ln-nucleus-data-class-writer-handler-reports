@@ -6,6 +6,7 @@ import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.kafka.common.config.Config;
 import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.constants.MessageConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
@@ -191,27 +192,51 @@ class ProcessEventHandler implements DBHandler {
         return false;
     }
     
-    private void splitByTaxonomyCode(String taxonomyCode, Map<String, String> taxObject){
-      int index = 0;
-      for(String value : taxonomyCode.split(MessageConstants.HYPHEN)){
-           switch(index){
-           case 0:
-             taxObject.put(MessageConstants.SUBJECT, value);
-             break;
-           case 1:
-             taxObject.put(MessageConstants.COURSE, value);
-             break;
-           case 2:
-             taxObject.put(MessageConstants.DOMAIN, value);
-             break;
-           case 3:
-             taxObject.put(MessageConstants.STANDARDS, value);
-             break;
-           case 4:
-             taxObject.put(MessageConstants.LEARNING_TARGETS, value);
-             break;
-           }
-           index++;
-         }
+  private void splitByTaxonomyCode(String taxonomyCode, Map<String, String> taxObject) {
+    int codeLength = taxonomyCode.split(MessageConstants.HYPHEN).length;
+    LOGGER.debug("taxonomy code size : {} ", codeLength);
+    int first = taxonomyCode.indexOf(MessageConstants.HYPHEN);
+    int second = taxonomyCode.indexOf(MessageConstants.HYPHEN, first + 1);
+    int third = taxonomyCode.indexOf(MessageConstants.HYPHEN, second + 1);
+    int fourth = taxonomyCode.indexOf(MessageConstants.HYPHEN, third + 1);
+    switch (codeLength) {
+    case 1:
+      taxObject.put(MessageConstants.SUBJECT, taxonomyCode);
+      taxObject.put(MessageConstants.COURSE, EventConstants.NA);
+      taxObject.put(MessageConstants.DOMAIN, EventConstants.NA);
+      taxObject.put(MessageConstants.STANDARDS, EventConstants.NA);
+      taxObject.put(MessageConstants.LEARNING_TARGETS, EventConstants.NA);
+      break;
+    case 2:
+      taxObject.put(MessageConstants.SUBJECT, taxonomyCode.substring(0, first));
+      taxObject.put(MessageConstants.COURSE, taxonomyCode);
+      taxObject.put(MessageConstants.DOMAIN, EventConstants.NA);
+      taxObject.put(MessageConstants.STANDARDS, EventConstants.NA);
+      taxObject.put(MessageConstants.LEARNING_TARGETS, EventConstants.NA);
+      break;
+    case 3:
+      taxObject.put(MessageConstants.SUBJECT, taxonomyCode.substring(0, first));
+      taxObject.put(MessageConstants.COURSE, taxonomyCode.substring(0, second));
+      taxObject.put(MessageConstants.DOMAIN, taxonomyCode);
+      taxObject.put(MessageConstants.STANDARDS, EventConstants.NA);
+      taxObject.put(MessageConstants.LEARNING_TARGETS, EventConstants.NA);
+      break;
+    case 4:
+      taxObject.put(MessageConstants.SUBJECT, taxonomyCode.substring(0, first));
+      taxObject.put(MessageConstants.COURSE, taxonomyCode.substring(0, second));
+      taxObject.put(MessageConstants.DOMAIN, taxonomyCode.substring(0, third));
+      taxObject.put(MessageConstants.STANDARDS, taxonomyCode);
+      taxObject.put(MessageConstants.LEARNING_TARGETS, EventConstants.NA);
+      break;
+    case 5:
+      taxObject.put(MessageConstants.SUBJECT, taxonomyCode.substring(0, first));
+      taxObject.put(MessageConstants.COURSE, taxonomyCode.substring(0, second));
+      taxObject.put(MessageConstants.DOMAIN, taxonomyCode.substring(0, third));
+      taxObject.put(MessageConstants.STANDARDS, taxonomyCode.substring(0, fourth));
+      taxObject.put(MessageConstants.LEARNING_TARGETS, taxonomyCode);
+      break;
     }
+    LOGGER.debug("taxObject : {} ", taxObject);
+  }
+    
 }
