@@ -201,39 +201,39 @@ class ProcessEventHandler implements DBHandler {
     int fourth = taxonomyCode.indexOf(MessageConstants.HYPHEN, third + 1);
     switch (codeLength) {
     case 1:
-      taxObject.put(MessageConstants.SUBJECT, taxonomyCode);
+      taxObject.put(MessageConstants.SUBJECT, taxonomyCode.trim());
       taxObject.put(MessageConstants.COURSE, EventConstants.NA);
       taxObject.put(MessageConstants.DOMAIN, EventConstants.NA);
       taxObject.put(MessageConstants.STANDARDS, EventConstants.NA);
       taxObject.put(MessageConstants.LEARNING_TARGETS, EventConstants.NA);
       break;
     case 2:
-      taxObject.put(MessageConstants.SUBJECT, taxonomyCode.substring(0, first));
-      taxObject.put(MessageConstants.COURSE, taxonomyCode);
+      taxObject.put(MessageConstants.SUBJECT, taxonomyCode.substring(0, first).trim());
+      taxObject.put(MessageConstants.COURSE, taxonomyCode.trim());
       taxObject.put(MessageConstants.DOMAIN, EventConstants.NA);
       taxObject.put(MessageConstants.STANDARDS, EventConstants.NA);
       taxObject.put(MessageConstants.LEARNING_TARGETS, EventConstants.NA);
       break;
     case 3:
-      taxObject.put(MessageConstants.SUBJECT, taxonomyCode.substring(0, first));
-      taxObject.put(MessageConstants.COURSE, taxonomyCode.substring(0, second));
-      taxObject.put(MessageConstants.DOMAIN, taxonomyCode);
+      taxObject.put(MessageConstants.SUBJECT, taxonomyCode.substring(0, first).trim());
+      taxObject.put(MessageConstants.COURSE, taxonomyCode.substring(0, second).trim());
+      taxObject.put(MessageConstants.DOMAIN, taxonomyCode.trim());
       taxObject.put(MessageConstants.STANDARDS, EventConstants.NA);
       taxObject.put(MessageConstants.LEARNING_TARGETS, EventConstants.NA);
       break;
     case 4:
-      taxObject.put(MessageConstants.SUBJECT, taxonomyCode.substring(0, first));
-      taxObject.put(MessageConstants.COURSE, taxonomyCode.substring(0, second));
-      taxObject.put(MessageConstants.DOMAIN, taxonomyCode.substring(0, third));
-      taxObject.put(MessageConstants.STANDARDS, taxonomyCode);
+      taxObject.put(MessageConstants.SUBJECT, taxonomyCode.substring(0, first).trim());
+      taxObject.put(MessageConstants.COURSE, taxonomyCode.substring(0, second).trim());
+      taxObject.put(MessageConstants.DOMAIN, taxonomyCode.substring(0, third).trim());
+      taxObject.put(MessageConstants.STANDARDS, taxonomyCode.trim());
       taxObject.put(MessageConstants.LEARNING_TARGETS, EventConstants.NA);
       break;
     case 5:
-      taxObject.put(MessageConstants.SUBJECT, taxonomyCode.substring(0, first));
-      taxObject.put(MessageConstants.COURSE, taxonomyCode.substring(0, second));
-      taxObject.put(MessageConstants.DOMAIN, taxonomyCode.substring(0, third));
-      taxObject.put(MessageConstants.STANDARDS, taxonomyCode.substring(0, fourth));
-      taxObject.put(MessageConstants.LEARNING_TARGETS, taxonomyCode);
+      taxObject.put(MessageConstants.SUBJECT, taxonomyCode.substring(0, first).trim());
+      taxObject.put(MessageConstants.COURSE, taxonomyCode.substring(0, second).trim());
+      taxObject.put(MessageConstants.DOMAIN, taxonomyCode.substring(0, third).trim());
+      taxObject.put(MessageConstants.STANDARDS, taxonomyCode.substring(0, fourth).trim());
+      taxObject.put(MessageConstants.LEARNING_TARGETS, taxonomyCode.trim());
       break;
     }
     LOGGER.debug("taxObject : {} ", taxObject);
