@@ -24,7 +24,7 @@ public class AJEntityTaxonomyReporting extends Model{
     public static final String GOORUUID = "actor_id";    
     public static final String TENANT_ID = "tenant_id"; 
     
-    public static final Object SUBJECT_ID = "subject_id";
+    public static final String SUBJECT_ID = "subject_id";
     public static final String COURSE_ID = "course_id";
     public static final String DOMAIN_ID = "domain_id";
     public static final String STANDARD_ID = "standard_id";

@@ -98,7 +98,13 @@ public class DeployVerticle extends AbstractVerticle {
     for (String verticleName : registry) {
       Future<String> deployFuture = Future.future();
       futures.add(deployFuture);
+      LOGGER.debug("Full Config :::" + config());
       JsonObject config = config().getJsonObject(verticleName);
+      
+      LOGGER.debug("verticleName :: " +verticleName);
+      
+      LOGGER.debug("verticleName config :: " +config);
+
       if (config.isEmpty()) {
         vertx.deployVerticle(verticleName, deployFuture.completer());
       } else {
