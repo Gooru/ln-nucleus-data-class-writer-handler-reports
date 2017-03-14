@@ -6,7 +6,6 @@ import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.kafka.common.config.Config;
 import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.constants.MessageConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
@@ -24,6 +23,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Created by mukul@gooru
+ * Modified by daniel
  */
 class ProcessEventHandler implements DBHandler {
 
@@ -61,27 +61,29 @@ class ProcessEventHandler implements DBHandler {
     	baseReport = new AJEntityReporting();    	
     	event = context.getEvent();    	
       LazyList<AJEntityReporting> duplicateRow = null;
-    	baseReport.set("eventName", event.getEventName());
-    	baseReport.set("eventType", event.getEventType());
-    	baseReport.set("actorId", event.getGooruUUID());
-    	baseReport.set("classId", event.getClassGooruId());    	    	
-    	baseReport.set("courseId", event.getCourseGooruId());
-    	baseReport.set("unitId", event.getUnitGooruId());
-    	baseReport.set("lessonId", event.getLessonGooruId());
-    	baseReport.set("sessionId", event.getSessionId());    	    	
-    	baseReport.set("collectionType", event.getCollectionType());
-    	baseReport.set("questionType", event.getQuestionType());
-      baseReport.set("resourcetype", event.getResourceType());
+    	baseReport.set("event_name", event.getEventName());
+    	baseReport.set("event_type", event.getEventType());
+    	baseReport.set("actor_id", event.getGooruUUID());
+    	baseReport.set("class_id", event.getClassGooruId());    	    	
+    	baseReport.set("course_id", event.getCourseGooruId());
+    	baseReport.set("unit_id", event.getUnitGooruId());
+    	baseReport.set("lesson_id", event.getLessonGooruId());
+    	baseReport.set("session_id", event.getSessionId());    	    	
+    	baseReport.set("collection_type", event.getCollectionType());
+    	baseReport.set("question_type", event.getQuestionType());
+      baseReport.set("resource_type", event.getResourceType());
     	baseReport.set("reaction", event.getReaction());
     	baseReport.set("score", event.getScore());    	
     	baseReport.setResourceAttemptStatus(event.getAnswerStatus());    	    	    	
     	baseReport.set("views", event.getViews());
-    	baseReport.set("timespent", event.getTimespent());
-    	baseReport.set("tenantId",event.getTenantId());
+    	baseReport.set("time_spent", event.getTimespent());
+    	baseReport.set("tenant_id",event.getTenantId());
+      baseReport.set("created_timestamp",new Timestamp(event.getStartTime()));
+      baseReport.set("updated_timestamp",new Timestamp(event.getEndTime()));
 
     	if ((event.getEventName().equals(EventConstants.COLLECTION_PLAY))){
     	  duplicateRow =  AJEntityReporting.findBySQL(AJEntityReporting.FIND_COLLECTION_EVENT,event.getSessionId(),event.getContentGooruId(),event.getEventType(), event.getEventName());
-    	  baseReport.set("collectionId", event.getContentGooruId());
+    	  baseReport.set("collection_id", event.getContentGooruId());
     		baseReport.set("question_count", event.getQuestionCount());
         if (event.getEventType().equalsIgnoreCase(EventConstants.STOP)) {
           Object scoreObj = Base.firstCell(AJEntityReporting.COMPUTE_ASSESSMENT_SCORE, event.getSessionId());
@@ -91,15 +93,11 @@ class ProcessEventHandler implements DBHandler {
     	    	
     	if ((event.getEventName().equals(EventConstants.COLLECTION_RESOURCE_PLAY))) {
     	  duplicateRow = AJEntityReporting.findBySQL(AJEntityReporting.FIND_RESOURCE_EVENT,event.getSessionId(),event.getContentGooruId(),event.getEventType());
-    		baseReport.set("collectionId", event.getParentGooruId());
-    		baseReport.set("resourceId", event.getContentGooruId());    		
-    		baseReport.set("answerObject", event.getAnswerObject().toString());
+    		baseReport.set("collection_id", event.getParentGooruId());
+    		baseReport.set("resource_id", event.getContentGooruId());    		
+    		baseReport.set("answer_object", event.getAnswerObject().toString());
     	}
-    	
-    	//Mukul - SetTimeStamp
-    	baseReport.set("createTimestamp", new Timestamp(event.getStartTime()));
-    	baseReport.set("updateTimestamp", new Timestamp(event.getEndTime())); 
-    	
+
     	Object maxSequenceId =
                 Base.firstCell(AJEntityReporting.SELECT_BASEREPORT_MAX_SEQUENCE_ID);
             int sequenceId = 1;
@@ -129,7 +127,7 @@ class ProcessEventHandler implements DBHandler {
                 duplicateRow.forEach(dup -> {
                   int id = Integer.valueOf(dup.get("id").toString());
                   long view = (Long.valueOf(dup.get("views").toString()) + event.getViews());
-                  long ts = (Long.valueOf(dup.get("timespent").toString()) + event.getTimespent());
+                  long ts = (Long.valueOf(dup.get("time_spent").toString()) + event.getTimespent());
                   long react = event.getReaction() != 0 ? event.getReaction() : 0;
                   Object attmptStatus = dup.get(AJEntityReporting.RESOURCE_ATTEMPT_STATUS);
                   Object ansObj = dup.get(AJEntityReporting.ANSWER_OBJECT);
@@ -141,7 +139,7 @@ class ProcessEventHandler implements DBHandler {
                 duplicateRow.forEach(dup -> {
                   int id = Integer.valueOf(dup.get("id").toString());
                   long view = (Long.valueOf(dup.get("views").toString()) + event.getViews());
-                  long ts = (Long.valueOf(dup.get("timespent").toString()) + event.getTimespent());
+                  long ts = (Long.valueOf(dup.get("time_spent").toString()) + event.getTimespent());
                   long react = event.getReaction() != 0 ? event.getReaction() : 0;
                   Base.exec(AJEntityReporting.UPDATE_COLLECTION_EVENT, view, ts, event.getScore(), react,id);
                 });

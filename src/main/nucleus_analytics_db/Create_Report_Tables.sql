@@ -7,32 +7,32 @@ CREATE TYPE attempt_status AS ENUM ('correct', 'incorrect', 'skipped', 'unevalua
 
 
 -- Store data for Class Analytics 
-CREATE TABLE BaseReports (
+CREATE TABLE base_reports (
 id SERIAL PRIMARY KEY,
 sequence_id bigint,
-eventName varchar(36) NOT NULL,
-eventType varchar(36) NOT NULL,
-actorId varchar(36) NOT NULL,
-tenantId varchar(36) DEFAULT NULL,
-classId varchar(36) DEFAULT NULL,
-courseId varchar(36) DEFAULT NULL,
-unitId varchar(36) DEFAULT NULL,
-lessonId varchar(36) DEFAULT NULL,
-collectionId varchar(36) NOT NULL,
-sessionId varchar(36),
+event_name varchar(36) NOT NULL,
+event_type varchar(36) NOT NULL,
+actor_id varchar(36) NOT NULL,
+tenant_id varchar(36) DEFAULT NULL,
+class_id varchar(36) DEFAULT NULL,
+course_id varchar(36) DEFAULT NULL,
+unit_id varchar(36) DEFAULT NULL,
+lesson_id varchar(36) DEFAULT NULL,
+collection_id varchar(36) NOT NULL,
+session_id varchar(36),
 question_count smallint,
-collectionType varchar(12),
-resourceType varchar(12),
-questionType varchar(36),
-answerObject text, 
-resourceId varchar(36),
+collection_type varchar(12),
+resource_type varchar(12),
+question_type varchar(36),
+answer_object text, 
+resource_id varchar(36),
 views integer,
-timespent bigint,
+time_spent bigint,
 score smallint,
 reaction smallint,
-resourceAttemptStatus attempt_status,
-createTimestamp timestamp NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'),
-updateTimestamp timestamp NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'));
+resource_attempt_status attempt_status,
+created_timestamp timestamp NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'),
+updated_timestamp timestamp NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'));
 
 --Store data for taxonomy report
 CREATE TABLE taxonomy_report (
@@ -59,7 +59,7 @@ score smallint,
 time_spent bigint);
 
 -- Store Class Lookup data for Analytics 
-CREATE TABLE class_collection_count (
+CREATE TABLE course_collection_count (
 course_id varchar(36) NOT NULL,
 unit_id varchar(36) NOT NULL,
 lesson_id varchar(36) NOT NULL,
