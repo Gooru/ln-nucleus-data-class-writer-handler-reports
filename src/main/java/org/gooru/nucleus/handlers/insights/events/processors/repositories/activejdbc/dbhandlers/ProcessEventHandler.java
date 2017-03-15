@@ -59,6 +59,7 @@ class ProcessEventHandler implements DBHandler {
     @SuppressWarnings("rawtypes")
     public ExecutionResult<MessageResponse> executeRequest() {
     	baseReport = new AJEntityReporting();    	
+    	baseReport.manageTime(false);
     	event = context.getEvent();    	
       LazyList<AJEntityReporting> duplicateRow = null;
     	baseReport.set("event_name", event.getEventName());
@@ -109,7 +110,6 @@ class ProcessEventHandler implements DBHandler {
     	if (baseReport.hasErrors()) {
             LOGGER.warn("errors in creating Base Report");            
         }
-    	baseReport.manageTime(false);
     	LOGGER.info("Before insert: " + context.request().toString());
     	
           if (baseReport.isValid()) {
