@@ -16,22 +16,20 @@ import org.slf4j.LoggerFactory;
 
 @Table("base_reports")
 public class AJEntityReporting extends Model {
-	
-	private static final Logger LOGGER = LoggerFactory.getLogger(AJEntityReporting.class);
-    	
-	public static final String ID = "id";
-	public static final String SEQUENCE_ID = "sequence_id";
-	public static final String EVENTNAME = "event_name";
-	
-	public static final String EVENTTYPE = "event_type";
-	//actor_id is userId or gooruuid
-	public static final String GOORUUID = "actor_id";    
-	public static final String TENANT_ID = "tenant_id";
-    
-	public static final Object CLASS_GOORU_OID = "class_id";
-	public static final String COURSE_GOORU_OID = "course_id";
-	public static final String UNIT_GOORU_OID = "unit_id";
-	public static final String LESSON_GOORU_OID = "lesson_id";
+  	private static final Logger LOGGER = LoggerFactory.getLogger(AJEntityReporting.class);
+  	public static final String ID = "id";
+  	public static final String SEQUENCE_ID = "sequence_id";
+  	public static final String EVENTNAME = "event_name";
+  	
+  	public static final String EVENTTYPE = "event_type";
+  	//actor_id is userId or gooruuid
+  	public static final String GOORUUID = "actor_id";    
+  	public static final String TENANT_ID = "tenant_id";
+      
+  	public static final Object CLASS_GOORU_OID = "class_id";
+  	public static final String COURSE_GOORU_OID = "course_id";
+  	public static final String UNIT_GOORU_OID = "unit_id";
+  	public static final String LESSON_GOORU_OID = "lesson_id";
     public static final String COLLECTION_OID = "collection_id";
 
     public static final String QUESTION_COUNT = "question_count";
@@ -114,5 +112,9 @@ public class AJEntityReporting extends Model {
             this.errors().put(field, value);
         }
     }
-
+    public AJEntityReporting() {
+      // Turning off create_at and updated_at columns are getting updated by
+      // activeJDBC.
+      this.manageTime(false);
+    }
 }
