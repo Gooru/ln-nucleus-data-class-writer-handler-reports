@@ -59,7 +59,6 @@ class ProcessEventHandler implements DBHandler {
     @SuppressWarnings("rawtypes")
     public ExecutionResult<MessageResponse> executeRequest() {
     	baseReport = new AJEntityReporting();    	
-    	baseReport.manageTime(false);
     	event = context.getEvent();    	
       LazyList<AJEntityReporting> duplicateRow = null;
     	baseReport.set("event_name", event.getEventName());
