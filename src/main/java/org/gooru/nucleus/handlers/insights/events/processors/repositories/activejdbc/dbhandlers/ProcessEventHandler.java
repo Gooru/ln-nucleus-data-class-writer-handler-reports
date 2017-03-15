@@ -78,8 +78,8 @@ class ProcessEventHandler implements DBHandler {
     	baseReport.set("views", event.getViews());
     	baseReport.set("time_spent", event.getTimespent());
     	baseReport.set("tenant_id",event.getTenantId());
-      baseReport.set("created_timestamp",new Timestamp(event.getStartTime()));
-      baseReport.set("updated_timestamp",new Timestamp(event.getEndTime()));
+      baseReport.set("created_at",new Timestamp(event.getStartTime()));
+      baseReport.set("updated_at",new Timestamp(event.getEndTime()));
 
     	if ((event.getEventName().equals(EventConstants.COLLECTION_PLAY))){
     	  duplicateRow =  AJEntityReporting.findBySQL(AJEntityReporting.FIND_COLLECTION_EVENT,event.getSessionId(),event.getContentGooruId(),event.getEventType(), event.getEventName());
@@ -109,7 +109,7 @@ class ProcessEventHandler implements DBHandler {
     	if (baseReport.hasErrors()) {
             LOGGER.warn("errors in creating Base Report");            
         }
-
+    	baseReport.manageTime(false);
     	LOGGER.info("Before insert: " + context.request().toString());
     	
           if (baseReport.isValid()) {
