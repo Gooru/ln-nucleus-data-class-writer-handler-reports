@@ -49,8 +49,8 @@ public class AJEntityReporting extends Model {
     public static final String RESOURCE_ATTEMPT_STATUS = "resource_attempt_status";    
     public static final String SCORE = "score";
     //********************************************
-    public static final String CREATE_TIMESTAMP = "created_timestamp";
-    public static final String UPDATE_TIMESTAMP = "updated_timestamp";   
+    public static final String CREATE_TIMESTAMP = "created_at";
+    public static final String UPDATE_TIMESTAMP = "updated_at";   
     
     public static final String SELECT_BASEREPORT_MAX_SEQUENCE_ID =
             "SELECT max(sequence_id) FROM base_reports";
@@ -67,7 +67,7 @@ public class AJEntityReporting extends Model {
     public static final String COMPUTE_ASSESSMENT_SCORE = "SELECT SUM(questionData.question_score) AS score  "
               +"FROM  (SELECT DISTINCT ON (resource_id)  score AS question_score , session_id FROM base_reports "
               +"WHERE event_name = 'collection.resource.play' AND event_type = 'stop' AND session_id = ?"
-              +"AND resource_type = 'question' ORDER BY resource_id, updated_timestamp desc) questionData GROUP BY session_id";
+              +"AND resource_type = 'question' ORDER BY resource_id, updated_at desc) questionData GROUP BY session_id";
     
     public static final String FIND_COLLECTION_EVENT = "SELECT id,views,time_spent,score,reaction,resource_attempt_status,answer_object FROM base_reports "
             + "WHERE session_id = ? AND collection_id = ? AND event_type = ? AND event_name = ? ";
