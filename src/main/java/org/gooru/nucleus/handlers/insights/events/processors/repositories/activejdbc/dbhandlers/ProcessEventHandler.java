@@ -87,7 +87,7 @@ class ProcessEventHandler implements DBHandler {
     		baseReport.set("question_count", event.getQuestionCount());
         if (event.getEventType().equalsIgnoreCase(EventConstants.STOP)) {
           Object scoreObj = Base.firstCell(AJEntityReporting.COMPUTE_ASSESSMENT_SCORE, event.getSessionId());
-          baseReport.set("score", Math.round((double) ((scoreObj != null ? Integer.valueOf(scoreObj.toString()) : 0 )* 100) / event.getQuestionCount()));
+          baseReport.set("score", (double) ((scoreObj != null ? Double.valueOf(scoreObj.toString()) : 0 )* 100) / event.getQuestionCount());
         }
     	}
     	    	

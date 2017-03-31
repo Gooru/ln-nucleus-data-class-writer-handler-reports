@@ -1,11 +1,11 @@
 package org.gooru.nucleus.handlers.insights.events.processors.events;
 
 import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public final class EventParser {
 	
@@ -88,7 +88,7 @@ public final class EventParser {
 
 		private long eventTime;
 
-		private long score;
+		private double score;
 
 		private long timespent;
 		
@@ -350,11 +350,11 @@ public final class EventParser {
 			this.eventTime = eventTime;
 		}
 
-		public long getScore() {
+		public double getScore() {
 			return score;
 		}
 
-		public void setScore(long score) {
+		public void setScore(double score) {
 			this.score = score;
 		}
 
@@ -463,7 +463,7 @@ public final class EventParser {
 					(!payLoadObject.containsKey(EventConstants.IS_STUDENT)) || payLoadObject.getBoolean(EventConstants.IS_STUDENT));
 				this.eventTime = this.event.getLong(EventConstants.END_TIME);
 				this.collectionItemId = EventConstants.NA;
-				this.score = 0;
+				this.score = metrics.containsKey(EventConstants.SCORE) ? metrics.getDouble(EventConstants.SCORE) :  0;
 				this.reaction = context.containsKey(EventConstants.REACTION_TYPE) ? context.getLong(EventConstants.REACTION_TYPE) : 0;
 
 				if (this.eventName.equals(EventConstants.COLLECTION_PLAY)){
