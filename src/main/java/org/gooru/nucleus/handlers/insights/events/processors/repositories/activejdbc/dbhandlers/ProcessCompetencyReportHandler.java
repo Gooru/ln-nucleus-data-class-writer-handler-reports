@@ -92,8 +92,7 @@ class ProcessCompetencyReportHandler implements DBHandler {
           AJEntityCompetencyReport taxCompetency = new AJEntityCompetencyReport();
           taxCompetency.copyFrom(competencyReport);
           String displayCode = event.getTaxonomyIds().getString(internalTaxonomyCode);
-          Map<String, String> taxObject = new HashMap<>();
-          splitByTaxonomyCode(internalTaxonomyCode, taxObject);
+          Map<String, String> taxObject = splitByTaxonomyCode(internalTaxonomyCode);
           taxCompetency.set(AJEntityCompetencyReport.DISPLAY_CODE, displayCode);
           taxCompetency.set(AJEntityCompetencyReport.TAX_SUBJECT_ID, taxObject.get(MessageConstants.SUBJECT));
           taxCompetency.set(AJEntityCompetencyReport.TAX_COURSE_ID, taxObject.get(MessageConstants.COURSE));
@@ -128,50 +127,44 @@ class ProcessCompetencyReportHandler implements DBHandler {
     return false;
   }
 
-  private void splitByTaxonomyCode(String taxonomyCode, Map<String, String> taxObject) {
+  private Map<String, String> splitByTaxonomyCode(String taxonomyCode) {
     int codeLength = taxonomyCode.split(MessageConstants.HYPHEN).length;
     int subjectIndex = taxonomyCode.indexOf(MessageConstants.HYPHEN);
     int courseIndex = taxonomyCode.indexOf(MessageConstants.HYPHEN, subjectIndex + 1);
     int domainIndex = taxonomyCode.indexOf(MessageConstants.HYPHEN, courseIndex + 1);
     int standardIndex = taxonomyCode.indexOf(MessageConstants.HYPHEN, domainIndex + 1);
+    Map<String, String> taxObject = null;
     switch (codeLength) {
     case 1:
-      taxObject.put(MessageConstants.SUBJECT, taxonomyCode.trim());
-      taxObject.put(MessageConstants.COURSE, null);
-      taxObject.put(MessageConstants.DOMAIN, null);
-      taxObject.put(MessageConstants.STANDARDS, null);
-      taxObject.put(MessageConstants.LEARNING_TARGETS, null);
+      taxObject = getTaxObject(taxonomyCode.trim(), null, null, null, null);
       break;
     case 2:
-      taxObject.put(MessageConstants.SUBJECT, taxonomyCode.substring(0, subjectIndex).trim());
-      taxObject.put(MessageConstants.COURSE, taxonomyCode.trim());
-      taxObject.put(MessageConstants.DOMAIN, null);
-      taxObject.put(MessageConstants.STANDARDS, null);
-      taxObject.put(MessageConstants.LEARNING_TARGETS, null);
+      taxObject = getTaxObject(taxonomyCode.substring(0, subjectIndex).trim(), taxonomyCode.trim(), null, null, null);
       break;
     case 3:
-      taxObject.put(MessageConstants.SUBJECT, taxonomyCode.substring(0, subjectIndex).trim());
-      taxObject.put(MessageConstants.COURSE, taxonomyCode.substring(0, courseIndex).trim());
-      taxObject.put(MessageConstants.DOMAIN, taxonomyCode.trim());
-      taxObject.put(MessageConstants.STANDARDS, null);
-      taxObject.put(MessageConstants.LEARNING_TARGETS, null);
+      taxObject = getTaxObject(taxonomyCode.substring(0, subjectIndex).trim(), taxonomyCode.substring(0, courseIndex).trim(), taxonomyCode.trim(),
+              null, null);
       break;
     case 4:
-      taxObject.put(MessageConstants.SUBJECT, taxonomyCode.substring(0, subjectIndex).trim());
-      taxObject.put(MessageConstants.COURSE, taxonomyCode.substring(0, courseIndex).trim());
-      taxObject.put(MessageConstants.DOMAIN, taxonomyCode.substring(0, domainIndex).trim());
-      taxObject.put(MessageConstants.STANDARDS, taxonomyCode.trim());
-      taxObject.put(MessageConstants.LEARNING_TARGETS, null);
+      taxObject = getTaxObject(taxonomyCode.substring(0, subjectIndex).trim(), taxonomyCode.substring(0, courseIndex).trim(),
+              taxonomyCode.substring(0, domainIndex).trim(), taxonomyCode.trim(), null);
       break;
     case 5:
-      taxObject.put(MessageConstants.SUBJECT, taxonomyCode.substring(0, subjectIndex).trim());
-      taxObject.put(MessageConstants.COURSE, taxonomyCode.substring(0, courseIndex).trim());
-      taxObject.put(MessageConstants.DOMAIN, taxonomyCode.substring(0, domainIndex).trim());
-      taxObject.put(MessageConstants.STANDARDS, taxonomyCode.substring(0, standardIndex).trim());
-      taxObject.put(MessageConstants.LEARNING_TARGETS, taxonomyCode.trim());
+      taxObject = getTaxObject(taxonomyCode.substring(0, subjectIndex).trim(), taxonomyCode.substring(0, courseIndex).trim(),
+              taxonomyCode.substring(0, domainIndex).trim(), taxonomyCode.substring(0, standardIndex).trim(), taxonomyCode.trim());
       break;
     }
     LOGGER.debug("taxObject : {} ", taxObject);
+    return taxObject;
   }
 
+  private Map<String, String> getTaxObject(String subject, String course, String domain, String standard, String microStandard) {
+    Map<String, String> taxObject = new HashMap<>();
+    taxObject.put(MessageConstants.SUBJECT, subject);
+    taxObject.put(MessageConstants.COURSE, course);
+    taxObject.put(MessageConstants.DOMAIN, domain);
+    taxObject.put(MessageConstants.STANDARDS, standard);
+    taxObject.put(MessageConstants.LEARNING_TARGETS, microStandard);
+    return taxObject;
+  }
 }
