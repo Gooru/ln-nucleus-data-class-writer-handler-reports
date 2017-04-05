@@ -101,6 +101,8 @@ public class AJEntityReporting extends Model {
     
     /***************************/
     
+    public static final String SELECT_BASE_REPORT_ID = "SELECT id FROM base_reports WHERE session_id = ? AND resource_id = ? AND event_type = ? ";
+    
     private void setPGObject(String field, String type, String value) {
         PGobject pgObject = new PGobject();
         pgObject.setType(type);

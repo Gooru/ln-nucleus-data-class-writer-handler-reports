@@ -20,4 +20,8 @@ class AJBaseReportingRepo implements BaseReportingRepo {
     public MessageResponse insertBaseReportData() {
         return TransactionExecutor.executeTransaction(DBHandlerBuilder.buildProcessEventHandler(context));
     }
+    @Override
+    public MessageResponse inserCompetencyReportsData() {
+        return TransactionExecutor.executeTransaction(DBHandlerBuilder.buildCompetencyReportsHandler(context));
+    }
 }

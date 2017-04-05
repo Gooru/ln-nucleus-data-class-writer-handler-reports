@@ -63,8 +63,11 @@ class MessageProcessor implements Processor {
         result = createBaseReport();
         break;
       case EventConstants.COLLECTION_RESOURCE_PLAY:
-        LOGGER.debug("Taxonomy IDs :  " + event.getTaxonomyIds());
         result = createBaseReport();
+        LOGGER.debug("Taxonomy IDs :  " + event.getTaxonomyIds());
+        if(event.getTaxonomyIds() != null && !event.getTaxonomyIds().isEmpty()){          
+          result = createCompetencyReport();
+        }
         break;
       case EventConstants.REACTION_CREATE:
         // TODO: Don't Process this event for now. Reaction
@@ -92,7 +95,14 @@ class MessageProcessor implements Processor {
     }
   }
 
-
+  private MessageResponse createCompetencyReport() {
+    try {
+      return RepoBuilder.buildBaseReportingRepo(context).inserCompetencyReportsData();
+    } catch (Throwable t) {
+      LOGGER.error("Exception while inserting data for competency report", t.getMessage());
+      return MessageResponseFactory.createInternalErrorResponse(t.getMessage());
+    }
+  }
   private ProcessorContext createContext() {
     try {
       event = new EventParser(request.toString());

@@ -9,5 +9,7 @@ import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageRe
 public interface BaseReportingRepo {
 	
 	MessageResponse insertBaseReportData();
+
+  MessageResponse inserCompetencyReportsData();
 	
 }
