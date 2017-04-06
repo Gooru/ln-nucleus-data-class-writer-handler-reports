@@ -66,6 +66,8 @@ class ProcessCompetencyReportHandler implements DBHandler {
     competencyReport.set(AJEntityCompetencyReport.COLLECTION_ID, event.getParentGooruId());
     competencyReport.set(AJEntityCompetencyReport.RESOURCE_ID, event.getContentGooruId());
     competencyReport.set(AJEntityCompetencyReport.COLLECTION_TYPE, event.getCollectionType());
+    competencyReport.set(AJEntityCompetencyReport.RESOURCE_TYPE, event.getResourceType());
+    competencyReport.set(AJEntityCompetencyReport.EVENT_TYPE, event.getEventType());
     competencyReport.set(AJEntityCompetencyReport.CREATED_AT, new Timestamp(event.getStartTime()));
     competencyReport.set(AJEntityCompetencyReport.UPDATED_AT, new Timestamp(event.getEndTime()));
 
@@ -84,7 +86,7 @@ class ProcessCompetencyReportHandler implements DBHandler {
 
     }
 
-    List<AJEntityCompetencyReport> reports = AJEntityCompetencyReport.where(AJEntityCompetencyReport.SELECT_ROWS_BY_SESSION_ID_AND_RESOURCE, event.getSessionId(), event.getContentGooruId());
+    List<AJEntityCompetencyReport> reports = AJEntityCompetencyReport.where(AJEntityCompetencyReport.SELECT_ROWS_BY_SESSION_ID_AND_RESOURCE, event.getSessionId(), event.getContentGooruId(), event.getEventType());
     if (reports.isEmpty()) {
       List<AJEntityCompetencyReport> compentencyReports = new ArrayList<>();
       if (!event.getTaxonomyIds().isEmpty()) {
@@ -98,7 +100,7 @@ class ProcessCompetencyReportHandler implements DBHandler {
           taxCompetency.set(AJEntityCompetencyReport.TAX_COURSE_ID, taxObject.get(MessageConstants.COURSE));
           taxCompetency.set(AJEntityCompetencyReport.TAX_DOMAIN_ID, taxObject.get(MessageConstants.DOMAIN));
           taxCompetency.set(AJEntityCompetencyReport.TAX_STANDARD_ID, taxObject.get(MessageConstants.STANDARDS));
-          taxCompetency.set(AJEntityCompetencyReport.TAX_MICRO_STANDARD_ID, taxObject.get(MessageConstants.MICRO_STANDARDS));
+          taxCompetency.set(AJEntityCompetencyReport.TAX_MICRO_STANDARD_ID, taxObject.get(MessageConstants.LEARNING_TARGETS));
           compentencyReports.add(taxCompetency);
         }
       } else {
