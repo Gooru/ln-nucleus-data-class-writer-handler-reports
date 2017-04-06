@@ -115,10 +115,10 @@ class ProcessEventHandler implements DBHandler {
             if (duplicateRow.isEmpty()) {
               if (baseReport.insert()) {
                 LOGGER.info("Record inserted successfully");
-                return new ExecutionResult<>(MessageResponseFactory.createCreatedResponse(), ExecutionStatus.SUCCESSFUL);
+              //  return new ExecutionResult<>(MessageResponseFactory.createCreatedResponse(), ExecutionStatus.SUCCESSFUL);
               } else {
                 LOGGER.error("Error while inserting event: " + context.request().toString());
-                return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(), ExecutionStatus.FAILED);
+               // return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(), ExecutionStatus.FAILED);
               }
             } else {
               LOGGER.debug("Found duplicate row. so updating duplicate row.....");
@@ -155,7 +155,7 @@ class ProcessEventHandler implements DBHandler {
         PreparedStatement ps = Base.startBatch(AJEntityTaxonomyReporting.INSERT_TAXONOMY_REPORT);
         Object maxSeqId = Base.firstCell(AJEntityTaxonomyReporting.SELECT_TAXONOMY_REPORT_MAX_SEQUENCE_ID);
         int seqId = 1;
-        if (maxSequenceId != null) {
+        if (maxSeqId != null) {
           seqId = Integer.valueOf(maxSeqId.toString()) + 1;
         }
         for (String internalTaxonomyCode : event.getTaxonomyIds().fieldNames()) {

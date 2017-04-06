@@ -29,12 +29,14 @@ public class AJEntityCompetencyReport extends Model {
   public static final String DISPLAY_CODE = "display_code";
   public static final String COLLECTION_ID = "collection_id";
   public static final String RESOURCE_ID = "resource_id";
+  public static final String RESOURCE_TYPE = "resource_type";
+  public static final String EVENT_TYPE = "event_type";
   public static final String COLLECTION_TYPE = "collection_type";
   public static final String BASE_REPORT_ID = "base_report_id";
   public static final String CREATED_AT = "created_at";
   public static final String UPDATED_AT = "updated_at";  
   
-  public static final String SELECT_ROWS_BY_SESSION_ID_AND_RESOURCE = "session_id = ? AND resource_id = ? ";
+  public static final String SELECT_ROWS_BY_SESSION_ID_AND_RESOURCE = "session_id = ? AND resource_id = ? AND event_type = ? ";
   public AJEntityCompetencyReport() {
     // Turning off create_at and updated_at columns are getting updated by
     // activeJDBC.
