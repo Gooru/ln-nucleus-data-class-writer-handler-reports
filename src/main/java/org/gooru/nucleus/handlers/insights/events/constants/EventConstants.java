@@ -843,6 +843,19 @@ public class EventConstants {
 	
 	public static final String _TOTAL_COUNT = "total_count";
 	
+	//Updates for Daily Class Activity
+	public static final String CONTENT_SOURCE = "contentSource";
+	
+	public static final String DAILY_CLASS_ACTIVITY = "DailyClassActivity";
+	
+	public static final String INDEPENDENT_LEARNER_COURSE_MAP = "IL-CourseMap";
+	
+	public static final String INCLASS_COURSE_MAP = "InClass-CourseMap";
+
+	public static final String INCLASS_COLLECTION = "InClass-Collection";
+	
+	public static final String INDEPENDENT_LEARNER_COLLECTION = "IL-Collection";
+		
 	private EventConstants() {
 		throw new AssertionError();
 	}

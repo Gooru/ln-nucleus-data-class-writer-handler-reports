@@ -102,6 +102,8 @@ public final class EventParser {
 
 		private String tenantId;
 		
+		private String contentSource;
+		
 		public String getEventId() {
 			return eventId;
 		}
@@ -406,6 +408,56 @@ public final class EventParser {
 		public int getQuestionCount() {
 			return questionCount;
 		}
+		
+		public void setContentSource(String contentSource){
+			this.contentSource = contentSource;
+		}
+		
+		public String getContentSource(){
+			return contentSource;
+		}
+		
+		
+		public String getParentEventId() {
+			return parentEventId;
+		}
+
+		public void setParentEventId(String parentEventId) {
+			this.parentEventId = parentEventId;
+		}
+
+		public String getContentFormat() {
+			return contentFormat;
+		}
+
+		public void setContentFormat(String contentFormat) {
+			this.contentFormat = contentFormat;
+		}
+
+		public String getReportsContext() {
+			return reportsContext;
+		}
+
+		public void setReportsContext(String reportsContext) {
+			this.reportsContext = reportsContext;
+		}
+
+		public boolean isStudent() {
+			return isStudent;
+		}
+
+		private void setStudent(boolean isStudent) {
+			this.isStudent = isStudent;
+		}
+		
+		public String getTenantId() {
+		      return tenantId;
+		    }
+		
+	    public void setTenantId(String tenantId) {
+	        this.tenantId = tenantId;
+	      }
+
 
 		private EventParser parse() {
 			try {			
@@ -428,7 +480,7 @@ public final class EventParser {
 				this.contentGooruId = context.containsKey(EventConstants.CONTENT_GOORU_OID) ? context.getString(EventConstants.CONTENT_GOORU_OID) : EventConstants.NA;
 
 				this.gooruUUID = user.getString(EventConstants.GOORUID);
-        this.tenantId = context.containsKey(EventConstants.TENANT_ID) ? context.getString(EventConstants.TENANT_ID) : null;
+                this.tenantId = context.containsKey(EventConstants.TENANT_ID) ? context.getString(EventConstants.TENANT_ID) : null;
 				this.lessonGooruId = context.containsKey(EventConstants.LESSON_GOORU_OID) ? context.getString(EventConstants.LESSON_GOORU_OID) : null;
 				this.unitGooruId = context.containsKey(EventConstants.UNIT_GOORU_OID) ? context.getString(EventConstants.UNIT_GOORU_OID) : null;
 				this.courseGooruId = context.containsKey(EventConstants.COURSE_GOORU_OID) ? context.getString(EventConstants.COURSE_GOORU_OID) : null;
@@ -452,7 +504,7 @@ public final class EventParser {
 				this.gradeStatus = payLoadObject.containsKey(EventConstants.GRADE_STATUS) ? payLoadObject.getString(EventConstants.GRADE_STATUS) : EventConstants.NA;
 				this.teacherId = payLoadObject.containsKey(EventConstants.TEACHER_ID) ? payLoadObject.getString(EventConstants.TEACHER_ID) : EventConstants.NA;
 				this.contentFormat = payLoadObject.containsKey(EventConstants.CONTENT_FORMAT) ? payLoadObject.getString(EventConstants.CONTENT_FORMAT) : EventConstants.NA;
-	      this.questionCount = context.containsKey(EventConstants.QUESTION_COUNT) ? context.getInteger(EventConstants.QUESTION_COUNT) : 0;         
+	            this.questionCount = context.containsKey(EventConstants.QUESTION_COUNT) ? context.getInteger(EventConstants.QUESTION_COUNT) : 0;         
 				if(payLoadObject.containsKey(EventConstants.TAXONOMYIDS) && payLoadObject.getValue(EventConstants.TAXONOMYIDS) instanceof JsonObject){
 					this.taxonomyIds = payLoadObject.getJsonObject(EventConstants.TAXONOMYIDS);					
 				}else{
@@ -465,6 +517,7 @@ public final class EventParser {
 				this.collectionItemId = EventConstants.NA;
 				this.score = metrics.containsKey(EventConstants.SCORE) ? metrics.getDouble(EventConstants.SCORE) :  0;
 				this.reaction = context.containsKey(EventConstants.REACTION_TYPE) ? context.getLong(EventConstants.REACTION_TYPE) : 0;
+				this.contentSource = context.containsKey(EventConstants.CONTENT_SOURCE) ? context.getString(EventConstants.CONTENT_SOURCE) : null;
 
 				if (this.eventName.equals(EventConstants.COLLECTION_PLAY)){
 					LOGGER.debug("Inside Collection.Play");
@@ -521,47 +574,6 @@ public final class EventParser {
 								
 			}
 		}
-		
-				
-		public String getParentEventId() {
-			return parentEventId;
-		}
-
-		public void setParentEventId(String parentEventId) {
-			this.parentEventId = parentEventId;
-		}
-
-		public String getContentFormat() {
-			return contentFormat;
-		}
-
-		public void setContentFormat(String contentFormat) {
-			this.contentFormat = contentFormat;
-		}
-
-		public String getReportsContext() {
-			return reportsContext;
-		}
-
-		public void setReportsContext(String reportsContext) {
-			this.reportsContext = reportsContext;
-		}
-
-		public boolean isStudent() {
-			return isStudent;
-		}
-
-		private void setStudent(boolean isStudent) {
-			this.isStudent = isStudent;
-		}
-		
-    public String getTenantId() {
-      return tenantId;
-    }
-
-    public void setTenantId(String tenantId) {
-      this.tenantId = tenantId;
-    }
 
 	} // End Class
 
