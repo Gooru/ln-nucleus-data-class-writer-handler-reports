@@ -72,7 +72,7 @@ public class DailyClassActivityEventHandler implements DBHandler {
         dcaReport.set("resource_type", event.getResourceType());
     	dcaReport.set("reaction", event.getReaction());
     	dcaReport.set("score", event.getScore());    	
-    	dcaReport.setResourceAttemptStatus(event.getAnswerStatus());    	    	    	
+    	dcaReport.set("resource_attempt_status", event.getAnswerStatus());    	    	    	
     	dcaReport.set("views", event.getViews());
     	dcaReport.set("time_spent", event.getTimespent());
     	dcaReport.set("tenant_id",event.getTenantId());
@@ -95,14 +95,6 @@ public class DailyClassActivityEventHandler implements DBHandler {
     		dcaReport.set("resource_id", event.getContentGooruId());    		
     		dcaReport.set("answer_object", event.getAnswerObject().toString());
     	}
-
-    	//Object maxSequenceId =
-          //      Base.firstCell(AJEntityDailyClassActivity.SELECT_BASEREPORT_MAX_SEQUENCE_ID);
-            //int sequenceId = 1;
-            //if (maxSequenceId != null) {
-              //  sequenceId = Integer.valueOf(maxSequenceId.toString()) + 1;
-            //}
-            //baseReport.set(AJEntityReporting.SEQUENCE_ID, sequenceId);
 
     	if (dcaReport.hasErrors()) {
             LOGGER.warn("Errors in creating DCA Report");            

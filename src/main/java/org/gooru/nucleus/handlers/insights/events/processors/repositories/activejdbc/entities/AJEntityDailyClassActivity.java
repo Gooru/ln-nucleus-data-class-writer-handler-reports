@@ -43,7 +43,7 @@ public class AJEntityDailyClassActivity extends Model {
     public static final String TIMESPENT = "time_spent";
     public static final String VIEWS = "views";
     public static final String REACTION = "reaction";
-    //enum (correct / incorrect / skipped / unevaluated)​
+    //(correct / incorrect / skipped / unevaluated)​
     public static final String RESOURCE_ATTEMPT_STATUS = "resource_attempt_status";    
     public static final String SCORE = "score";
     //********************************************

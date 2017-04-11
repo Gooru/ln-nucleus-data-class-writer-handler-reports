@@ -43,7 +43,7 @@ public class AJEntityReporting extends Model {
     public static final String TIMESPENT = "time_spent";
     public static final String VIEWS = "views";
     public static final String REACTION = "reaction";
-    //enum (correct / incorrect / skipped / unevaluated)​
+    //(correct / incorrect / skipped / unevaluated)​
     public static final String RESOURCE_ATTEMPT_STATUS = "resource_attempt_status";    
     public static final String SCORE = "score";
     //********************************************
@@ -85,9 +85,9 @@ public class AJEntityReporting extends Model {
     public static final String PGTYPE_NUMERIC = "numeric";
     public static final String PGTYPE_INT = "smallint";
     
-    public void setResourceAttemptStatus(String answerStatus) {
-        setPGObject(RESOURCE_ATTEMPT_STATUS, RESOURCE_ATTEMPT_STATUS_TYPE, answerStatus);
-    }
+    //public void setResourceAttemptStatus(String answerStatus) {
+    //  setPGObject(RESOURCE_ATTEMPT_STATUS, RESOURCE_ATTEMPT_STATUS_TYPE, answerStatus);
+    //}
     
     /*************************** DELETE Queries For ReComputations Purpose *************************/
     

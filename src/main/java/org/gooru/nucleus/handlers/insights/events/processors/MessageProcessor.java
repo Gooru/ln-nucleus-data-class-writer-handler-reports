@@ -78,7 +78,7 @@ class MessageProcessor implements Processor {
   	          result = createDCACompetencyReport();
   	        }
     	  } else {
-    		  result = createBaseReport();
+    		  result = createBaseReport();    		  
   	        LOGGER.debug("Taxonomy IDs :  " + event.getTaxonomyIds());
   	        if(event.getTaxonomyIds() != null && !event.getTaxonomyIds().isEmpty()){          
   	          result = createCompetencyReport();
