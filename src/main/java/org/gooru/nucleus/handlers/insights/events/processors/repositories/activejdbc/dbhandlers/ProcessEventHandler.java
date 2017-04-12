@@ -74,7 +74,7 @@ class ProcessEventHandler implements DBHandler {
       baseReport.set("resource_type", event.getResourceType());
     	baseReport.set("reaction", event.getReaction());
     	baseReport.set("score", event.getScore());    	
-    	baseReport.setResourceAttemptStatus(event.getAnswerStatus());    	    	    	
+    	baseReport.set("resource_attempt_status", event.getAnswerStatus());    	    	    	
     	baseReport.set("views", event.getViews());
     	baseReport.set("time_spent", event.getTimespent());
     	baseReport.set("tenant_id",event.getTenantId());
@@ -109,19 +109,19 @@ class ProcessEventHandler implements DBHandler {
     	if (baseReport.hasErrors()) {
             LOGGER.warn("errors in creating Base Report");            
         }
-    	LOGGER.info("Before insert: " + context.request().toString());
+    	LOGGER.debug("Inserting into Reports DB: " + context.request().toString());
     	
           if (baseReport.isValid()) {
             if (duplicateRow.isEmpty()) {
               if (baseReport.insert()) {
-                LOGGER.info("Record inserted successfully");
-              //  return new ExecutionResult<>(MessageResponseFactory.createCreatedResponse(), ExecutionStatus.SUCCESSFUL);
+                LOGGER.info("Record inserted successfully in Reports DB");
+                // return new ExecutionResult<>(MessageResponseFactory.createCreatedResponse(), ExecutionStatus.SUCCESSFUL);
               } else {
-                LOGGER.error("Error while inserting event: " + context.request().toString());
-               // return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(), ExecutionStatus.FAILED);
+                LOGGER.error("Error while inserting event into Reports DB: " + context.request().toString());
+               //  return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(), ExecutionStatus.FAILED);
               }
             } else {
-              LOGGER.debug("Found duplicate row. so updating duplicate row.....");
+              LOGGER.debug("Found duplicate row in the DB, so updating duplicate row.....");
               if ((event.getEventName().equals(EventConstants.COLLECTION_RESOURCE_PLAY))) {
                 duplicateRow.forEach(dup -> {
                   int id = Integer.valueOf(dup.get("id").toString());

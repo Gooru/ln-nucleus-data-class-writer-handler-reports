@@ -10,6 +10,10 @@ public interface BaseReportingRepo {
 	
 	MessageResponse insertBaseReportData();
 
-  MessageResponse inserCompetencyReportsData();
-	
+    MessageResponse insertCompetencyReportsData();
+    
+    MessageResponse insertDCAData();
+    
+    MessageResponse insertDCACompetencyData();
+    
 }

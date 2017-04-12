@@ -11,14 +11,14 @@ import org.slf4j.LoggerFactory;
 
 /**
  * created by mukul@gooru
- * modified by daniel
+ *   
  */
 
-@Table("base_reports")
-public class AJEntityReporting extends Model {
-  	private static final Logger LOGGER = LoggerFactory.getLogger(AJEntityReporting.class);
+@Table("daily_class_activity")
+public class AJEntityDailyClassActivity extends Model {
+
+  	private static final Logger LOGGER = LoggerFactory.getLogger(AJEntityDailyClassActivity.class);
   	public static final String ID = "id";
-  	public static final String SEQUENCE_ID = "sequence_id";
   	public static final String EVENTNAME = "event_name";
   	
   	public static final String EVENTTYPE = "event_type";
@@ -50,34 +50,36 @@ public class AJEntityReporting extends Model {
     public static final String CREATE_TIMESTAMP = "created_at";
     public static final String UPDATE_TIMESTAMP = "updated_at";   
     
-    public static final String SELECT_BASEREPORT_MAX_SEQUENCE_ID =
-            "SELECT max(sequence_id) FROM base_reports";
+    //public static final String SELECT_BASEREPORT_MAX_SEQUENCE_ID =
+      //      "SELECT max(sequence_id) FROM base_reports";
 
     public static final String GET_COLLECTION_SCORE = 
-        "SELECT SUM(score) as score from base_reports "
+        "SELECT SUM(score) as score from daily_class_activity "
         + "WHERE class_id = ? AND course_id = ? AND unit_id = ? AND lesson_id = ? AND collection_id = ? AND session_id = ? AND actor_id = ?";
     
     public static final String GET_QUESTION_COUNT = 
-        "SELECT question_count from base_reports "
+        "SELECT question_count from daily_class_activity "
         + "WHERE class_id = ? AND course_id = ? AND unit_id = ? AND lesson_id = ? AND collection_id = ? "
         + "AND session_id = ? AND actor_id = ? AND question_count IS NOT NULL";
     
     public static final String COMPUTE_ASSESSMENT_SCORE = "SELECT SUM(questionData.question_score) AS score  "
-              +"FROM  (SELECT DISTINCT ON (resource_id)  score AS question_score , session_id FROM base_reports "
-              +"WHERE event_name = 'collection.resource.play' AND event_type = 'stop' AND session_id = ?"
+              +"FROM  (SELECT DISTINCT ON (resource_id)  score AS question_score , session_id FROM daily_class_activity "
+              +"WHERE event_name = 'collection.resource.play' AND event_type = 'stop' AND session_id = ? "
               +"AND resource_type = 'question' ORDER BY resource_id, updated_at desc) questionData GROUP BY session_id";
     
-    public static final String FIND_COLLECTION_EVENT = "SELECT id,views,time_spent,score,reaction,resource_attempt_status,answer_object FROM base_reports "
+    public static final String FIND_COLLECTION_EVENT = "SELECT id, views, time_spent, score, reaction, resource_attempt_status, answer_object "
+    		+ "FROM daily_class_activity "
             + "WHERE session_id = ? AND collection_id = ? AND event_type = ? AND event_name = ? ";
     
-    public static final String UPDATE_COLLECTION_EVENT = "UPDATE base_reports SET views = ?, time_spent= ?, score = ?, "
+    public static final String UPDATE_COLLECTION_EVENT = "UPDATE daily_class_activity SET views = ?, time_spent= ?, score = ?, "
             + "reaction = ? WHERE id = ?";
     
-    public static final String UPDATE_RESOURCE_EVENT = "UPDATE base_reports SET views = ?, time_spent= ?, score = ?, "
+    public static final String UPDATE_RESOURCE_EVENT = "UPDATE daily_class_activity SET views = ?, time_spent= ?, score = ?, "
             + "reaction = ?, resource_attempt_status = CAST(? AS attempt_status), answer_object = ? WHERE id = ?";
 
     
-    public static final String FIND_RESOURCE_EVENT = "SELECT id,views,time_spent,score,reaction,resource_attempt_status,answer_object FROM base_reports "
+    public static final String FIND_RESOURCE_EVENT = "SELECT id, views,time_spent, score, reaction, resource_attempt_status, answer_object "
+    		+ "FROM daily_class_activity "
             + "WHERE session_id = ? AND resource_id = ? AND event_type = ?";
     
     public static final String RESOURCE_ATTEMPT_STATUS_TYPE = "attempt_status";    
@@ -85,23 +87,9 @@ public class AJEntityReporting extends Model {
     public static final String PGTYPE_NUMERIC = "numeric";
     public static final String PGTYPE_INT = "smallint";
     
-    //public void setResourceAttemptStatus(String answerStatus) {
-    //  setPGObject(RESOURCE_ATTEMPT_STATUS, RESOURCE_ATTEMPT_STATUS_TYPE, answerStatus);
-    //}
-    
-    /*************************** DELETE Queries For ReComputations Purpose *************************/
-    
-    public static final String DELETE_BASEREPORT_BY_COURSE = "DELETE FROM base_reports WHERE class_id = ? AND course_id = ?";
-   
-    public static final String DELETE_BASEREPORT_BY_UNIT = "DELETE FROM base_reports WHERE class_id = ? AND unit_id = ?";
-    
-    public static final String DELETE_BASEREPORT_BY_LESSON = "DELETE FROM base_reports WHERE class_id = ? AND lesson_id = ?";
-    
-    public static final String DELETE_BASEREPORT_BY_COLLECTION = "DELETE FROM base_reports WHERE class_id = ? AND collection_id = ?";
-    
-    /***************************/
-    
-    public static final String SELECT_BASE_REPORT_ID = "SELECT id FROM base_reports WHERE session_id = ? AND resource_id = ? AND event_type = ? ";
+    public void setResourceAttemptStatus(String answerStatus) {
+        setPGObject(RESOURCE_ATTEMPT_STATUS, RESOURCE_ATTEMPT_STATUS_TYPE, answerStatus);
+    }
     
     private void setPGObject(String field, String type, String value) {
         PGobject pgObject = new PGobject();
@@ -114,9 +102,10 @@ public class AJEntityReporting extends Model {
             this.errors().put(field, value);
         }
     }
-    public AJEntityReporting() {
+    public AJEntityDailyClassActivity() {
       // Turning off create_at and updated_at columns are getting updated by
-      // activeJDBC.
+      // activeJDBC.    	
       this.manageTime(false);
     }
+
 }
