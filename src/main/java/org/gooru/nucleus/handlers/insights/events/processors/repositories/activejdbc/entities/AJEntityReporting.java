@@ -62,19 +62,19 @@ public class AJEntityReporting extends Model {
         + "WHERE class_id = ? AND course_id = ? AND unit_id = ? AND lesson_id = ? AND collection_id = ? "
         + "AND session_id = ? AND actor_id = ? AND question_count IS NOT NULL";
     
-    public static final String COMPUTE_ASSESSMENT_SCORE = "SELECT SUM(questionData.question_score) AS score  "
-              +"FROM  (SELECT DISTINCT ON (resource_id)  score AS question_score , session_id FROM base_reports "
+    public static final String COMPUTE_ASSESSMENT_SCORE = "SELECT SUM(questionData.question_score) AS score, SUM(questionData.resource_timeSpent) as time_spent "
+              +"FROM  (SELECT DISTINCT ON (resource_id)  score AS question_score , time_spent as resource_timespent, session_id FROM base_reports "
               +"WHERE event_name = 'collection.resource.play' AND event_type = 'stop' AND session_id = ?"
               +"AND resource_type = 'question' ORDER BY resource_id, updated_at desc) questionData GROUP BY session_id";
     
     public static final String FIND_COLLECTION_EVENT = "SELECT id,views,time_spent,score,reaction,resource_attempt_status,answer_object FROM base_reports "
             + "WHERE session_id = ? AND collection_id = ? AND event_type = ? AND event_name = ? ";
     
-    public static final String UPDATE_COLLECTION_EVENT = "UPDATE base_reports SET views = ?, time_spent= ?, score = ?, "
+    public static final String UPDATE_COLLECTION_EVENT = "UPDATE base_reports SET views = ?, time_spent= ?, score = ?, updated_at = ?, "
             + "reaction = ? WHERE id = ?";
     
-    public static final String UPDATE_RESOURCE_EVENT = "UPDATE base_reports SET views = ?, time_spent= ?, score = ?, "
-            + "reaction = ?, resource_attempt_status = CAST(? AS attempt_status), answer_object = ? WHERE id = ?";
+    public static final String UPDATE_RESOURCE_EVENT = "UPDATE base_reports SET views = ?, time_spent= ?, score = ?, updated_at = ?, "
+            + "reaction = ?, resource_attempt_status = ?, answer_object = ? WHERE id = ?";
 
     
     public static final String FIND_RESOURCE_EVENT = "SELECT id,views,time_spent,score,reaction,resource_attempt_status,answer_object FROM base_reports "
