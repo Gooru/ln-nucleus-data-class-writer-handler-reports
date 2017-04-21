@@ -31,6 +31,9 @@ class ProcessEventHandler implements DBHandler {
     private final ProcessorContext context;
     private AJEntityReporting baseReport;
     private EventParser event;
+    Double scoreObj;
+    Long tsObj;
+
 
     public ProcessEventHandler(ProcessorContext context) {
         this.context = context;
@@ -61,6 +64,7 @@ class ProcessEventHandler implements DBHandler {
     	baseReport = new AJEntityReporting();    	
     	event = context.getEvent();    	
       LazyList<AJEntityReporting> duplicateRow = null;
+      LazyList<AJEntityReporting> scoreTS = null;
     	baseReport.set("event_name", event.getEventName());
     	baseReport.set("event_type", event.getEventType());
     	baseReport.set("actor_id", event.getGooruUUID());
@@ -85,10 +89,20 @@ class ProcessEventHandler implements DBHandler {
     	  duplicateRow =  AJEntityReporting.findBySQL(AJEntityReporting.FIND_COLLECTION_EVENT,event.getSessionId(),event.getContentGooruId(),event.getEventType(), event.getEventName());
     	  baseReport.set("collection_id", event.getContentGooruId());
     		baseReport.set("question_count", event.getQuestionCount());
-        if (event.getEventType().equalsIgnoreCase(EventConstants.STOP)) {
-          Object scoreObj = Base.firstCell(AJEntityReporting.COMPUTE_ASSESSMENT_SCORE, event.getSessionId());
-          baseReport.set("score", (double) ((scoreObj != null ? Double.valueOf(scoreObj.toString()) : 0 )* 100) / event.getQuestionCount());
-        }
+    		
+			if (event.getEventType().equalsIgnoreCase(EventConstants.STOP)) {
+				scoreTS = AJEntityReporting.findBySQL(AJEntityReporting.COMPUTE_ASSESSMENT_SCORE, event.getSessionId());
+				if (!scoreTS.isEmpty()) {
+					scoreTS.forEach(m -> {
+						scoreObj = Double.valueOf(m.get(AJEntityReporting.SCORE).toString());
+						tsObj = Long.valueOf(m.get(AJEntityReporting.TIMESPENT).toString());
+					});
+					baseReport.set("score", ((scoreObj != null ? scoreObj : 0) * 100) / event.getQuestionCount());
+					if (event.getCollectionType().equalsIgnoreCase(EventConstants.ASSESSMENT)) {
+						baseReport.set("time_spent", (tsObj != null ? tsObj : 0));
+					}
+				}
+			}
     	}
     	    	
     	if ((event.getEventName().equals(EventConstants.COLLECTION_RESOURCE_PLAY))) {
@@ -130,7 +144,8 @@ class ProcessEventHandler implements DBHandler {
                   long react = event.getReaction() != 0 ? event.getReaction() : 0;
                   Object attmptStatus = dup.get(AJEntityReporting.RESOURCE_ATTEMPT_STATUS);
                   Object ansObj = dup.get(AJEntityReporting.ANSWER_OBJECT);
-                  Base.exec(AJEntityReporting.UPDATE_RESOURCE_EVENT, view, ts, event.getScore(), react, attmptStatus, ansObj, id);
+                  Base.exec(AJEntityReporting.UPDATE_RESOURCE_EVENT, view, ts, event.getScore(), new Timestamp(event.getEndTime()), 
+                		  react, attmptStatus, ansObj, id);
                 });
       
               }
@@ -140,7 +155,7 @@ class ProcessEventHandler implements DBHandler {
                   long view = (Long.valueOf(dup.get("views").toString()) + event.getViews());
                   long ts = (Long.valueOf(dup.get("time_spent").toString()) + event.getTimespent());
                   long react = event.getReaction() != 0 ? event.getReaction() : 0;
-                  Base.exec(AJEntityReporting.UPDATE_COLLECTION_EVENT, view, ts, event.getScore(), react,id);
+                  Base.exec(AJEntityReporting.UPDATE_COLLECTION_EVENT, view, ts, event.getScore(), new Timestamp(event.getEndTime()), react,id);
                 });
               }
             }
