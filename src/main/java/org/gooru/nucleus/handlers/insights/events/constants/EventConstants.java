@@ -517,7 +517,7 @@ public class EventConstants {
 
 	public static final  String DATA = "data";
 
-	public static final  String SYSTEM = "System";
+	public static final  String SYSTEM = "system";
 
 	public static final  String NAME = "name";
 
@@ -693,7 +693,7 @@ public class EventConstants {
 
 	public static final String GRADE = "grade";
 
-	public static final String GRADE_TYPE = "gradeType";
+	public static final String GRADING_TYPE = "gradingType";
 
 	public static final String GRADE_STATUS = "gradeStatus";
 
@@ -855,7 +855,17 @@ public class EventConstants {
 	public static final String INCLASS_COLLECTION = "InClass-Collection";
 	
 	public static final String INDEPENDENT_LEARNER_COLLECTION = "IL-Collection";
-		
+	
+	public static final String APP_ID = "appId";
+	
+	public static final String PARTNER_ID = "partnerId";
+  
+	public static final String COLLECTION_SUB_TYPE = "collectionSubType";
+	
+	public static final String MAX_SCORE = "maxScore";
+
+  public static final String PATH_ID = "pathId";
+
 	private EventConstants() {
 		throw new AssertionError();
 	}

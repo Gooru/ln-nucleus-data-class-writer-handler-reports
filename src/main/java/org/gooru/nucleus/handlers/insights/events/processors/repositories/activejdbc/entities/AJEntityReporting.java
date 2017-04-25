@@ -47,6 +47,12 @@ public class AJEntityReporting extends Model {
     public static final String RESOURCE_ATTEMPT_STATUS = "resource_attempt_status";    
     public static final String SCORE = "score";
     //********************************************
+    public static final String APP_ID = "app_id";
+    public static final String PARTNER_ID = "partner_id";
+    public static final String COLLECTION_SUB_TYPE = "collection_sub_type";
+    public static final String MAX_SCORE = "max_score";
+    public static final String PATH_ID = "path_id";
+
     public static final String CREATE_TIMESTAMP = "created_at";
     public static final String UPDATE_TIMESTAMP = "updated_at";   
     
