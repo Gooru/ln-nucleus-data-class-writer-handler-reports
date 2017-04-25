@@ -13,7 +13,7 @@ public final class EventParser {
 		
 		private static final Logger LOGGER = LoggerFactory.getLogger(EventParser.class);
 		
-		public EventParser(String json) throws Exception {
+    public EventParser(String json) throws Exception {
 			this.event = new JsonObject(json);
 			this.parse();
 		}
@@ -104,6 +104,16 @@ public final class EventParser {
 		
 		private String contentSource;
 		
+		private String appId;
+		
+		private String partnerId;
+		
+		private String collectionSubType;
+
+    public double maxScore;
+		
+    public long pathId;
+    
 		public String getEventId() {
 			return eventId;
 		}
@@ -452,12 +462,51 @@ public final class EventParser {
 		
 		public String getTenantId() {
 		      return tenantId;
-		    }
+		}
 		
-	    public void setTenantId(String tenantId) {
-	        this.tenantId = tenantId;
-	      }
+    public void setTenantId(String tenantId) {
+      this.tenantId = tenantId;
+    }
+  
+    public String getCollectionSubType() {
+      return collectionSubType;
+    }
+  
+    public void setCollectionSubType(String collectionSubType) {
+      this.collectionSubType = collectionSubType;
+    }
+  
+    public String getPartnerId() {
+      return partnerId;
+    }
+  
+    public void setPartnerId(String partnerId) {
+      this.partnerId = partnerId;
+    }
+  
+    public String getAppId() {
+      return appId;
+    }
+  
+    public void setAppId(String appId) {
+      this.appId = appId;
+    }
+  
+    public double getMaxScore() {
+      return maxScore;
+    }
+  
+    public void setMaxScore(double maxScore) {
+      this.maxScore = maxScore;
+    }
+    
+    public long getPathId() {
+      return pathId;
+    }
 
+    public void setPathId(long pathId) {
+      this.pathId = pathId;
+    }
 
 		private EventParser parse() {
 			try {			
@@ -492,7 +541,11 @@ public final class EventParser {
 				}
 				this.resourceType = context.containsKey(EventConstants.RESOURCE_TYPE) ? context.getString(EventConstants.RESOURCE_TYPE) : EventConstants.NA;
 				this.eventType =  context.containsKey(EventConstants.TYPE) ? context.getString(EventConstants.TYPE) : EventConstants.NA;
-				this.sessionId = session.containsKey(EventConstants.SESSION_ID) ? session.getString(EventConstants.SESSION_ID) : EventConstants.NA;
+				this.appId = context.containsKey(EventConstants.APP_ID) ? context.getString(EventConstants.APP_ID) : null;
+				this.partnerId = context.containsKey(EventConstants.PARTNER_ID) ? context.getString(EventConstants.PARTNER_ID) : null;     
+        this.collectionSubType = context.containsKey(EventConstants.COLLECTION_SUB_TYPE) ? context.getString(EventConstants.COLLECTION_SUB_TYPE) : null;     
+				this.pathId = context.containsKey(EventConstants.PATH_ID) ? context.getLong(EventConstants.PATH_ID) : 0L; 
+        this.sessionId = session.containsKey(EventConstants.SESSION_ID) ? session.getString(EventConstants.SESSION_ID) : EventConstants.NA;
 				this.questionType = payLoadObject.containsKey(EventConstants.QUESTION_TYPE) ? payLoadObject.getString(EventConstants.QUESTION_TYPE) : EventConstants.NA;				
 				if(payLoadObject.containsKey(EventConstants.ANSWER_OBECT) && payLoadObject.getValue(EventConstants.ANSWER_OBECT) instanceof JsonArray){
 					this.answerObject = payLoadObject.getJsonArray(EventConstants.ANSWER_OBECT);					
@@ -500,7 +553,7 @@ public final class EventParser {
 					this.answerObject = new JsonArray();
 				}				
 				this.reportsContext = payLoadObject.containsKey(EventConstants.REPORTS_CONTEXT) ? payLoadObject.getString(EventConstants.REPORTS_CONTEXT) : EventConstants.PERFORMANCE;
-				this.gradeType = payLoadObject.containsKey(EventConstants.GRADE_TYPE) ? payLoadObject.getString(EventConstants.GRADE_TYPE) : EventConstants.SYSTEM;
+				this.gradeType = payLoadObject.containsKey(EventConstants.GRADING_TYPE) ? payLoadObject.getString(EventConstants.GRADING_TYPE) : EventConstants.SYSTEM;
 				this.gradeStatus = payLoadObject.containsKey(EventConstants.GRADE_STATUS) ? payLoadObject.getString(EventConstants.GRADE_STATUS) : EventConstants.NA;
 				this.teacherId = payLoadObject.containsKey(EventConstants.TEACHER_ID) ? payLoadObject.getString(EventConstants.TEACHER_ID) : EventConstants.NA;
 				this.contentFormat = payLoadObject.containsKey(EventConstants.CONTENT_FORMAT) ? payLoadObject.getString(EventConstants.CONTENT_FORMAT) : EventConstants.NA;

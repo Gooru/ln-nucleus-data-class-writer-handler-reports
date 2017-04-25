@@ -82,6 +82,12 @@ class ProcessEventHandler implements DBHandler {
     	baseReport.set("views", event.getViews());
     	baseReport.set("time_spent", event.getTimespent());
     	baseReport.set("tenant_id",event.getTenantId());
+    	baseReport.set("max_score",event.getMaxScore());
+      baseReport.set("grading_type",event.getGradeType());
+      baseReport.set("app_id",event.getAppId());
+      baseReport.set("partner_id",event.getPartnerId());
+      baseReport.set("path_id",event.getPathId());
+      baseReport.set("collection_sub_type",event.getCollectionSubType());
       baseReport.set("created_at",new Timestamp(event.getStartTime()));
       baseReport.set("updated_at",new Timestamp(event.getEndTime()));
 
