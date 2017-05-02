@@ -120,7 +120,7 @@ class MessageProcessor implements Processor {
     try {
       return RepoBuilder.buildBaseReportingRepo(context).createUserTaxonomySubject();
     } catch (Throwable t) {
-      LOGGER.error("Exception while processing Collection Play Event Data", t.getMessage());
+      LOGGER.error("Exception while processing createUserTaxonomySubject", t.getMessage());
       return MessageResponseFactory.createInternalErrorResponse(t.getMessage());
     }
   }

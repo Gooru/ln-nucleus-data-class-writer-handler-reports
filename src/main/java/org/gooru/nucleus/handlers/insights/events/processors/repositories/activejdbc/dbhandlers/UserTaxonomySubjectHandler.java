@@ -52,12 +52,12 @@ public class UserTaxonomySubjectHandler implements DBHandler {
   public ExecutionResult<MessageResponse> executeRequest() {
     event = context.getEvent();
     if (!StringUtil.isNullOrEmpty(event.getCourseGooruId())) {
+      // Get Subject ID for this course
       Object taxSubjectId = Base.firstCell(AJEntityUserTaxonomySubject.SELECT_SUBJECT_ID_BY_COURSE, event.getCourseGooruId());
       if (taxSubjectId != null) {
         userTaxonomySubject = new AJEntityUserTaxonomySubject();
         userTaxonomySubject.set(AJEntityUserTaxonomySubject.COURSE_ID, event.getCourseGooruId());
         userTaxonomySubject.set(AJEntityUserTaxonomySubject.ACTOR_ID, event.getGooruUUID());
-        // Get Subject ID for this course
         userTaxonomySubject.set(AJEntityUserTaxonomySubject.TAX_SUBJECT_ID, taxSubjectId);
 
         if (userTaxonomySubject.isValid()) {

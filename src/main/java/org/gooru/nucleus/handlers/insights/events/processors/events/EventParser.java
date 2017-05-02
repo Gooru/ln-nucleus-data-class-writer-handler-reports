@@ -112,7 +112,7 @@ public final class EventParser {
 
     public double maxScore;
 		
-    public long pathId;
+    public Long pathId;
     
 		public String getEventId() {
 			return eventId;
@@ -544,7 +544,7 @@ public final class EventParser {
 				this.appId = context.containsKey(EventConstants.APP_ID) ? context.getString(EventConstants.APP_ID) : null;
 				this.partnerId = context.containsKey(EventConstants.PARTNER_ID) ? context.getString(EventConstants.PARTNER_ID) : null;     
         this.collectionSubType = context.containsKey(EventConstants.COLLECTION_SUB_TYPE) ? context.getString(EventConstants.COLLECTION_SUB_TYPE) : null;     
-				this.pathId = context.containsKey(EventConstants.PATH_ID) ? context.getLong(EventConstants.PATH_ID) : 0L; 
+				this.pathId = context.containsKey(EventConstants.PATH_ID) ? context.getLong(EventConstants.PATH_ID) : null; 
         this.sessionId = session.containsKey(EventConstants.SESSION_ID) ? session.getString(EventConstants.SESSION_ID) : EventConstants.NA;
 				this.questionType = payLoadObject.containsKey(EventConstants.QUESTION_TYPE) ? payLoadObject.getString(EventConstants.QUESTION_TYPE) : EventConstants.NA;				
 				if(payLoadObject.containsKey(EventConstants.ANSWER_OBECT) && payLoadObject.getValue(EventConstants.ANSWER_OBECT) instanceof JsonArray){
