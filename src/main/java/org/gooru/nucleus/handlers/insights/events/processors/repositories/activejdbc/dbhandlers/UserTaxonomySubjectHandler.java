@@ -1,5 +1,7 @@
 package org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers;
 
+import java.sql.Timestamp;
+
 import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.insights.events.processors.events.EventParser;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityUserTaxonomySubject;
@@ -12,7 +14,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.netty.util.internal.StringUtil;
-import io.vertx.core.impl.StringEscapeUtils;
 
 /**
  * 
@@ -59,7 +60,7 @@ public class UserTaxonomySubjectHandler implements DBHandler {
         userTaxonomySubject.set(AJEntityUserTaxonomySubject.COURSE_ID, event.getCourseGooruId());
         userTaxonomySubject.set(AJEntityUserTaxonomySubject.ACTOR_ID, event.getGooruUUID());
         userTaxonomySubject.set(AJEntityUserTaxonomySubject.TAX_SUBJECT_ID, taxSubjectId);
-
+        userTaxonomySubject.set(AJEntityUserTaxonomySubject.UPDATED_AT, new Timestamp(event.getEndTime()));
         if (userTaxonomySubject.isValid()) {
           if (userTaxonomySubject.insert()) {
             LOGGER.info("Successfully inserted in UserTaxonomySubject");
@@ -69,7 +70,6 @@ public class UserTaxonomySubjectHandler implements DBHandler {
         } else {
           LOGGER.warn("Event validation error");
           return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(), ExecutionStatus.FAILED);
-
         }
       } else {
         LOGGER.debug("Don't process if tax subject id is NULL");
@@ -82,7 +82,6 @@ public class UserTaxonomySubjectHandler implements DBHandler {
 
   @Override
   public boolean handlerReadOnly() {
-    // TODO Auto-generated method stub
     return false;
   }
 

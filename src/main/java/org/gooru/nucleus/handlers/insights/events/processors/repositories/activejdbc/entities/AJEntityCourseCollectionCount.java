@@ -44,4 +44,10 @@ public class AJEntityCourseCollectionCount extends Model {
   public static final String DELETE_LESSON_LEVEL = "DELETE FROM course_collection_count WHERE course_id = ? AND unit_id = ? AND lesson_id = ?";
 
   public static final String SELECT_ROW_COUNT = "SELECT COUNT(1) AS rowCount FROM course_collection_count WHERE course_id = ? AND unit_id = ? AND lesson_id = ?";
+   
+  public AJEntityCourseCollectionCount() {
+    // Turning off create_at and updated_at columns are getting updated by
+    // activeJDBC.
+    this.manageTime(false);
+  }
 }

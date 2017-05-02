@@ -500,11 +500,11 @@ public final class EventParser {
       this.maxScore = maxScore;
     }
     
-    public long getPathId() {
+    public Long getPathId() {
       return pathId;
     }
 
-    public void setPathId(long pathId) {
+    public void setPathId(Long pathId) {
       this.pathId = pathId;
     }
 

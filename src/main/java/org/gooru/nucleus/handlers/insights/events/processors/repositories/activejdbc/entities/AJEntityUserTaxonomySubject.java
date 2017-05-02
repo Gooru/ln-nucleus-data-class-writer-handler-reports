@@ -2,7 +2,6 @@ package org.gooru.nucleus.handlers.insights.events.processors.repositories.activ
 
 import org.javalite.activejdbc.Model;
 import org.javalite.activejdbc.annotations.Table;
-
 /**
  * 
  * @author daniel
@@ -23,4 +22,9 @@ public class AJEntityUserTaxonomySubject extends Model {
   
   public static final String SELECT_SUBJECT_ID_BY_COURSE = "SELECT tax_subject_id FROM content WHERE id = ?";
 
+  public AJEntityUserTaxonomySubject() {
+    // Turning off create_at and updated_at columns are getting updated by
+    // activeJDBC.
+    this.manageTime(false);
+  }
 }
