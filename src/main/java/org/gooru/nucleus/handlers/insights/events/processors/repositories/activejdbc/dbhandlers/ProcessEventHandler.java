@@ -61,32 +61,35 @@ class ProcessEventHandler implements DBHandler {
     @Override
     @SuppressWarnings("rawtypes")
     public ExecutionResult<MessageResponse> executeRequest() {
-    	baseReport = new AJEntityReporting();    	
-    	event = context.getEvent();    	
+      baseReport = new AJEntityReporting();    	
+      event = context.getEvent();    	
       LazyList<AJEntityReporting> duplicateRow = null;
       LazyList<AJEntityReporting> scoreTS = null;
-    	baseReport.set("event_name", event.getEventName());
-    	baseReport.set("event_type", event.getEventType());
-    	baseReport.set("actor_id", event.getGooruUUID());
-    	baseReport.set("class_id", event.getClassGooruId());    	    	
-    	baseReport.set("course_id", event.getCourseGooruId());
-    	baseReport.set("unit_id", event.getUnitGooruId());
-    	baseReport.set("lesson_id", event.getLessonGooruId());
-    	baseReport.set("session_id", event.getSessionId());    	    	
-    	baseReport.set("collection_type", event.getCollectionType());
-    	baseReport.set("question_type", event.getQuestionType());
+      baseReport.set("event_name", event.getEventName());
+      baseReport.set("event_type", event.getEventType());
+      baseReport.set("actor_id", event.getGooruUUID());
+      baseReport.set("class_id", event.getClassGooruId());    	    	
+      baseReport.set("course_id", event.getCourseGooruId());
+      baseReport.set("unit_id", event.getUnitGooruId());
+      baseReport.set("lesson_id", event.getLessonGooruId());
+      baseReport.set("session_id", event.getSessionId());    	    	
+      baseReport.set("collection_type", event.getCollectionType());
+      baseReport.set("question_type", event.getQuestionType());
       baseReport.set("resource_type", event.getResourceType());
-    	baseReport.set("reaction", event.getReaction());
-    	baseReport.set("score", event.getScore());    	
-    	baseReport.set("resource_attempt_status", event.getAnswerStatus());    	    	    	
-    	baseReport.set("views", event.getViews());
-    	baseReport.set("time_spent", event.getTimespent());
-    	baseReport.set("tenant_id",event.getTenantId());
-    	baseReport.set("max_score",event.getMaxScore());
+      baseReport.set("reaction", event.getReaction());
+      baseReport.set("score", event.getScore());    	
+      baseReport.set("resource_attempt_status", event.getAnswerStatus());    	    	    	
+      baseReport.set("views", event.getViews());
+      baseReport.set("time_spent", event.getTimespent());
+      baseReport.set("tenant_id",event.getTenantId());
+      baseReport.set("max_score",event.getMaxScore());
       baseReport.set("grading_type",event.getGradeType());
       baseReport.set("app_id",event.getAppId());
       baseReport.set("partner_id",event.getPartnerId());
-      baseReport.set("path_id",event.getPathId());
+      //pathId = 0L indicates the main Path. We store pathId only for the altPaths
+      if (event.getPathId() != 0L){
+    	  baseReport.set("path_id",event.getPathId());  
+      }
       baseReport.set("collection_sub_type",event.getCollectionSubType());
       baseReport.set("created_at",new Timestamp(event.getStartTime()));
       baseReport.set("updated_at",new Timestamp(event.getEndTime()));
@@ -112,9 +115,9 @@ class ProcessEventHandler implements DBHandler {
     	}
     	    	
     	if ((event.getEventName().equals(EventConstants.COLLECTION_RESOURCE_PLAY))) {
-    	  duplicateRow = AJEntityReporting.findBySQL(AJEntityReporting.FIND_RESOURCE_EVENT,event.getSessionId(),event.getContentGooruId(),event.getEventType());
+    	  duplicateRow = AJEntityReporting.findBySQL(AJEntityReporting.FIND_RESOURCE_EVENT, event.getParentGooruId(), event.getSessionId(),event.getContentGooruId(),event.getEventType());
     		baseReport.set("collection_id", event.getParentGooruId());
-    		baseReport.set("resource_id", event.getContentGooruId());    		
+    		baseReport.set("resource_id", event.getContentGooruId());
     		baseReport.set("answer_object", event.getAnswerObject().toString());
     	}
 
