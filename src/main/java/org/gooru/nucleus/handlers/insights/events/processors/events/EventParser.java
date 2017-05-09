@@ -110,8 +110,8 @@ public final class EventParser {
 		
 		private String collectionSubType;
 
-        public double maxScore;
-		
+        public double maxScore;		
+
         public long pathId;
     
 		public String getEventId() {
@@ -463,7 +463,7 @@ public final class EventParser {
 		public String getTenantId() {
 		      return tenantId;
 		}
-		
+	
         public void setTenantId(String tenantId) {
         	this.tenantId = tenantId;
         }
@@ -471,7 +471,7 @@ public final class EventParser {
         public String getCollectionSubType() {
             return collectionSubType;
         }
-        
+               
         public void setCollectionSubType(String collectionSubType) {
             this.collectionSubType = collectionSubType;
         }
@@ -507,6 +507,7 @@ public final class EventParser {
         public void setPathId(long pathId) {
             this.pathId = pathId;
         }
+
         
 		private EventParser parse() {
 			try {			
@@ -585,7 +586,7 @@ public final class EventParser {
 				}
 				LOGGER.debug("views : {} - timespent : {}", this.views,this.timespent);
 			} catch (Exception e) {
-				LOGGER.debug(e.toString());
+				LOGGER.error("Error in event parser : {}", e);
 			}			
 			return this;
 		}

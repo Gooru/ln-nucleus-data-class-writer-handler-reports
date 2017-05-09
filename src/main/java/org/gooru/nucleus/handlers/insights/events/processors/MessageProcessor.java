@@ -67,6 +67,9 @@ class MessageProcessor implements Processor {
     		  result = createDCAReport();    		  
     	  } else {
     		  result = createBaseReport();
+    		  if(event.getEventType().equalsIgnoreCase(EventConstants.START)){
+    		    result = createUserTaxonomySubject();
+    		  }
     	  }
         break;
       case EventConstants.COLLECTION_RESOURCE_PLAY:    	  
@@ -109,6 +112,15 @@ class MessageProcessor implements Processor {
       return RepoBuilder.buildBaseReportingRepo(context).insertBaseReportData();
     } catch (Throwable t) {
       LOGGER.error("Exception while processing Collection Play Event Data", t.getMessage());
+      return MessageResponseFactory.createInternalErrorResponse(t.getMessage());
+    }
+  }
+  
+  private MessageResponse createUserTaxonomySubject() {
+    try {
+      return RepoBuilder.buildBaseReportingRepo(context).createUserTaxonomySubject();
+    } catch (Throwable t) {
+      LOGGER.error("Exception while processing createUserTaxonomySubject", t.getMessage());
       return MessageResponseFactory.createInternalErrorResponse(t.getMessage());
     }
   }
