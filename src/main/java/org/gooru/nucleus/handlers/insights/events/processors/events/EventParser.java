@@ -112,7 +112,7 @@ public final class EventParser {
 
     public double maxScore;
 		
-    public long pathId;
+    public Long pathId;
     
 		public String getEventId() {
 			return eventId;
@@ -500,11 +500,11 @@ public final class EventParser {
       this.maxScore = maxScore;
     }
     
-    public long getPathId() {
+    public Long getPathId() {
       return pathId;
     }
 
-    public void setPathId(long pathId) {
+    public void setPathId(Long pathId) {
       this.pathId = pathId;
     }
 
@@ -581,7 +581,7 @@ public final class EventParser {
 				}
 				LOGGER.debug("views : {} - timespent : {}", this.views,this.timespent);
 			} catch (Exception e) {
-				LOGGER.debug(e.toString());
+				LOGGER.error("Error in event parser : {}", e);
 			}			
 			return this;
 		}

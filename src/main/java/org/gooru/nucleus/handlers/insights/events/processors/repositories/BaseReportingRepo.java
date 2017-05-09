@@ -16,4 +16,6 @@ public interface BaseReportingRepo {
     
     MessageResponse insertDCACompetencyData();
     
+    MessageResponse createUserTaxonomySubject();
+    
 }
