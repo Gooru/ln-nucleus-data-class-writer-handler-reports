@@ -12,7 +12,6 @@ import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.insights.events.processors.events.EventParser;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityDCATaxonomyReport;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityDailyClassActivity;
-
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponse;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponseFactory;
@@ -29,6 +28,9 @@ public class DailyClassActivityEventHandler implements DBHandler {
     private final ProcessorContext context;
     private AJEntityDailyClassActivity dcaReport;
     private EventParser event;
+    Double scoreObj;
+    Long tsObj;
+
 
     public DailyClassActivityEventHandler(ProcessorContext context) {
         this.context = context;
@@ -59,6 +61,7 @@ public class DailyClassActivityEventHandler implements DBHandler {
     	dcaReport = new AJEntityDailyClassActivity();    	
     	event = context.getEvent();    	
         LazyList<AJEntityDailyClassActivity> duplicateRow = null;
+        LazyList<AJEntityDailyClassActivity> scoreTS = null;
     	dcaReport.set("event_name", event.getEventName());
     	dcaReport.set("event_type", event.getEventType());
     	dcaReport.set("actor_id", event.getGooruUUID());
@@ -78,19 +81,40 @@ public class DailyClassActivityEventHandler implements DBHandler {
     	dcaReport.set("tenant_id",event.getTenantId());
         dcaReport.set("created_at",new Timestamp(event.getStartTime()));
         dcaReport.set("updated_at",new Timestamp(event.getEndTime()));
+        
+        dcaReport.set("max_score",event.getMaxScore());
+        dcaReport.set("grading_type",event.getGradeType());
+        dcaReport.set("app_id",event.getAppId());
+        dcaReport.set("partner_id",event.getPartnerId());
+        //pathId = 0L indicates the main Path. We store pathId only for the altPaths
+        if (event.getPathId() != 0L){
+      	  dcaReport.set("path_id",event.getPathId());  
+        }
+        dcaReport.set("collection_sub_type",event.getCollectionSubType());
+
 
     	if ((event.getEventName().equals(EventConstants.COLLECTION_PLAY))){
     	  duplicateRow =  AJEntityDailyClassActivity.findBySQL(AJEntityDailyClassActivity.FIND_COLLECTION_EVENT,event.getSessionId(),event.getContentGooruId(),event.getEventType(), event.getEventName());
     	  dcaReport.set("collection_id", event.getContentGooruId());
     		dcaReport.set("question_count", event.getQuestionCount());
-        if (event.getEventType().equalsIgnoreCase(EventConstants.STOP)) {
-          Object scoreObj = Base.firstCell(AJEntityDailyClassActivity.COMPUTE_ASSESSMENT_SCORE, event.getSessionId());
-          dcaReport.set("score", (double) ((scoreObj != null ? Double.valueOf(scoreObj.toString()) : 0 )* 100) / event.getQuestionCount());
-        }
+    		
+			if (event.getEventType().equalsIgnoreCase(EventConstants.STOP)) {
+				scoreTS = AJEntityDailyClassActivity.findBySQL(AJEntityDailyClassActivity.COMPUTE_ASSESSMENT_SCORE, event.getSessionId());
+				if (!scoreTS.isEmpty()) {
+					scoreTS.forEach(m -> {
+						scoreObj = Double.valueOf(m.get(AJEntityDailyClassActivity.SCORE).toString());
+						tsObj = Long.valueOf(m.get(AJEntityDailyClassActivity.TIMESPENT).toString());
+					});
+					dcaReport.set("score", ((scoreObj != null ? scoreObj : 0) * 100) / event.getQuestionCount());
+					if (event.getCollectionType().equalsIgnoreCase(EventConstants.ASSESSMENT)) {
+						dcaReport.set("time_spent", (tsObj != null ? tsObj : 0));
+					}
+				}
+			}
     	}
     	    	
     	if ((event.getEventName().equals(EventConstants.COLLECTION_RESOURCE_PLAY))) {
-    	  duplicateRow = AJEntityDailyClassActivity.findBySQL(AJEntityDailyClassActivity.FIND_RESOURCE_EVENT,event.getSessionId(),event.getContentGooruId(),event.getEventType());
+    	  duplicateRow = AJEntityDailyClassActivity.findBySQL(AJEntityDailyClassActivity.FIND_RESOURCE_EVENT, event.getParentGooruId(), event.getSessionId(),event.getContentGooruId(),event.getEventType());
     		dcaReport.set("collection_id", event.getParentGooruId());
     		dcaReport.set("resource_id", event.getContentGooruId());    		
     		dcaReport.set("answer_object", event.getAnswerObject().toString());
@@ -120,7 +144,8 @@ public class DailyClassActivityEventHandler implements DBHandler {
                   long react = event.getReaction() != 0 ? event.getReaction() : 0;
                   Object attmptStatus = dup.get(AJEntityDailyClassActivity.RESOURCE_ATTEMPT_STATUS);
                   Object ansObj = dup.get(AJEntityDailyClassActivity.ANSWER_OBJECT);
-                  Base.exec(AJEntityDailyClassActivity.UPDATE_RESOURCE_EVENT, view, ts, event.getScore(), react, attmptStatus, ansObj, id);
+                  Base.exec(AJEntityDailyClassActivity.UPDATE_RESOURCE_EVENT, view, ts, event.getScore(), new Timestamp(event.getEndTime()), 
+                		  react, attmptStatus, ansObj, id);
                 });
       
               }
@@ -130,7 +155,7 @@ public class DailyClassActivityEventHandler implements DBHandler {
                   long view = (Long.valueOf(dup.get("views").toString()) + event.getViews());
                   long ts = (Long.valueOf(dup.get("time_spent").toString()) + event.getTimespent());
                   long react = event.getReaction() != 0 ? event.getReaction() : 0;
-                  Base.exec(AJEntityDailyClassActivity.UPDATE_COLLECTION_EVENT, view, ts, event.getScore(), react,id);
+                  Base.exec(AJEntityDailyClassActivity.UPDATE_COLLECTION_EVENT, view, ts, event.getScore(), new Timestamp(event.getEndTime()), react,id);
                 });
               }
             }

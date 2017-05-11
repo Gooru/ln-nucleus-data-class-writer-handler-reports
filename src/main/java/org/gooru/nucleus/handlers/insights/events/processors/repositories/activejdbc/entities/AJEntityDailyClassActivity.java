@@ -47,6 +47,13 @@ public class AJEntityDailyClassActivity extends Model {
     public static final String RESOURCE_ATTEMPT_STATUS = "resource_attempt_status";    
     public static final String SCORE = "score";
     //********************************************
+    
+    public static final String APP_ID = "app_id";
+    public static final String PARTNER_ID = "partner_id";
+    public static final String COLLECTION_SUB_TYPE = "collection_sub_type";
+    public static final String MAX_SCORE = "max_score";
+    public static final String PATH_ID = "path_id";
+    
     public static final String CREATE_TIMESTAMP = "created_at";
     public static final String UPDATE_TIMESTAMP = "updated_at";   
     
@@ -71,16 +78,15 @@ public class AJEntityDailyClassActivity extends Model {
     		+ "FROM daily_class_activity "
             + "WHERE session_id = ? AND collection_id = ? AND event_type = ? AND event_name = ? ";
     
-    public static final String UPDATE_COLLECTION_EVENT = "UPDATE daily_class_activity SET views = ?, time_spent= ?, score = ?, "
+    public static final String UPDATE_COLLECTION_EVENT = "UPDATE daily_class_activity SET views = ?, time_spent= ?, score = ?, updated_at = ?, "
             + "reaction = ? WHERE id = ?";
     
-    public static final String UPDATE_RESOURCE_EVENT = "UPDATE daily_class_activity SET views = ?, time_spent= ?, score = ?, "
-            + "reaction = ?, resource_attempt_status = CAST(? AS attempt_status), answer_object = ? WHERE id = ?";
+    public static final String UPDATE_RESOURCE_EVENT = "UPDATE daily_class_activity SET views = ?, time_spent= ?, score = ?, updated_at = ?, "
+            + "reaction = ?, resource_attempt_status = ?, answer_object = ? WHERE id = ?";
 
     
-    public static final String FIND_RESOURCE_EVENT = "SELECT id, views,time_spent, score, reaction, resource_attempt_status, answer_object "
-    		+ "FROM daily_class_activity "
-            + "WHERE session_id = ? AND resource_id = ? AND event_type = ?";
+    public static final String FIND_RESOURCE_EVENT = "SELECT id, views, time_spent, score, reaction, resource_attempt_status, answer_object"
+    		+ " FROM daily_class_activity WHERE collection_id = ? AND session_id = ? AND resource_id = ? AND event_type = ?";
     
     public static final String RESOURCE_ATTEMPT_STATUS_TYPE = "attempt_status";    
     public static final String PGTYPE_TEXT = "text";
