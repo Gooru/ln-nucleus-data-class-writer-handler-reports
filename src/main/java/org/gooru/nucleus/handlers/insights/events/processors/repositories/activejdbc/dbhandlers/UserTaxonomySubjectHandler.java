@@ -61,6 +61,7 @@ public class UserTaxonomySubjectHandler implements DBHandler {
         userTaxonomySubject.set(AJEntityUserTaxonomySubject.ACTOR_ID, event.getGooruUUID());
         userTaxonomySubject.set(AJEntityUserTaxonomySubject.TAX_SUBJECT_ID, taxSubjectId);
         userTaxonomySubject.set(AJEntityUserTaxonomySubject.UPDATED_AT, new Timestamp(event.getEndTime()));
+        userTaxonomySubject.set(AJEntityUserTaxonomySubject.CLASS_ID,event.getClassGooruId());
         if (userTaxonomySubject.isValid()) {
           if (userTaxonomySubject.insert()) {
             LOGGER.info("Successfully inserted in UserTaxonomySubject");
