@@ -513,10 +513,22 @@ public final class EventParser {
 			try {			
 							
 				this.context = this.event.getJsonObject(EventConstants.CONTEXT);
+				if(this.context == null){
+				  this.context = new JsonObject();
+				}
 				this.user = this.event.getJsonObject(EventConstants.USER);
 				this.payLoadObject = this.event.getJsonObject(EventConstants.PAY_LOAD);
+				if(this.payLoadObject == null){
+          this.payLoadObject = new JsonObject();
+        }
 				this.metrics = this.event.getJsonObject(EventConstants.METRICS);
+				if(this.metrics == null){
+          this.metrics = new JsonObject();
+        }
 				this.session = this.event.getJsonObject(EventConstants.SESSION);
+				if(this.session == null){
+          this.session = new JsonObject();
+        }
 				this.version = this.event.getJsonObject(EventConstants.VERSION);
 				
 				this.startTime = this.event.getLong(EventConstants.START_TIME);
