@@ -20,7 +20,7 @@ public class AJEntityUserTaxonomySubject extends Model {
 
   public static final String UPDATED_AT = "updated_at";
   
-  public static final String CLASS_ID = "classs_id";
+  public static final String CLASS_ID = "class_id";
 
   public static final String SELECT_SUBJECT_ID_BY_COURSE = "SELECT tax_subject_id FROM content WHERE id = ?";
 
