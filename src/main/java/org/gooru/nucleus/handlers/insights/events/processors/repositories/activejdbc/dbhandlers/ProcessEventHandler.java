@@ -100,7 +100,7 @@ class ProcessEventHandler implements DBHandler {
     		baseReport.set("question_count", event.getQuestionCount());
     		
 			if (event.getEventType().equalsIgnoreCase(EventConstants.STOP)) {
-				scoreTS = AJEntityReporting.findBySQL(AJEntityReporting.COMPUTE_ASSESSMENT_SCORE, event.getSessionId());
+				scoreTS = AJEntityReporting.findBySQL(AJEntityReporting.COMPUTE_ASSESSMENT_SCORE, event.getContentGooruId(), event.getSessionId());
 				if (!scoreTS.isEmpty()) {
 					scoreTS.forEach(m -> {
 						scoreObj = Double.valueOf(m.get(AJEntityReporting.SCORE).toString());
@@ -121,14 +121,6 @@ class ProcessEventHandler implements DBHandler {
     		baseReport.set("answer_object", event.getAnswerObject().toString());
     	}
 
-    	/*Object maxSequenceId =
-                Base.firstCell(AJEntityReporting.SELECT_BASEREPORT_MAX_SEQUENCE_ID);
-            int sequenceId = 1;
-            if (maxSequenceId != null) {
-                sequenceId = Integer.valueOf(maxSequenceId.toString()) + 1;
-            }
-            baseReport.set(AJEntityReporting.SEQUENCE_ID, sequenceId);
-*/
     	if (baseReport.hasErrors()) {
             LOGGER.warn("errors in creating Base Report");            
         }
@@ -177,11 +169,7 @@ class ProcessEventHandler implements DBHandler {
       //Taxonomy report...
       if (!event.getTaxonomyIds().isEmpty()) {
         PreparedStatement ps = Base.startBatch(AJEntityTaxonomyReporting.INSERT_TAXONOMY_REPORT);
-       // Object maxSeqId = Base.firstCell(AJEntityTaxonomyReporting.SELECT_TAXONOMY_REPORT_MAX_SEQUENCE_ID);
         int seqId = 1;
-        /*if (maxSeqId != null) {
-          seqId = Integer.valueOf(maxSeqId.toString()) + 1;
-        }*/
         for (String internalTaxonomyCode : event.getTaxonomyIds().fieldNames()) {
           String displayCode = event.getTaxonomyIds().getString(internalTaxonomyCode);
           Map<String, String> taxObject = new HashMap<>();
