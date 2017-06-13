@@ -70,7 +70,7 @@ public class AJEntityReporting extends Model {
     
     public static final String COMPUTE_ASSESSMENT_SCORE = "SELECT SUM(questionData.question_score) AS score, SUM(questionData.resource_timeSpent) as time_spent "
               +"FROM  (SELECT DISTINCT ON (resource_id)  score AS question_score , time_spent as resource_timespent, session_id FROM base_reports "
-              +"WHERE event_name = 'collection.resource.play' AND event_type = 'stop' AND session_id = ?"
+              +"WHERE collection_id = ? AND session_id = ? AND event_name = 'collection.resource.play' AND event_type = 'stop' "
               +"AND resource_type = 'question' ORDER BY resource_id, updated_at desc) questionData GROUP BY session_id";
     
     public static final String FIND_COLLECTION_EVENT = "SELECT id,views,time_spent,score,reaction,resource_attempt_status,answer_object FROM base_reports "
