@@ -121,14 +121,14 @@ class ProcessEventHandler implements DBHandler {
     		baseReport.set("answer_object", event.getAnswerObject().toString());
     	}
 
-    	Object maxSequenceId =
+    	/*Object maxSequenceId =
                 Base.firstCell(AJEntityReporting.SELECT_BASEREPORT_MAX_SEQUENCE_ID);
             int sequenceId = 1;
             if (maxSequenceId != null) {
                 sequenceId = Integer.valueOf(maxSequenceId.toString()) + 1;
             }
             baseReport.set(AJEntityReporting.SEQUENCE_ID, sequenceId);
-
+*/
     	if (baseReport.hasErrors()) {
             LOGGER.warn("errors in creating Base Report");            
         }
