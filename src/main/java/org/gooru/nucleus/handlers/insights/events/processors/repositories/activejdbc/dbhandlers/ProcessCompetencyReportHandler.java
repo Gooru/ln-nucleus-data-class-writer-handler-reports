@@ -71,7 +71,7 @@ class ProcessCompetencyReportHandler implements DBHandler {
     competencyReport.set(AJEntityCompetencyReport.CREATED_AT, new Timestamp(event.getStartTime()));
     competencyReport.set(AJEntityCompetencyReport.UPDATED_AT, new Timestamp(event.getEndTime()));
 
-    Object baseReportId = Base.firstCell(AJEntityReporting.SELECT_BASE_REPORT_ID, event.getSessionId(), event.getContentGooruId(), event.getEventType());
+    Object baseReportId = Base.firstCell(AJEntityReporting.SELECT_BASE_REPORT_ID,event.getParentGooruId(), event.getSessionId(), event.getContentGooruId(), event.getEventType());
     if (baseReportId != null) {
       int sequenceId = Integer.valueOf(baseReportId.toString());
       competencyReport.set(AJEntityCompetencyReport.BASE_REPORT_ID, sequenceId);
