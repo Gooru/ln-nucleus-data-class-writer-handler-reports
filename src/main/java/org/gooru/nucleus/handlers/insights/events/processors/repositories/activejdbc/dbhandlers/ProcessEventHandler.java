@@ -8,6 +8,7 @@ import java.util.Map;
 
 import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.constants.MessageConstants;
+import org.gooru.nucleus.handlers.insights.events.processors.MessageDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.insights.events.processors.events.EventParser;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityReporting;
@@ -20,6 +21,8 @@ import org.javalite.activejdbc.Base;
 import org.javalite.activejdbc.LazyList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import io.vertx.core.json.JsonObject;
 
 /**
  * Created by mukul@gooru
@@ -99,19 +102,37 @@ class ProcessEventHandler implements DBHandler {
     	  baseReport.set("collection_id", event.getContentGooruId());
     		baseReport.set("question_count", event.getQuestionCount());
     		
-			if (event.getEventType().equalsIgnoreCase(EventConstants.STOP)) {
-				scoreTS = AJEntityReporting.findBySQL(AJEntityReporting.COMPUTE_ASSESSMENT_SCORE, event.getContentGooruId(), event.getSessionId());
-				if (!scoreTS.isEmpty()) {
-					scoreTS.forEach(m -> {
-						scoreObj = Double.valueOf(m.get(AJEntityReporting.SCORE).toString());
-						tsObj = Long.valueOf(m.get(AJEntityReporting.TIMESPENT).toString());
-					});
-					baseReport.set("score", ((scoreObj != null ? scoreObj : 0) * 100) / event.getQuestionCount());
-					if (event.getCollectionType().equalsIgnoreCase(EventConstants.ASSESSMENT)) {
-						baseReport.set("time_spent", (tsObj != null ? tsObj : 0));
-					}
-				}
-			}
+      if (event.getEventType().equalsIgnoreCase(EventConstants.STOP)) {
+        scoreTS = AJEntityReporting.findBySQL(AJEntityReporting.COMPUTE_ASSESSMENT_SCORE, event.getContentGooruId(), event.getSessionId());
+        if (!scoreTS.isEmpty()) {
+          scoreTS.forEach(m -> {
+            scoreObj = Double.valueOf(m.get(AJEntityReporting.SCORE).toString());
+            tsObj = Long.valueOf(m.get(AJEntityReporting.TIMESPENT).toString());
+          });
+
+          baseReport.set("score", ((scoreObj != null ? scoreObj : 0) * 100) / event.getQuestionCount());
+          if (event.getCollectionType().equalsIgnoreCase(EventConstants.ASSESSMENT)) {
+            baseReport.set("time_spent", (tsObj != null ? tsObj : 0));
+            
+            //Getting LTI event and publishing into Kafka topic.
+            JsonObject ltiEvent = getLTIEventStructure();
+            if (tsObj != null) {
+              ltiEvent.put("timeSpentInMs", tsObj);
+            }
+            if (scoreObj != null) {
+              ltiEvent.put("scoreInPercentage", (scoreObj * 100) / event.getQuestionCount());
+            }
+            try {
+              LOGGER.debug("LTI Event : {} ", ltiEvent);
+              MessageDispatcher.getInstance().sendMessage2Kafka(ltiEvent);
+              LOGGER.info("Successfully dispatched LTI message..");
+            } catch (Exception e) {
+              LOGGER.error("Error while dispatching LTI message ", e);
+            }
+          }
+        }
+      }
+
     	}
     	    	
     	if ((event.getEventName().equals(EventConstants.COLLECTION_RESOURCE_PLAY))) {
@@ -247,4 +268,23 @@ class ProcessEventHandler implements DBHandler {
     LOGGER.debug("taxObject : {} ", taxObject);
   }
     
+  private JsonObject getLTIEventStructure(){
+    JsonObject assessmentOutComeEvent = new JsonObject();
+    assessmentOutComeEvent.put("userUid", event.getGooruUUID());
+    assessmentOutComeEvent.put("contentGooruId", event.getContentGooruId());
+    assessmentOutComeEvent.put("classGooruId", event.getClassGooruId());
+    assessmentOutComeEvent.put("courseGooruId",event.getCourseGooruId());
+    assessmentOutComeEvent.put("unitGooruId",event.getUnitGooruId());
+    assessmentOutComeEvent.put("lessonGooruId",event.getLessonGooruId());
+    assessmentOutComeEvent.put("type",event.getCollectionType());
+    assessmentOutComeEvent.put("timeSpentInMs",0);
+    assessmentOutComeEvent.put("scoreInPercentage",0);
+    assessmentOutComeEvent.put("reaction",0);
+    assessmentOutComeEvent.put("completedTime",event.getEndTime());
+    assessmentOutComeEvent.put("isStudent",event.isStudent());
+    assessmentOutComeEvent.put("accessToken", event.getAccessToken());
+    assessmentOutComeEvent.put("sourceId", event.getSourceId());
+    assessmentOutComeEvent.put("questionsCount", event.getQuestionCount());
+    return assessmentOutComeEvent;
+  }
 }
