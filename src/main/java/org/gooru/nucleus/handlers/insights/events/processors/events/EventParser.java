@@ -110,14 +110,10 @@ public final class EventParser {
 		
 		private String collectionSubType;
 
-    private double maxScore;		
+        public double maxScore;		
 
-    private long pathId;
+        public long pathId;
     
-    private String sourceId;
-
-    private String accessToken;
-
 		public String getEventId() {
 			return eventId;
 		}
@@ -593,9 +589,6 @@ public final class EventParser {
 				this.reaction = context.containsKey(EventConstants.REACTION_TYPE) ? context.getLong(EventConstants.REACTION_TYPE) : 0;
 				this.contentSource = context.containsKey(EventConstants.CONTENT_SOURCE) ? context.getString(EventConstants.CONTENT_SOURCE) : null;
 
-	      this.sourceId = (payLoadObject.containsKey("sourceId") ? null : payLoadObject.getString("sourceId"));
-        this.accessToken = (payLoadObject.containsKey("accessToken") ? null : payLoadObject.getString("accessToken"));
-
 				if (this.eventName.equals(EventConstants.COLLECTION_PLAY)){
 					LOGGER.debug("Inside Collection.Play");
 					processCollectionPlayEvents();
@@ -651,22 +644,6 @@ public final class EventParser {
 								
 			}
 		}
-
-    public String getSourceId() {
-      return sourceId;
-    }
-
-    public void setSourceId(String sourceId) {
-      this.sourceId = sourceId;
-    }
-
-    public String getAccessToken() {
-      return accessToken;
-    }
-
-    public void setAccessToken(String accessToken) {
-      this.accessToken = accessToken;
-    }
 
 	} // End Class
 
