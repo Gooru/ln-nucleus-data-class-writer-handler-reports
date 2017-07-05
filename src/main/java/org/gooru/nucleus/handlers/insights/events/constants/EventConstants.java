@@ -865,6 +865,8 @@ public class EventConstants {
 	public static final String MAX_SCORE = "maxScore";
 
   public static final String PATH_ID = "pathId";
+  
+  public static final String TIMEZONE = "timezone";
 
 	private EventConstants() {
 		throw new AssertionError();

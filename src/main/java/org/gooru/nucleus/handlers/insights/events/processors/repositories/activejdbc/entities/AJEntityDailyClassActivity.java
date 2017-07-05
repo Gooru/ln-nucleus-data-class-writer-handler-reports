@@ -54,6 +54,12 @@ public class AJEntityDailyClassActivity extends Model {
     public static final String MAX_SCORE = "max_score";
     public static final String PATH_ID = "path_id";
     
+    public static final String EVENT_ID = "event_id";
+    public static final String TIME_ZONE = "time_zone";
+    public static final String DATE_IN_TIME_ZONE = "date_in_time_zone";
+    public static final String IS_GRADED = "is_graded";
+    public static final String CONTENT_SOURCE = "content_source";
+    
     public static final String CREATE_TIMESTAMP = "created_at";
     public static final String UPDATE_TIMESTAMP = "updated_at";   
     
@@ -92,11 +98,16 @@ public class AJEntityDailyClassActivity extends Model {
     public static final String PGTYPE_TEXT = "text";
     public static final String PGTYPE_NUMERIC = "numeric";
     public static final String PGTYPE_INT = "smallint";
+    public static final String PGTYPE_DATE = "date";
     
     public void setResourceAttemptStatus(String answerStatus) {
         setPGObject(RESOURCE_ATTEMPT_STATUS, RESOURCE_ATTEMPT_STATUS_TYPE, answerStatus);
     }
-    
+
+    public void setDateinTZ(String date) {
+        setPGObject(DATE_IN_TIME_ZONE, PGTYPE_DATE, date);
+    }
+
     private void setPGObject(String field, String type, String value) {
         PGobject pgObject = new PGobject();
         pgObject.setType(type);

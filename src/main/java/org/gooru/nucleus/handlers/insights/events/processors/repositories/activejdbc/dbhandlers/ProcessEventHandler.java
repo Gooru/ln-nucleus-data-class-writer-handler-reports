@@ -3,8 +3,11 @@ package org.gooru.nucleus.handlers.insights.events.processors.repositories.activ
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TimeZone;
 
 import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.constants.MessageConstants;
@@ -93,6 +96,23 @@ class ProcessEventHandler implements DBHandler {
       baseReport.set("collection_sub_type",event.getCollectionSubType());
       baseReport.set("created_at",new Timestamp(event.getStartTime()));
       baseReport.set("updated_at",new Timestamp(event.getEndTime()));
+      
+      baseReport.set("collection_sub_type",event.getCollectionSubType());
+      
+      baseReport.set("event_id", event.getEventId());
+      baseReport.set("content_source", event.getContentSource());
+      
+      if (event.getTimeZone() != null) {        	
+      	String timeZone = event.getTimeZone();        	
+      	LOGGER.debug("Timezone is " + timeZone);
+      	baseReport.set("time_zone", timeZone);        	
+      	String localeDate = UTCToLocale(event.getEndTime(), timeZone);
+      	
+      	if (localeDate != null) {
+          	baseReport.setDateinTZ(localeDate);
+      	}
+      }
+
 
     	if ((event.getEventName().equals(EventConstants.COLLECTION_PLAY))){
     	  duplicateRow =  AJEntityReporting.findBySQL(AJEntityReporting.FIND_COLLECTION_EVENT,event.getSessionId(),event.getContentGooruId(),event.getEventType(), event.getEventName());
@@ -246,5 +266,34 @@ class ProcessEventHandler implements DBHandler {
     }
     LOGGER.debug("taxObject : {} ", taxObject);
   }
+  
+  //********************************************************************************************************
+
+  private String UTCToLocale(Long strUtcDate, String timeZone){
+      
+      String strLocaleDate = null;
+      try{
+          Long epohTime = strUtcDate;
+      	Date utcDate = new Date(epohTime);
+
+          SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss z");
+          simpleDateFormat.setTimeZone(TimeZone.getTimeZone("Etc/UTC"));
+          String strUTCDate = simpleDateFormat.format(utcDate);
+          simpleDateFormat.setTimeZone(TimeZone.getTimeZone(timeZone));
+          
+          strLocaleDate = simpleDateFormat.format(utcDate);
+          
+          LOGGER.debug("UTC Date String: " + strUTCDate);
+          LOGGER.debug("Locale Date String: " + strLocaleDate);            
+          
+      }catch(Exception e){
+          LOGGER.error(e.getMessage());            
+      }
+      
+      return strLocaleDate;
+  }
+  
+  //********************************************************************************************************
+
     
 }
