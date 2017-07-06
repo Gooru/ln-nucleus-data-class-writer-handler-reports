@@ -113,6 +113,9 @@ public final class EventParser {
         public double maxScore;		
 
         public long pathId;
+                
+        public String timezone;      
+                
     
 		public String getEventId() {
 			return eventId;
@@ -508,6 +511,14 @@ public final class EventParser {
             this.pathId = pathId;
         }
 
+        public String getTimeZone() {
+            return timezone;
+        }
+
+        public void setTimeZone(String timezone) {
+            this.timezone = timezone;
+        }
+
         
 		private EventParser parse() {
 			try {			
@@ -588,6 +599,8 @@ public final class EventParser {
 				this.score = metrics.containsKey(EventConstants.SCORE) ? metrics.getDouble(EventConstants.SCORE) :  0;
 				this.reaction = context.containsKey(EventConstants.REACTION_TYPE) ? context.getLong(EventConstants.REACTION_TYPE) : 0;
 				this.contentSource = context.containsKey(EventConstants.CONTENT_SOURCE) ? context.getString(EventConstants.CONTENT_SOURCE) : null;
+								
+				this.timezone = this.event.containsKey(EventConstants.TIMEZONE) ? event.getString(EventConstants.TIMEZONE) : null;
 
 				if (this.eventName.equals(EventConstants.COLLECTION_PLAY)){
 					LOGGER.debug("Inside Collection.Play");
