@@ -1,10 +1,15 @@
 package org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers;
 
+//import java.sql.Date;
 import java.sql.PreparedStatement;
+
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TimeZone;
 
 import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.constants.MessageConstants;
@@ -20,6 +25,11 @@ import org.javalite.activejdbc.Base;
 import org.javalite.activejdbc.LazyList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+/**
+ * created by mukul@gooru
+ *   
+ */
 
 public class DailyClassActivityEventHandler implements DBHandler {
 	
@@ -91,8 +101,21 @@ public class DailyClassActivityEventHandler implements DBHandler {
       	  dcaReport.set("path_id",event.getPathId());  
         }
         dcaReport.set("collection_sub_type",event.getCollectionSubType());
-
-
+        
+        dcaReport.set("event_id", event.getEventId());
+        dcaReport.set("content_source", event.getContentSource());
+        
+        if (event.getTimeZone() != null) {        	
+        	String timeZone = event.getTimeZone();        	
+        	LOGGER.debug("Timezone is " + timeZone);
+        	dcaReport.set("time_zone", timeZone);        	
+        	String localeDate = UTCToLocale(event.getEndTime(), timeZone);
+        	
+        	if (localeDate != null) {
+            	dcaReport.setDateinTZ(localeDate);
+        	}
+        }
+        
     	if ((event.getEventName().equals(EventConstants.COLLECTION_PLAY))){
     	  duplicateRow =  AJEntityDailyClassActivity.findBySQL(AJEntityDailyClassActivity.FIND_COLLECTION_EVENT,event.getSessionId(),event.getContentGooruId(),event.getEventType(), event.getEventName());
     	  dcaReport.set("collection_id", event.getContentGooruId());
@@ -173,5 +196,28 @@ public class DailyClassActivityEventHandler implements DBHandler {
     public boolean handlerReadOnly() {
         return false;
     }
-    
+
+    private String UTCToLocale(Long strUtcDate, String timeZone){
+        
+        String strLocaleDate = null;
+        try{
+            Long epohTime = strUtcDate;
+        	Date utcDate = new Date(epohTime);
+
+            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss z");
+            simpleDateFormat.setTimeZone(TimeZone.getTimeZone("Etc/UTC"));
+            String strUTCDate = simpleDateFormat.format(utcDate);
+            simpleDateFormat.setTimeZone(TimeZone.getTimeZone(timeZone));
+            
+            strLocaleDate = simpleDateFormat.format(utcDate);
+            
+            LOGGER.debug("UTC Date String: " + strUTCDate);
+            LOGGER.debug("Locale Date String: " + strLocaleDate);            
+            
+        }catch(Exception e){
+            LOGGER.error(e.getMessage());            
+        }
+        
+        return strLocaleDate;
+    }       
 }
