@@ -110,14 +110,33 @@ public final class EventParser {
 		
 		private String collectionSubType;
 
-        public double maxScore;		
+    private double maxScore;		
 
-        public long pathId;
+    private long pathId;
                 
-        public String timezone;      
-                
+    private String timezone;      
     
-		public String getEventId() {
+    private String sourceId;
+    
+    private String accessToken;
+    
+		public String getSourceId() {
+      return sourceId;
+    }
+
+    public void setSourceId(String sourceId) {
+      this.sourceId = sourceId;
+    }
+
+    public String getAccessToken() {
+      return accessToken;
+    }
+
+    public void setAccessToken(String accessToken) {
+      this.accessToken = accessToken;
+    }
+
+    public String getEventId() {
 			return eventId;
 		}
 
@@ -602,6 +621,8 @@ public final class EventParser {
 								
 				this.timezone = this.event.containsKey(EventConstants.TIMEZONE) ? event.getString(EventConstants.TIMEZONE) : null;
 
+				this.sourceId = (context.containsKey("source") ? context.getString("source") : null);
+				this.accessToken = (this.session.containsKey("sessionToken") ? this.session.getString("sessionToken") : null);
 				if (this.eventName.equals(EventConstants.COLLECTION_PLAY)){
 					LOGGER.debug("Inside Collection.Play");
 					processCollectionPlayEvents();
