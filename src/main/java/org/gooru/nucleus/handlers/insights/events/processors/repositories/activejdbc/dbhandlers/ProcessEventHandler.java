@@ -143,14 +143,17 @@ class ProcessEventHandler implements DBHandler {
     		baseReport.set("resource_id", event.getContentGooruId());
     		baseReport.set("answer_object", event.getAnswerObject().toString());
     	}
-
+    	if((event.getEventName().equals(EventConstants.REACTION_CREATE))) {
+    	  baseReport.set("collection_id", event.getParentGooruId());
+        baseReport.set("resource_id", event.getContentGooruId());
+    	}
     	if (baseReport.hasErrors()) {
             LOGGER.warn("errors in creating Base Report");            
         }
     	LOGGER.debug("Inserting into Reports DB: " + context.request().toString());
     	
           if (baseReport.isValid()) {
-            if (duplicateRow.isEmpty()) {
+            if (duplicateRow == null || duplicateRow.isEmpty()) {
               if (baseReport.insert()) {
                 LOGGER.info("Record inserted successfully in Reports DB");
                 // return new ExecutionResult<>(MessageResponseFactory.createCreatedResponse(), ExecutionStatus.SUCCESSFUL);
@@ -215,9 +218,11 @@ class ProcessEventHandler implements DBHandler {
         LOGGER.debug("No Taxonomy mapping..");
       }
         // Pushing LTI event
-        if ((event.getEventName().equals(EventConstants.COLLECTION_PLAY)) && event.getEventType().equalsIgnoreCase(EventConstants.STOP)) {
+       /**
+        * TO BE REVERTED...DON'T REMOVE THIS CODE..
+        *  if ((event.getEventName().equals(EventConstants.COLLECTION_PLAY)) && event.getEventType().equalsIgnoreCase(EventConstants.STOP)) {
           sendLTIEvent();
-        }
+        }*/
 
         return new ExecutionResult<>(MessageResponseFactory.createCreatedResponse(), ExecutionStatus.SUCCESSFUL);
 

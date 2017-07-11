@@ -94,7 +94,7 @@ public final class EventParser {
 		
 		private long views;
 		
-		private long reaction;
+		private int reaction;
 
 		private String reportsContext;
 		
@@ -414,7 +414,7 @@ public final class EventParser {
 			return reaction;
 		}
 
-		public void setReaction(long reaction) {
+		public void setReaction(int reaction) {
 			this.reaction = reaction;
 		}
 		public String getGradeStatus() {
@@ -616,7 +616,13 @@ public final class EventParser {
 				this.eventTime = this.event.getLong(EventConstants.END_TIME);
 				this.collectionItemId = EventConstants.NA;
 				this.score = metrics.containsKey(EventConstants.SCORE) ? metrics.getDouble(EventConstants.SCORE) :  0;
-				this.reaction = context.containsKey(EventConstants.REACTION_TYPE) ? context.getLong(EventConstants.REACTION_TYPE) : 0;
+          // FIXME : Sometime event has string value in reactionType attribute so
+          // re-framing this code to accept both numeric and string value
+          if (context.containsKey(EventConstants.REACTION_TYPE)) {
+            this.reaction = Integer.parseInt(context.getValue(EventConstants.REACTION_TYPE).toString());
+          } else {
+            this.reaction = 0;
+          }
 				this.contentSource = context.containsKey(EventConstants.CONTENT_SOURCE) ? context.getString(EventConstants.CONTENT_SOURCE) : null;
 								
 				this.timezone = this.event.containsKey(EventConstants.TIMEZONE) ? event.getString(EventConstants.TIMEZONE) : null;

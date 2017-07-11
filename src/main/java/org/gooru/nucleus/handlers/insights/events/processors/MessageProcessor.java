@@ -93,10 +93,11 @@ class MessageProcessor implements Processor {
     	  }
         break;
       case EventConstants.REACTION_CREATE:
-        // TODO: Don't Process this event for now. Reaction
-        // collection.resource.play itself.
-        // We may need to revisit this in future.
-        result = MessageResponseFactory.createOkayResponse();
+        if (!StringUtil.isNullOrEmpty(event.getContentSource()) && event.getContentSource().equalsIgnoreCase(EventConstants.DAILY_CLASS_ACTIVITY)) {
+          result = createDCAReport();
+        } else {
+          result = createBaseReport();
+        }
         break;
       default:
         LOGGER.error("Invalid operation type passed in, not able to handle");

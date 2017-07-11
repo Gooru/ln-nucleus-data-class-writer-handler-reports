@@ -5,7 +5,6 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.gooru.nucleus.handlers.insights.events.app.components.DataSourceRegistry;
-import org.gooru.nucleus.handlers.insights.events.app.components.KafkaRegistry;
 
 public class Finalizers implements Iterable<Finalizer> {
 
@@ -14,7 +13,7 @@ public class Finalizers implements Iterable<Finalizer> {
     public Finalizers() {
         List<Finalizer> finalizers = new ArrayList<>();
         finalizers.add(DataSourceRegistry.getInstance());
-        finalizers.add(KafkaRegistry.getInstance());
+       // finalizers.add(KafkaRegistry.getInstance());
         internalIterator = finalizers.iterator();
     }
 
