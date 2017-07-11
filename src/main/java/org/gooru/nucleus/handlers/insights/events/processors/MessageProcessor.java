@@ -62,6 +62,7 @@ class MessageProcessor implements Processor {
       final String eventName = event.getEventName();
       switch (eventName) {
       case EventConstants.COLLECTION_PLAY:
+        long start = System.currentTimeMillis();
     	  if (!StringUtil.isNullOrEmpty(event.getContentSource()) 
     			  && event.getContentSource().equalsIgnoreCase(EventConstants.DAILY_CLASS_ACTIVITY)){
     		  result = createDCAReport();    		  
@@ -70,6 +71,9 @@ class MessageProcessor implements Processor {
     		  if(event.getEventType().equalsIgnoreCase(EventConstants.START)){
     		    result = createUserTaxonomySubject();
     		  }
+    		  long end = System.currentTimeMillis();
+    		  LOGGER.info("collection.play processed time : " + (end-start));
+
     	  }
         break;
       case EventConstants.COLLECTION_RESOURCE_PLAY:    	  
