@@ -93,7 +93,8 @@ class MessageProcessor implements Processor {
     	  }
         break;
       case EventConstants.REACTION_CREATE:
-        if (!StringUtil.isNullOrEmpty(event.getContentSource()) && event.getContentSource().equalsIgnoreCase(EventConstants.DAILY_CLASS_ACTIVITY)) {
+        if (!StringUtil.isNullOrEmpty(event.getContentSource()) 
+        		&& event.getContentSource().equalsIgnoreCase(EventConstants.DAILY_CLASS_ACTIVITY)) {
           result = createDCAReport();
         } else {
           result = createBaseReport();

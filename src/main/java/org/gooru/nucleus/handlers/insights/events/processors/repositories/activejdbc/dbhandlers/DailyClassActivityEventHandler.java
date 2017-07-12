@@ -169,10 +169,10 @@ public class DailyClassActivityEventHandler implements DBHandler {
                   long view = (Long.valueOf(dup.get("views").toString()) + event.getViews());
                   long ts = (Long.valueOf(dup.get("time_spent").toString()) + event.getTimespent());
                   long react = event.getReaction() != 0 ? event.getReaction() : 0;
-                  Object attmptStatus = dup.get(AJEntityDailyClassActivity.RESOURCE_ATTEMPT_STATUS);
-                  Object ansObj = dup.get(AJEntityDailyClassActivity.ANSWER_OBJECT);
+//                  Object attmptStatus = dup.get(AJEntityDailyClassActivity.RESOURCE_ATTEMPT_STATUS);
+//                  Object ansObj = dup.get(AJEntityDailyClassActivity.ANSWER_OBJECT);
                   Base.exec(AJEntityDailyClassActivity.UPDATE_RESOURCE_EVENT, view, ts, event.getScore(), new Timestamp(event.getEndTime()), 
-                		  react, attmptStatus, ansObj, id);
+                		  react, event.getAnswerStatus(), event.getAnswerObject().toString(), id);
                 });
       
               }
