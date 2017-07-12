@@ -143,13 +143,17 @@ public class DailyClassActivityEventHandler implements DBHandler {
     		dcaReport.set("answer_object", event.getAnswerObject().toString());
     	}
 
+    	 if ((event.getEventName().equals(EventConstants.REACTION_CREATE))) {
+         dcaReport.set("collection_id", event.getParentGooruId());
+         dcaReport.set("resource_id", event.getContentGooruId());        
+       }
     	if (dcaReport.hasErrors()) {
             LOGGER.warn("Errors in creating DCA Report");            
         }
     	LOGGER.info("Event, Before inserting into DCA Table: " + context.request().toString());
     	
           if (dcaReport.isValid()) {
-            if (duplicateRow.isEmpty()) {
+            if (duplicateRow == null || duplicateRow.isEmpty()) {
               if (dcaReport.insert()) {
                 LOGGER.info("Record inserted successfully");
                 return new ExecutionResult<>(MessageResponseFactory.createCreatedResponse(), ExecutionStatus.SUCCESSFUL);
