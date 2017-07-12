@@ -143,10 +143,12 @@ class ProcessEventHandler implements DBHandler {
     		baseReport.set("resource_id", event.getContentGooruId());
     		baseReport.set("answer_object", event.getAnswerObject().toString());
     	}
+    	
     	if((event.getEventName().equals(EventConstants.REACTION_CREATE))) {
     	  baseReport.set("collection_id", event.getParentGooruId());
         baseReport.set("resource_id", event.getContentGooruId());
     	}
+    	
     	if (baseReport.hasErrors()) {
             LOGGER.warn("errors in creating Base Report");            
         }
@@ -169,10 +171,10 @@ class ProcessEventHandler implements DBHandler {
                   long view = (Long.valueOf(dup.get("views").toString()) + event.getViews());
                   long ts = (Long.valueOf(dup.get("time_spent").toString()) + event.getTimespent());
                   long react = event.getReaction() != 0 ? event.getReaction() : 0;
-                  Object attmptStatus = dup.get(AJEntityReporting.RESOURCE_ATTEMPT_STATUS);
-                  Object ansObj = dup.get(AJEntityReporting.ANSWER_OBJECT);
+//                  Object attmptStatus = dup.get(AJEntityReporting.RESOURCE_ATTEMPT_STATUS);
+//                  Object ansObj = dup.get(AJEntityReporting.ANSWER_OBJECT);
                   Base.exec(AJEntityReporting.UPDATE_RESOURCE_EVENT, view, ts, event.getScore(), new Timestamp(event.getEndTime()), 
-                		  react, attmptStatus, ansObj, id);
+                		  react, event.getAnswerStatus(), event.getAnswerObject().toString(), id);
                 });
       
               }
