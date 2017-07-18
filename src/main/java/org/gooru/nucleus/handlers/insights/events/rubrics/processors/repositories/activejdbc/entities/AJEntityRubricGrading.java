@@ -30,6 +30,7 @@ public class AJEntityRubricGrading extends Model {
 	private static final Logger LOGGER = LoggerFactory.getLogger(AJEntityRubricGrading.class);
 
     public static final String ID = "id";
+    public static final String EVENT_NAME = "event_name";
     public static final String RUBRIC_ID = "rubric_id";
     public static final String TITLE = "title";
     public static final String URL = "url";    

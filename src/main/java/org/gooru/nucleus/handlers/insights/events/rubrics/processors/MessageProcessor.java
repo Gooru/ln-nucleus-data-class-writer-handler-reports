@@ -61,7 +61,7 @@ class MessageProcessor implements RubricProcessor {
         
         context = createContext();
         
-        final String eventName = messageJobj.getString(EventConstants.EVENT_NAME);
+        final String eventName = messageJobj.getString(EventConstants._EVENT_NAME);
         LOGGER.debug(eventName);
         switch (eventName) {
         //case MessageConstants.MSG_OP_STUDENTS_GRADES_WRITE:

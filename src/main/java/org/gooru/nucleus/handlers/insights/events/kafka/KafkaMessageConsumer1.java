@@ -55,7 +55,7 @@ public class KafkaMessageConsumer1 implements Runnable {
       }
       if (eventObject != null) {
         LOGGER.info("RECEIVED EVENT OBJECT :::: {}", eventObject);
-        if (eventObject.getString(ConfigConstants.EVENT_NAME).equalsIgnoreCase(EventConstants.RESOURCE_RUBRIC_GRADE)) {
+        if (eventObject.getString(ConfigConstants._EVENT_NAME).equalsIgnoreCase(EventConstants.RESOURCE_RUBRIC_GRADE)) {
         	RubricProcessorBuilder.build(eventObject).process();
         } else {
         	ProcessorBuilder.build(eventObject).process();
