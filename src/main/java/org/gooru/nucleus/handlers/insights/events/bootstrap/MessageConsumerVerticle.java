@@ -8,7 +8,7 @@ import java.util.concurrent.Executors;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.gooru.nucleus.handlers.insights.events.constants.ConfigConstants;
-import org.gooru.nucleus.handlers.insights.events.processors.KafkaMessageConsumer;
+import org.gooru.nucleus.handlers.insights.events.kafka.KafkaMessageConsumer1;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,6 +57,6 @@ public class MessageConsumerVerticle extends AbstractVerticle {
     // HYPHEN. EG : EVENTLOGS-QA, TEST-PROD, XAPITRANSFORMER-QA
     String[] topics = config.getString(ConfigConstants.CONFIG_KAFKA_TOPICS).split(ConfigConstants.COMMA);
     consumer.subscribe(Arrays.asList(topics));
-    service.submit(new KafkaMessageConsumer(consumer));
+    service.submit(new KafkaMessageConsumer1(consumer));
   }
 }
