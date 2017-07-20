@@ -44,9 +44,9 @@ public final class MessageConstants {
     public static final String HYPHEN = "-";
     public static final String COMMA = ",";
     public static final String COLON = ":";
-
     
-    
+    // Rubric Grading Constants    
+    public static final String MSG_OP_STUDENTS_GRADES_WRITE = "student.grades.write";
     
     private MessageConstants() {
         throw new AssertionError();

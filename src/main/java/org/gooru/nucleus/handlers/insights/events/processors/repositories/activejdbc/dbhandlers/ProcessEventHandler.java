@@ -11,7 +11,8 @@ import java.util.TimeZone;
 
 import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.constants.MessageConstants;
-import org.gooru.nucleus.handlers.insights.events.processors.MessageDispatcher;
+//import org.gooru.nucleus.handlers.insights.events.processors.MessageDispatcher;
+import org.gooru.nucleus.handlers.insights.events.kafka.MessageDispatcher1;
 import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.insights.events.processors.events.EventParser;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityReporting;
@@ -321,7 +322,7 @@ class ProcessEventHandler implements DBHandler {
     }
     try {
       LOGGER.debug("LTI Event : {} ", ltiEvent);
-      MessageDispatcher.getInstance().sendMessage2Kafka(ltiEvent);
+      MessageDispatcher1.getInstance().sendMessage2Kafka(ltiEvent);
       LOGGER.info("Successfully dispatched LTI message..");
     } catch (Exception e) {
       LOGGER.error("Error while dispatching LTI message ", e);
