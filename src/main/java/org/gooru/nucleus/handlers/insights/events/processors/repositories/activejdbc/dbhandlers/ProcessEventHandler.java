@@ -220,11 +220,9 @@ class ProcessEventHandler implements DBHandler {
         LOGGER.debug("No Taxonomy mapping..");
       }
         // Pushing LTI event
-       /**
-        * TO BE REVERTED...DON'T REMOVE THIS CODE..
-        *  if ((event.getEventName().equals(EventConstants.COLLECTION_PLAY)) && event.getEventType().equalsIgnoreCase(EventConstants.STOP)) {
+        if ((event.getEventName().equals(EventConstants.COLLECTION_PLAY)) && event.getEventType().equalsIgnoreCase(EventConstants.STOP)) {
           sendLTIEvent();
-        }*/
+        }
 
         return new ExecutionResult<>(MessageResponseFactory.createCreatedResponse(), ExecutionStatus.SUCCESSFUL);
 
