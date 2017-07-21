@@ -24,5 +24,15 @@
 "session.timeout.ms":"6000",
 "message.bus.send.timeout.seconds":10
 }
-}
+},
+"defaultKafkaProducerSettings":{
+ "bootstrap.servers":"127.0.0.1:9092",
+ "key.serializer":"org.apache.kafka.common.serialization.StringSerializer",
+ "value.serializer":"org.apache.kafka.common.serialization.StringSerializer",
+ "batch.size":10,
+ "retries":2,
+ "linger.ms":1,
+ "buffer.memory":33554432,
+ "topic":"NILE-LTI-EVENT"
+ }
 }
