@@ -9,8 +9,8 @@ import java.util.Map;
 import org.gooru.nucleus.handlers.insights.events.constants.MessageConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.insights.events.processors.events.EventParser;
-import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityCompetencyReport;
-import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityReporting;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityDCACompetencyReport;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityDailyClassActivity;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponse;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponseFactory;
@@ -23,7 +23,7 @@ public class DCACompetencyHandler implements DBHandler {
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(DCACompetencyHandler.class);
 	  private final ProcessorContext context;
-	  private AJEntityCompetencyReport competencyReport;
+	  private AJEntityDCACompetencyReport dcacompetencyReport;
 	  private EventParser event;
 
 	  public DCACompetencyHandler(ProcessorContext context) {
@@ -51,53 +51,53 @@ public class DCACompetencyHandler implements DBHandler {
 	  @Override
 	  @SuppressWarnings("rawtypes")
 	  public ExecutionResult<MessageResponse> executeRequest() {
-	    competencyReport = new AJEntityCompetencyReport();
+	    dcacompetencyReport = new AJEntityDCACompetencyReport();
 	    event = context.getEvent();
-	    competencyReport.set(AJEntityCompetencyReport.SESSION_ID, event.getSessionId());
-	    competencyReport.set(AJEntityCompetencyReport.CLASS_ID, event.getClassGooruId());
-	    competencyReport.set(AJEntityCompetencyReport.COURSE_ID, event.getCourseGooruId());
-	    competencyReport.set(AJEntityCompetencyReport.UNIT_ID, event.getUnitGooruId());
-	    competencyReport.set(AJEntityCompetencyReport.LESSON_ID, event.getLessonGooruId());
-	    competencyReport.set(AJEntityCompetencyReport.ACTOR_ID, event.getGooruUUID());
-	    competencyReport.set(AJEntityCompetencyReport.TENANT_ID, event.getTenantId());
-	    competencyReport.set(AJEntityCompetencyReport.COLLECTION_ID, event.getParentGooruId());
-	    competencyReport.set(AJEntityCompetencyReport.RESOURCE_ID, event.getContentGooruId());
-	    competencyReport.set(AJEntityCompetencyReport.COLLECTION_TYPE, event.getCollectionType());
-	    competencyReport.set(AJEntityCompetencyReport.RESOURCE_TYPE, event.getResourceType());
-	    competencyReport.set(AJEntityCompetencyReport.EVENT_TYPE, event.getEventType());
-	    competencyReport.set(AJEntityCompetencyReport.CREATED_AT, new Timestamp(event.getStartTime()));
-	    competencyReport.set(AJEntityCompetencyReport.UPDATED_AT, new Timestamp(event.getEndTime()));
+	    dcacompetencyReport.set(AJEntityDCACompetencyReport.SESSION_ID, event.getSessionId());
+	    dcacompetencyReport.set(AJEntityDCACompetencyReport.CLASS_ID, event.getClassGooruId());
+	    dcacompetencyReport.set(AJEntityDCACompetencyReport.COURSE_ID, event.getCourseGooruId());
+	    dcacompetencyReport.set(AJEntityDCACompetencyReport.UNIT_ID, event.getUnitGooruId());
+	    dcacompetencyReport.set(AJEntityDCACompetencyReport.LESSON_ID, event.getLessonGooruId());
+	    dcacompetencyReport.set(AJEntityDCACompetencyReport.ACTOR_ID, event.getGooruUUID());
+	    dcacompetencyReport.set(AJEntityDCACompetencyReport.TENANT_ID, event.getTenantId());
+	    dcacompetencyReport.set(AJEntityDCACompetencyReport.COLLECTION_ID, event.getParentGooruId());
+	    dcacompetencyReport.set(AJEntityDCACompetencyReport.RESOURCE_ID, event.getContentGooruId());
+	    dcacompetencyReport.set(AJEntityDCACompetencyReport.COLLECTION_TYPE, event.getCollectionType());
+	    dcacompetencyReport.set(AJEntityDCACompetencyReport.RESOURCE_TYPE, event.getResourceType());
+	    dcacompetencyReport.set(AJEntityDCACompetencyReport.EVENT_TYPE, event.getEventType());
+	    dcacompetencyReport.set(AJEntityDCACompetencyReport.CREATED_AT, new Timestamp(event.getStartTime()));
+	    dcacompetencyReport.set(AJEntityDCACompetencyReport.UPDATED_AT, new Timestamp(event.getEndTime()));
 
-	    Object baseReportId = Base.firstCell(AJEntityReporting.SELECT_BASE_REPORT_ID, event.getSessionId(), event.getContentGooruId(), event.getEventType());
-	    if (baseReportId != null) {
-	      int sequenceId = Integer.valueOf(baseReportId.toString());
-	      competencyReport.set(AJEntityCompetencyReport.BASE_REPORT_ID, sequenceId);
+	    Object dcaReportId = Base.firstCell(AJEntityDailyClassActivity.SELECT_DCA_REPORT_ID, event.getParentGooruId(), event.getSessionId(), event.getContentGooruId(), event.getEventType());
+	    if (dcaReportId != null) {
+	      int sequenceId = Integer.valueOf(dcaReportId.toString());
+	      dcacompetencyReport.set(AJEntityDCACompetencyReport.BASE_REPORT_ID, sequenceId);
 	    } else {
-	      LOGGER.warn("Base Report ID can not be null...");
+	      LOGGER.warn("DCA Report ID can not be null...");
 	      return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(), ExecutionStatus.FAILED);
 	    }
 
-	    if (competencyReport.hasErrors()) {
-	      LOGGER.error("Errors in creating Competency Report");
+	    if (dcacompetencyReport.hasErrors()) {
+	      LOGGER.error("Errors in creating DCA Competency Report");
 	      return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(), ExecutionStatus.FAILED);
 
 	    }
 
-	    List<AJEntityCompetencyReport> reports = AJEntityCompetencyReport.where(AJEntityCompetencyReport.SELECT_ROWS_BY_SESSION_ID_AND_RESOURCE, event.getSessionId(), event.getContentGooruId(), event.getEventType());
+	    List<AJEntityDCACompetencyReport> reports = AJEntityDCACompetencyReport.where(AJEntityDCACompetencyReport.SELECT_ROWS_BY_SESSION_ID_AND_RESOURCE, event.getSessionId(), event.getContentGooruId(), event.getEventType());
 	    if (reports.isEmpty()) {
-	      List<AJEntityCompetencyReport> compentencyReports = new ArrayList<>();
+	      List<AJEntityDCACompetencyReport> compentencyReports = new ArrayList<>();
 	      if (!event.getTaxonomyIds().isEmpty()) {
 	        for (String internalTaxonomyCode : event.getTaxonomyIds().fieldNames()) {
-	          AJEntityCompetencyReport taxCompetency = new AJEntityCompetencyReport();
-	          taxCompetency.copyFrom(competencyReport);
+	          AJEntityDCACompetencyReport taxCompetency = new AJEntityDCACompetencyReport();
+	          taxCompetency.copyFrom(dcacompetencyReport);
 	          String displayCode = event.getTaxonomyIds().getString(internalTaxonomyCode);
 	          Map<String, String> taxObject = splitByTaxonomyCode(internalTaxonomyCode);
-	          taxCompetency.set(AJEntityCompetencyReport.DISPLAY_CODE, displayCode);
-	          taxCompetency.set(AJEntityCompetencyReport.TAX_SUBJECT_ID, taxObject.get(MessageConstants.SUBJECT));
-	          taxCompetency.set(AJEntityCompetencyReport.TAX_COURSE_ID, taxObject.get(MessageConstants.COURSE));
-	          taxCompetency.set(AJEntityCompetencyReport.TAX_DOMAIN_ID, taxObject.get(MessageConstants.DOMAIN));
-	          taxCompetency.set(AJEntityCompetencyReport.TAX_STANDARD_ID, taxObject.get(MessageConstants.STANDARDS));
-	          taxCompetency.set(AJEntityCompetencyReport.TAX_MICRO_STANDARD_ID, taxObject.get(MessageConstants.LEARNING_TARGETS));
+	          taxCompetency.set(AJEntityDCACompetencyReport.DISPLAY_CODE, displayCode);
+	          taxCompetency.set(AJEntityDCACompetencyReport.TAX_SUBJECT_ID, taxObject.get(MessageConstants.SUBJECT));
+	          taxCompetency.set(AJEntityDCACompetencyReport.TAX_COURSE_ID, taxObject.get(MessageConstants.COURSE));
+	          taxCompetency.set(AJEntityDCACompetencyReport.TAX_DOMAIN_ID, taxObject.get(MessageConstants.DOMAIN));
+	          taxCompetency.set(AJEntityDCACompetencyReport.TAX_STANDARD_ID, taxObject.get(MessageConstants.STANDARDS));
+	          taxCompetency.set(AJEntityDCACompetencyReport.TAX_MICRO_STANDARD_ID, taxObject.get(MessageConstants.LEARNING_TARGETS));
 	          compentencyReports.add(taxCompetency);
 	        }
 	      } else {

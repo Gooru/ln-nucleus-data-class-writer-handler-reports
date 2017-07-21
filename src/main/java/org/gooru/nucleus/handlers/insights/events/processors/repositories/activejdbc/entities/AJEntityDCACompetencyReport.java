@@ -34,6 +34,7 @@ public class AJEntityDCACompetencyReport extends Model {
 	  public static final String UPDATED_AT = "updated_at";  
 	  
 	  public static final String SELECT_ROWS_BY_SESSION_ID_AND_RESOURCE = "session_id = ? AND resource_id = ? AND event_type = ? ";
+	  
 	  public AJEntityDCACompetencyReport() {
 	    // Turning off create_at and updated_at columns are getting updated by
 	    // activeJDBC.
