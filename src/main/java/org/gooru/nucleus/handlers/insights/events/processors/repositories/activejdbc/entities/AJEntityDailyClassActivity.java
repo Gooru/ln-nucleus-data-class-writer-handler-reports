@@ -94,6 +94,8 @@ public class AJEntityDailyClassActivity extends Model {
     public static final String FIND_RESOURCE_EVENT = "SELECT id, views, time_spent, score, reaction, resource_attempt_status, answer_object"
     		+ " FROM daily_class_activity WHERE collection_id = ? AND session_id = ? AND resource_id = ? AND event_type = ?";
     
+    public static final String SELECT_DCA_REPORT_ID = "SELECT id FROM daily_class_activity WHERE collection_id = ? AND session_id = ? AND resource_id = ? AND event_type = ? ";
+    
     public static final String RESOURCE_ATTEMPT_STATUS_TYPE = "attempt_status";    
     public static final String PGTYPE_TEXT = "text";
     public static final String PGTYPE_NUMERIC = "numeric";
