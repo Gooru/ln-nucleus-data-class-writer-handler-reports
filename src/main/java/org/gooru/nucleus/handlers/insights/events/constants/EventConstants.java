@@ -868,6 +868,8 @@ public class EventConstants {
   
   public static final String TIMEZONE = "timezone";
   
+	public static final String TEACHER = "teacher";
+  
   public static final String RESOURCE_RUBRIC_GRADE = "resource.rubric.grade";
 
 	private EventConstants() {

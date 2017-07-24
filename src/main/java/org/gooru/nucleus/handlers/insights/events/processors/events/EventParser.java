@@ -671,9 +671,7 @@ public final class EventParser {
 					this.answerStatus = payLoadObject.containsKey(EventConstants.ATTEMPT_STATUS) ? payLoadObject.getString(EventConstants.ATTEMPT_STATUS) : EventConstants.ATTEMPTED;
 					
 					//Score - EVALUATED Case is not considered at this point
-					if(answerStatus.equalsIgnoreCase(EventConstants.ATTEMPTED)){						
-						this.score = 0;
-					} else if (answerStatus.equalsIgnoreCase(EventConstants.INCORRECT)) {
+					if (answerStatus.equalsIgnoreCase(EventConstants.INCORRECT)) {
 						this.score = 0;
 					} else if (answerStatus.equalsIgnoreCase(EventConstants.CORRECT)) {
 						this.score = 1;

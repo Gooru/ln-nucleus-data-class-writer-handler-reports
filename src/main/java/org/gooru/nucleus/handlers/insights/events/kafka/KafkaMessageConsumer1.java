@@ -26,6 +26,7 @@ public class KafkaMessageConsumer1 implements Runnable {
   @Override
   public void run() {
     while (true) {
+    
       ConsumerRecords<String, String> records = consumer.poll(200);
       for (ConsumerRecord<String, String> record : records) {
         switch (record.topic().split(ConfigConstants.HYPHEN)[0]) {
@@ -54,10 +55,12 @@ public class KafkaMessageConsumer1 implements Runnable {
         LOGGER.warn("Kafka Message should be JsonObject");
       }
       if (eventObject != null) {
-        LOGGER.info("RECEIVED EVENT OBJECT :::: {}", eventObject);
-        if (eventObject.getString(ConfigConstants._EVENT_NAME).equalsIgnoreCase(EventConstants.RESOURCE_RUBRIC_GRADE)) {
+        LOGGER.info("RECEIVED EVENT OBJECT :::: {}", eventObject);        
+        if (eventObject.containsKey(ConfigConstants._EVENT_NAME) &&  
+        		eventObject.getString(ConfigConstants._EVENT_NAME).equalsIgnoreCase(EventConstants.RESOURCE_RUBRIC_GRADE)) {
         	RubricProcessorBuilder.build(eventObject).process();
         } else {
+        	LOGGER.info("Do I get here", eventObject);
         	ProcessorBuilder.build(eventObject).process();
         }
         

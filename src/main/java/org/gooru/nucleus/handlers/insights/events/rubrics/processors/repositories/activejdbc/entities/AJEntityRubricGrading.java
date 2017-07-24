@@ -58,6 +58,7 @@ public class AJEntityRubricGrading extends Model {
     public static final String UNIT_ID = "unit_id";
     public static final String LESSON_ID = "lesson_id";
     public static final String COLLECTION_ID = "collection_id";
+    public static final String SESSION_ID = "session_id";
     public static final String RESOURCE_ID = "content_id";
     
     public static final String MAX_SCORE = "max_score";
