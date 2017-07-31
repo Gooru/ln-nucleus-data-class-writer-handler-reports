@@ -9,6 +9,9 @@ public class RepoBuilder {
         return AJRepoBuilder.buildBaseReportingRepo(context);
     }
 
+    public RubricGradingRepo buildRubricGradingRepo(ProcessorContext context) {
+      return AJRepoBuilder.buildRubricsGradingRepo(context);
+  }
 }
 
 

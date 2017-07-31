@@ -4,6 +4,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.gooru.nucleus.handlers.insights.events.constants.ConfigConstants;
+import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,7 +53,14 @@ public class KafkaMessageConsumer implements Runnable {
       }
       if (eventObject != null) {
         LOGGER.info("RECEIVED EVENT OBJECT :::: {}", eventObject);
-        ProcessorBuilder.build(eventObject).process();
+        if (eventObject.containsKey(ConfigConstants._EVENT_NAME)
+                && eventObject.getString(ConfigConstants._EVENT_NAME).equalsIgnoreCase(EventConstants.RESOURCE_RUBRIC_GRADE)) {
+          RubricProcessorBuilder.build(eventObject).process();
+        } else {
+          LOGGER.info("Do I get here", eventObject);
+          ProcessorBuilder.build(eventObject).process();
+        }
+
       }
     } else {
       LOGGER.warn("NULL or Empty message can not be processed...");

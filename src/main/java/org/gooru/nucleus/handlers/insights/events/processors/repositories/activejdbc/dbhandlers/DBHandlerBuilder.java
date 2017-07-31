@@ -30,4 +30,8 @@ import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
     public static DBHandler buildUserTaxonomySubjectHandler(ProcessorContext context) {
       return new UserTaxonomySubjectHandler(context);
     }
+    
+    public static DBHandler buildRubricGradingHandler(ProcessorContext context) {
+      return new RubricGradingHandler(context);
+    }
 }
