@@ -1,4 +1,4 @@
-package org.gooru.nucleus.handlers.insights.events.rubrics.processors.repositories.activejdbc.entities;
+package org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities;
 
 import java.sql.SQLException;
 import java.util.Arrays;
@@ -7,17 +7,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.gooru.nucleus.handlers.insights.events.rubrics.processors.repositories.activejdbc.converters.ConverterRegistry;
-import org.gooru.nucleus.handlers.insights.events.rubrics.processors.repositories.activejdbc.converters.FieldConverter;
-import org.gooru.nucleus.handlers.insights.events.rubrics.processors.repositories.activejdbc.validators.FieldValidator;
-import org.gooru.nucleus.handlers.insights.events.rubrics.processors.repositories.activejdbc.validators.ValidatorRegistry;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.converters.ConverterRegistry;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.converters.FieldConverter;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.validators.FieldValidator;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.validators.ValidatorRegistry;
 import org.javalite.activejdbc.Model;
 import org.javalite.activejdbc.annotations.Table;
 import org.postgresql.util.PGobject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import io.vertx.core.json.JsonObject;
 
 /**
  * @author mukul@gooru

@@ -1,4 +1,4 @@
-package org.gooru.nucleus.handlers.insights.events.rubrics.processors.repositories.activejdbc.converters;
+package org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.converters;
 
 /**
  * Created by ashish on 28/1/16.

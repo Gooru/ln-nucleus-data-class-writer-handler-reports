@@ -1,20 +1,14 @@
-package org.gooru.nucleus.handlers.insights.events.rubrics.processors.repositories.activejdbc.dbhandlers;
+package org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers;
 
-import java.sql.Timestamp;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
-import org.gooru.nucleus.handlers.insights.events.rubrics.processors.ProcessorContext;
-import org.gooru.nucleus.handlers.insights.events.rubrics.processors.repositories.activejdbc.converters.ConverterRegistry;
-import org.gooru.nucleus.handlers.insights.events.rubrics.processors.repositories.activejdbc.converters.FieldConverter;
-import org.gooru.nucleus.handlers.insights.events.rubrics.processors.repositories.activejdbc.entities.AJEntityRubricGrading;
-import org.gooru.nucleus.handlers.insights.events.rubrics.processors.repositories.activejdbc.entities.EntityBuilder;
-import org.gooru.nucleus.handlers.insights.events.rubrics.processors.responses.ExecutionResult;
-import org.gooru.nucleus.handlers.insights.events.rubrics.processors.responses.MessageResponse;
-import org.gooru.nucleus.handlers.insights.events.rubrics.processors.responses.MessageResponseFactory;
-import org.gooru.nucleus.handlers.insights.events.rubrics.processors.responses.ExecutionResult.ExecutionStatus;
+import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityRubricGrading;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.EntityBuilder;
+import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult;
+import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult.ExecutionStatus;
+import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponse;
+import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponseFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

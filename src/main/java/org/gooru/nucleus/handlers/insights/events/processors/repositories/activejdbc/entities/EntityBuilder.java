@@ -1,7 +1,7 @@
-package org.gooru.nucleus.handlers.insights.events.rubrics.processors.repositories.activejdbc.entities;
+package org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities;
 
-import org.gooru.nucleus.handlers.insights.events.rubrics.processors.repositories.activejdbc.converters.ConverterRegistry;
-import org.gooru.nucleus.handlers.insights.events.rubrics.processors.repositories.activejdbc.converters.FieldConverter;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.converters.ConverterRegistry;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.converters.FieldConverter;
 import org.javalite.activejdbc.Model;
 
 import io.vertx.core.json.JsonObject;

@@ -1,4 +1,4 @@
-package org.gooru.nucleus.handlers.insights.events.rubrics.processors.repositories.activejdbc.converters;
+package org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.converters;
 
 import java.sql.SQLException;
 
