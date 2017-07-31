@@ -23,4 +23,5 @@ public class ConfigConstants {
   public static final String COLON = ":";
 
   public static final String EVENT_NAME = "eventName";
+  public static final String _EVENT_NAME = "event_name";
 }
