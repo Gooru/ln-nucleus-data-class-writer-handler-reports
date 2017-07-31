@@ -8,10 +8,6 @@ public class RepoBuilder {
     public static BaseReportingRepo buildBaseReportingRepo(ProcessorContext context) {
         return AJRepoBuilder.buildBaseReportingRepo(context);
     }
-
-    public RubricGradingRepo buildRubricGradingRepo(ProcessorContext context) {
-      return AJRepoBuilder.buildRubricsGradingRepo(context);
-  }
 }
 
 

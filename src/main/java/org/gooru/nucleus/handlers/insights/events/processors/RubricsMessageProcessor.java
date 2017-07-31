@@ -74,7 +74,7 @@ public class RubricsMessageProcessor implements Processor{
 
     private MessageResponse procStudentGrades() {
       try {
-        return new RepoBuilder().buildRubricGradingRepo(context).processStudentGrades();
+        return RepoBuilder.buildBaseReportingRepo(context).processStudentGrades();
   
       } catch (Throwable t) {
         LOGGER.error("Exception while getting Students Grades for a Question", t);

@@ -12,4 +12,7 @@ public final class ProcessorBuilder {
         return new MessageProcessor(message);
     }
     
+    public static Processor buildRubrics(JsonObject message) {
+      return new RubricsMessageProcessor(message);
+    }
 }
