@@ -92,6 +92,13 @@ public class AJEntityReporting extends Model {
     public static final String FIND_RESOURCE_EVENT = "SELECT id,views,time_spent,score,reaction,resource_attempt_status,answer_object FROM base_reports "
             + "WHERE collection_id = ? AND session_id = ? AND resource_id = ? AND event_type = ?";
     
+    public static final String FIND_SESSION_ID = "SELECT session_id "
+            + "FROM base_reports WHERE class_id = ? AND course_id = ? AND unit_id = ? "
+            + "AND lesson_id = ? AND collection_id = ? AND resource_id = ? "
+            + "ORDER BY updated_at desc ,session_id LIMIT 1";
+    
+    public static final String UPDATE_SCORE = "UPDATE base_reports set score = ?, max_score = ? WHERE session_id =  ? AND resource_id = ?;";
+    
     public static final String RESOURCE_ATTEMPT_STATUS_TYPE = "attempt_status";    
     public static final String PGTYPE_TEXT = "text";
     public static final String PGTYPE_NUMERIC = "numeric";
