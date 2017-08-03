@@ -4,13 +4,18 @@ import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageRe
 
 /**
  * Created by mukul@gooru
+ * Modified by daniel
  */
 public interface BaseReportingRepo {
 	
 	MessageResponse insertBaseReportData();
 
-  MessageResponse reComputeUsageData();
-
-  MessageResponse insertTaxonomyReportData();    
-	
+    MessageResponse insertCompetencyReportsData();
+    
+    MessageResponse insertDCAData();
+    
+    MessageResponse insertDCACompetencyData();
+    
+    MessageResponse createUserTaxonomySubject();
+    
 }

@@ -1,11 +1,11 @@
 package org.gooru.nucleus.handlers.insights.events.processors.events;
 
 import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public final class EventParser {
 	
@@ -13,7 +13,7 @@ public final class EventParser {
 		
 		private static final Logger LOGGER = LoggerFactory.getLogger(EventParser.class);
 		
-		public EventParser(String json) throws Exception {
+    public EventParser(String json) throws Exception {
 			this.event = new JsonObject(json);
 			this.parse();
 		}
@@ -88,29 +88,55 @@ public final class EventParser {
 
 		private long eventTime;
 
-		private long score;
+		private double score;
 
 		private long timespent;
 		
-		private long collectionTimespent;
-		
-		private long resourceTimespent;
-
 		private long views;
 		
-		private long collectionViews;
-		
-		private long resourceViews;
-
-		private int attempts;
-
-		private long reaction;
+		private int reaction;
 
 		private String reportsContext;
 		
 		private int questionCount;
 
-		public String getEventId() {
+		private String tenantId;
+		
+		private String contentSource;
+		
+		private String appId;
+		
+		private String partnerId;
+		
+		private String collectionSubType;
+
+    private double maxScore;		
+
+    private long pathId;
+                
+    private String timezone;      
+    
+    private String sourceId;
+    
+    private String accessToken;
+    
+		public String getSourceId() {
+      return sourceId;
+    }
+
+    public void setSourceId(String sourceId) {
+      this.sourceId = sourceId;
+    }
+
+    public String getAccessToken() {
+      return accessToken;
+    }
+
+    public void setAccessToken(String accessToken) {
+      this.accessToken = accessToken;
+    }
+
+    public String getEventId() {
 			return eventId;
 		}
 
@@ -358,77 +384,37 @@ public final class EventParser {
 			this.eventTime = eventTime;
 		}
 
-		public long getScore() {
+		public double getScore() {
 			return score;
 		}
 
-		public void setScore(long score) {
+		public void setScore(double score) {
 			this.score = score;
 		}
 
 		public long getTimespent() {
 			return timespent;
 		}
-
-		public long getCollectionTimespent () {
-			return collectionTimespent;
-			
-		}
-		
-		public long getResourceTimespent () {
-			return resourceTimespent;			
-		}
 		
 		public void setTimespent(long timespent) {
 			this.timespent = timespent;
 		}
 		
-		public void setCollectionTimespent(long colltimespent) {
-			this.collectionTimespent = colltimespent;
-		}
-		
-		public void setResourceTimespent(long restimespent) {
-			this.resourceTimespent = restimespent;
-		}
 
 		public long getViews() {
 			return views;
 		}
 		
-		public long getCollectionViews () {
-			return collectionViews;
-		}
-		
-		public long getResourceViews () {
-			return resourceViews;
-		}
 
 		public void setViews(long views) {
 			this.views = views;
 		}
 		
-		public void setCollectionViews(long collviews) {
-			this.collectionViews = collviews;
-		}
-		
-		public void setResourceViews(long resviews) {
-			this.resourceViews = resviews;
-		}
-		
-
-		public int getAttempts() {
-			return attempts;
-		}
-
-		public void setAttempts(int attempts) {
-			this.attempts = attempts;
-		}
-
 		public long getReaction() {
 			return reaction;
 		}
 
-		public void setReaction(long reaction) {
+		public void setReaction(int reaction) {
 			this.reaction = reaction;
 		}
 		public String getGradeStatus() {
@@ -454,118 +440,16 @@ public final class EventParser {
 		public int getQuestionCount() {
 			return questionCount;
 		}
-
-		private EventParser parse() {
-			try {			
-								
-				this.context = this.event.getJsonObject(EventConstants.CONTEXT);
-				this.user = this.event.getJsonObject(EventConstants.USER);
-				this.payLoadObject = this.event.getJsonObject(EventConstants.PAY_LOAD);
-				this.metrics = this.event.getJsonObject(EventConstants.METRICS);
-				this.session = this.event.getJsonObject(EventConstants.SESSION);
-				this.version = this.event.getJsonObject(EventConstants.VERSION);
-				
-				this.startTime = this.event.getLong(EventConstants.START_TIME);
-				this.endTime = this.event.getLong(EventConstants.END_TIME);
-				this.eventId = this.event.getString(EventConstants.EVENT_ID);
-				this.eventName = this.event.getString(EventConstants.EVENT_NAME);
-				
-
-				this.apiKey = session.containsKey(EventConstants.API_KEY) ? session.getString(EventConstants.API_KEY) : EventConstants.NA;
-				this.contentGooruId = context.containsKey(EventConstants.CONTENT_GOORU_OID) ? context.getString(EventConstants.CONTENT_GOORU_OID) : EventConstants.NA;
-
-				this.gooruUUID = user.getString(EventConstants.GOORUID);
-				this.lessonGooruId = context.containsKey(EventConstants.LESSON_GOORU_OID) ? context.getString(EventConstants.LESSON_GOORU_OID) : EventConstants.NA;
-				this.unitGooruId = context.containsKey(EventConstants.UNIT_GOORU_OID) ? context.getString(EventConstants.UNIT_GOORU_OID) : EventConstants.NA;
-				this.courseGooruId = context.containsKey(EventConstants.COURSE_GOORU_OID) ? context.getString(EventConstants.COURSE_GOORU_OID) : EventConstants.NA;
-				this.classGooruId = context.containsKey(EventConstants.CLASS_GOORU_OID) ? context.getString(EventConstants.CLASS_GOORU_OID) : EventConstants.NA;
-				this.parentGooruId = context.containsKey(EventConstants.PARENT_GOORU_OID) ? context.getString(EventConstants.PARENT_GOORU_OID) : EventConstants.NA;
-				this.parentEventId = context.containsKey(EventConstants.PARENT_EVENT_ID) ? context.getString(EventConstants.PARENT_EVENT_ID) : EventConstants.NA;
-				if(context.containsKey(EventConstants.COLLECTION_TYPE)){
-					this.collectionType = context.getString(EventConstants.COLLECTION_TYPE).equals(EventConstants.COLLECTION) ? EventConstants.COLLECTION : EventConstants.ASSESSMENT;
-				}
-				this.resourceType = context.containsKey(EventConstants.RESOURCE_TYPE) ? context.getString(EventConstants.RESOURCE_TYPE) : EventConstants.NA;
-				this.eventType =  context.containsKey(EventConstants.TYPE) ? context.getString(EventConstants.TYPE) : EventConstants.NA;
-				this.sessionId = session.containsKey(EventConstants.SESSION_ID) ? session.getString(EventConstants.SESSION_ID) : EventConstants.NA;
-				this.questionType = payLoadObject.containsKey(EventConstants.QUESTION_TYPE) ? payLoadObject.getString(EventConstants.QUESTION_TYPE) : EventConstants.NA;				
-				if(payLoadObject.containsKey(EventConstants.ANSWER_OBECT) && payLoadObject.getValue(EventConstants.ANSWER_OBECT) instanceof JsonArray){
-					this.answerObject = payLoadObject.getJsonArray(EventConstants.ANSWER_OBECT);					
-				}else{
-					this.answerObject = new JsonArray();
-				}				
-				this.reportsContext = payLoadObject.containsKey(EventConstants.REPORTS_CONTEXT) ? payLoadObject.getString(EventConstants.REPORTS_CONTEXT) : EventConstants.PERFORMANCE;
-				this.gradeType = payLoadObject.containsKey(EventConstants.GRADE_TYPE) ? payLoadObject.getString(EventConstants.GRADE_TYPE) : EventConstants.SYSTEM;
-				this.gradeStatus = payLoadObject.containsKey(EventConstants.GRADE_STATUS) ? payLoadObject.getString(EventConstants.GRADE_STATUS) : EventConstants.NA;
-				this.teacherId = payLoadObject.containsKey(EventConstants.TEACHER_ID) ? payLoadObject.getString(EventConstants.TEACHER_ID) : EventConstants.NA;
-				this.contentFormat = payLoadObject.containsKey(EventConstants.CONTENT_FORMAT) ? payLoadObject.getString(EventConstants.CONTENT_FORMAT) : EventConstants.NA;
-				if(payLoadObject.containsKey(EventConstants.TAXONOMYIDS) && payLoadObject.getValue(EventConstants.TAXONOMYIDS) instanceof JsonObject){
-					this.taxonomyIds = payLoadObject.getJsonObject(EventConstants.TAXONOMYIDS);					
-				}else{
-					this.taxonomyIds = new JsonObject();
-				}
-				
-				this.setStudent(
-					(!payLoadObject.containsKey(EventConstants.IS_STUDENT)) || payLoadObject.getBoolean(EventConstants.IS_STUDENT));
-				this.eventTime = this.event.getLong(EventConstants.END_TIME);
-				this.collectionItemId = EventConstants.NA;
-				this.score = 0;
-				this.reaction = context.containsKey(EventConstants.REACTION_TYPE) ? context.getLong(EventConstants.REACTION_TYPE) : 0;
-
-				if (eventName.equals(EventConstants.COLLECTION_PLAY)){
-					LOGGER.debug("Inside Collection.Play");
-					processCollectionPlayEvents();
-				} else if (eventName.equals(EventConstants.COLLECTION_RESOURCE_PLAY)){
-					LOGGER.debug("Inside Collection.Resourse.Play");
-					processCollectionResourcePlayEvents();
-				}
-				
-			} catch (Exception e) {
-				LOGGER.debug(e.toString());
-			}			
-			
-			return this;
+		
+		public void setContentSource(String contentSource){
+			this.contentSource = contentSource;
 		}
 		
-        public void processCollectionPlayEvents(){
-			
-			if (eventType.equals(EventConstants.START)) {
-				LOGGER.debug("Process Collection.Play Events - Start");
-				this.collectionViews = 1;
-				this.questionCount = context.containsKey(EventConstants.QUESTION_COUNT) ? context.getInteger(EventConstants.QUESTION_COUNT) : 0;				 
-			} else if (eventType.equals(EventConstants.STOP)) {
-				this.collectionTimespent = this.endTime - this.startTime;
-			}
-			
-		}
-        
-        
-		public void processCollectionResourcePlayEvents(){
-			
-			if (eventType.equals(EventConstants.START)) {
-				LOGGER.debug("Process Collection.Resource.Play Events - Start");
-				this.resourceViews = 1; 
-			} else if (eventType.equals(EventConstants.STOP)) {
-				this.resourceTimespent = this.endTime - this.startTime;			
-
-				if (EventConstants.QUESTION.equals(resourceType)) {
-					this.answerStatus = payLoadObject.containsKey(EventConstants.ATTEMPT_STATUS) ? payLoadObject.getString(EventConstants.ATTEMPT_STATUS) : EventConstants.ATTEMPTED;
-					
-					//Score - EVALUATED Case is not considered at this point
-					if(answerStatus.equalsIgnoreCase(EventConstants.ATTEMPTED)){						
-						this.score = 0;
-					} else if (answerStatus.equalsIgnoreCase(EventConstants.INCORRECT)) {
-						this.score = 0;
-					} else if (answerStatus.equalsIgnoreCase(EventConstants.CORRECT)) {
-						this.score = 1;
-					}
-				}else{
-				  this.answerStatus = EventConstants.UNEVALUATED;
-				}				
-								
-			}
+		public String getContentSource(){
+			return contentSource;
 		}
 		
-				
+		
 		public String getParentEventId() {
 			return parentEventId;
 		}
@@ -596,6 +480,209 @@ public final class EventParser {
 
 		private void setStudent(boolean isStudent) {
 			this.isStudent = isStudent;
+		}
+		
+		public String getTenantId() {
+		      return tenantId;
+		}
+	
+        public void setTenantId(String tenantId) {
+        	this.tenantId = tenantId;
+        }
+        
+        public String getCollectionSubType() {
+            return collectionSubType;
+        }
+               
+        public void setCollectionSubType(String collectionSubType) {
+            this.collectionSubType = collectionSubType;
+        }
+        
+        public String getPartnerId() {
+            return partnerId;
+        }
+        
+        public void setPartnerId(String partnerId) {
+            this.partnerId = partnerId;
+        }
+        
+        public String getAppId() {
+            return appId;
+        }
+        
+        public void setAppId(String appId) {
+            this.appId = appId;
+        }
+        
+        public double getMaxScore() {
+            return maxScore;
+        }
+        
+        public void setMaxScore(double maxScore) {
+            this.maxScore = maxScore;
+        }
+          
+        public long getPathId() {
+            return pathId;
+        }
+
+        public void setPathId(long pathId) {
+            this.pathId = pathId;
+        }
+
+        public String getTimeZone() {
+            return timezone;
+        }
+
+        public void setTimeZone(String timezone) {
+            this.timezone = timezone;
+        }
+
+        
+		private EventParser parse() {
+			try {			
+							
+				this.context = this.event.getJsonObject(EventConstants.CONTEXT);
+				if(this.context == null){
+				  this.context = new JsonObject();
+				}
+				this.user = this.event.getJsonObject(EventConstants.USER);
+				this.payLoadObject = this.event.getJsonObject(EventConstants.PAY_LOAD);
+				if(this.payLoadObject == null){
+          this.payLoadObject = new JsonObject();
+        }
+				this.metrics = this.event.getJsonObject(EventConstants.METRICS);
+				if(this.metrics == null){
+          this.metrics = new JsonObject();
+        }
+				this.session = this.event.getJsonObject(EventConstants.SESSION);
+				if(this.session == null){
+          this.session = new JsonObject();
+        }
+				this.version = this.event.getJsonObject(EventConstants.VERSION);
+				
+				this.startTime = this.event.getLong(EventConstants.START_TIME);
+				this.endTime = this.event.getLong(EventConstants.END_TIME);
+				this.eventId = this.event.getString(EventConstants.EVENT_ID);
+				this.eventName = this.event.getString(EventConstants.EVENT_NAME);
+				
+				this.views = 0;
+				this.timespent = 0;
+				this.apiKey = session.containsKey(EventConstants.API_KEY) ? session.getString(EventConstants.API_KEY) : EventConstants.NA;
+				this.contentGooruId = context.containsKey(EventConstants.CONTENT_GOORU_OID) ? context.getString(EventConstants.CONTENT_GOORU_OID) : EventConstants.NA;
+
+				this.gooruUUID = user.getString(EventConstants.GOORUID);
+                this.tenantId = context.containsKey(EventConstants.TENANT_ID) ? context.getString(EventConstants.TENANT_ID) : null;
+				this.lessonGooruId = context.containsKey(EventConstants.LESSON_GOORU_OID) ? context.getString(EventConstants.LESSON_GOORU_OID) : null;
+				this.unitGooruId = context.containsKey(EventConstants.UNIT_GOORU_OID) ? context.getString(EventConstants.UNIT_GOORU_OID) : null;
+				this.courseGooruId = context.containsKey(EventConstants.COURSE_GOORU_OID) ? context.getString(EventConstants.COURSE_GOORU_OID) : null;
+				this.classGooruId = context.containsKey(EventConstants.CLASS_GOORU_OID) ? context.getString(EventConstants.CLASS_GOORU_OID) : null;
+				this.parentGooruId = context.containsKey(EventConstants.PARENT_GOORU_OID) ? context.getString(EventConstants.PARENT_GOORU_OID) : EventConstants.NA;
+				this.parentEventId = context.containsKey(EventConstants.PARENT_EVENT_ID) ? context.getString(EventConstants.PARENT_EVENT_ID) : EventConstants.NA;
+				if(context.containsKey(EventConstants.COLLECTION_TYPE) && context.getString(EventConstants.COLLECTION_TYPE).equals(EventConstants.COLLECTION)){
+					this.collectionType = EventConstants.COLLECTION;
+				} else if (context.containsKey(EventConstants.COLLECTION_TYPE) && context.getString(EventConstants.COLLECTION_TYPE).equals(EventConstants.ASSESSMENT)){
+					this.collectionType = EventConstants.ASSESSMENT;
+				} else {
+					this.collectionType = null;
+				}
+				this.resourceType = context.containsKey(EventConstants.RESOURCE_TYPE) ? context.getString(EventConstants.RESOURCE_TYPE) : EventConstants.NA;
+				this.eventType =  context.containsKey(EventConstants.TYPE) ? context.getString(EventConstants.TYPE) : EventConstants.NA;				
+				this.appId = context.containsKey(EventConstants.APP_ID) ? context.getString(EventConstants.APP_ID) : null;				
+				this.partnerId = context.containsKey(EventConstants.PARTNER_ID) ? context.getString(EventConstants.PARTNER_ID) : null;				
+                this.collectionSubType = context.containsKey(EventConstants.COLLECTION_SUB_TYPE) ? context.getString(EventConstants.COLLECTION_SUB_TYPE) : null;        
+				this.pathId = context.containsKey(EventConstants.PATH_ID) ? context.getLong(EventConstants.PATH_ID) : 0L;
+                this.sessionId = session.containsKey(EventConstants.SESSION_ID) ? session.getString(EventConstants.SESSION_ID) : EventConstants.NA;        
+				this.questionType = payLoadObject.containsKey(EventConstants.QUESTION_TYPE) ? payLoadObject.getString(EventConstants.QUESTION_TYPE) : EventConstants.NA;				
+				if(payLoadObject.containsKey(EventConstants.ANSWER_OBECT) && payLoadObject.getValue(EventConstants.ANSWER_OBECT) instanceof JsonArray){
+					this.answerObject = payLoadObject.getJsonArray(EventConstants.ANSWER_OBECT);					
+				}else{
+					this.answerObject = new JsonArray();					
+				}				
+				this.reportsContext = payLoadObject.containsKey(EventConstants.REPORTS_CONTEXT) ? payLoadObject.getString(EventConstants.REPORTS_CONTEXT) : EventConstants.PERFORMANCE;
+				this.gradeType = payLoadObject.containsKey(EventConstants.GRADING_TYPE) ? payLoadObject.getString(EventConstants.GRADING_TYPE) : EventConstants.SYSTEM;
+				this.gradeStatus = payLoadObject.containsKey(EventConstants.GRADE_STATUS) ? payLoadObject.getString(EventConstants.GRADE_STATUS) : EventConstants.NA;
+				this.teacherId = payLoadObject.containsKey(EventConstants.TEACHER_ID) ? payLoadObject.getString(EventConstants.TEACHER_ID) : EventConstants.NA;
+				this.contentFormat = payLoadObject.containsKey(EventConstants.CONTENT_FORMAT) ? payLoadObject.getString(EventConstants.CONTENT_FORMAT) : EventConstants.NA;
+	            this.questionCount = context.containsKey(EventConstants.QUESTION_COUNT) ? context.getInteger(EventConstants.QUESTION_COUNT) : 0;         
+				if(payLoadObject.containsKey(EventConstants.TAXONOMYIDS) && payLoadObject.getValue(EventConstants.TAXONOMYIDS) instanceof JsonObject){
+					this.taxonomyIds = payLoadObject.getJsonObject(EventConstants.TAXONOMYIDS);
+				}else{
+					this.taxonomyIds = new JsonObject();
+				}
+				
+				this.setStudent(
+					(!payLoadObject.containsKey(EventConstants.IS_STUDENT)) || payLoadObject.getBoolean(EventConstants.IS_STUDENT));
+				this.eventTime = this.event.getLong(EventConstants.END_TIME);
+				this.collectionItemId = EventConstants.NA;
+				this.score = metrics.containsKey(EventConstants.SCORE) ? metrics.getDouble(EventConstants.SCORE) :  0;
+          // FIXME : Sometime event has string value in reactionType attribute so
+          // re-framing this code to accept both numeric and string value
+          if (context.containsKey(EventConstants.REACTION_TYPE)) {
+            this.reaction = Integer.parseInt(context.getValue(EventConstants.REACTION_TYPE).toString());
+          } else {
+            this.reaction = 0;
+          }
+				this.contentSource = context.containsKey(EventConstants.CONTENT_SOURCE) ? context.getString(EventConstants.CONTENT_SOURCE) : null;
+								
+				this.timezone = this.event.containsKey(EventConstants.TIMEZONE) ? event.getString(EventConstants.TIMEZONE) : null;
+
+				this.sourceId = (context.containsKey("source") ? context.getString("source") : null);
+				this.accessToken = (this.session.containsKey("sessionToken") ? this.session.getString("sessionToken") : null);
+				if (this.eventName.equals(EventConstants.COLLECTION_PLAY)){
+					LOGGER.debug("Inside Collection.Play");
+					processCollectionPlayEvents();
+				} else if (this.eventName.equals(EventConstants.COLLECTION_RESOURCE_PLAY)){
+					LOGGER.debug("Inside Collection.Resourse.Play");
+					processCollectionResourcePlayEvents();
+				}
+				LOGGER.debug("views : {} - timespent : {}", this.views,this.timespent);
+			} catch (Exception e) {
+				LOGGER.error("Error in event parser : {}", e);
+			}			
+			return this;
+		}
+		
+        public void processCollectionPlayEvents(){
+			LOGGER.debug("collectionType : {} ",this.collectionType);
+			if (this.eventType.equals(EventConstants.START) && this.collectionType.equalsIgnoreCase(EventConstants.COLLECTION)) {
+				LOGGER.debug("Process Collection.Play Events - Start");
+				this.views = 1;
+			} else if (this.eventType.equals(EventConstants.STOP)) {
+	       LOGGER.debug("Process Collection.Play Events - Stop");
+			  if(this.collectionType.equalsIgnoreCase(EventConstants.ASSESSMENT)){
+			    this.views = 1;
+			  }
+				this.timespent = this.endTime - this.startTime;
+			}
+			
+		}
+        
+        
+		public void processCollectionResourcePlayEvents(){
+			
+			if (this.eventType.equals(EventConstants.START)){
+				LOGGER.debug("Process Collection.Resource.Play Events - Start");
+				this.views = 1; 
+			} else if (this.eventType.equals(EventConstants.STOP)) {
+	       LOGGER.debug("Process Collection.Resource.Play Events - Stop");
+				this.timespent = this.endTime - this.startTime;			
+				if (EventConstants.QUESTION.equals(resourceType)) {
+					this.answerStatus = payLoadObject.containsKey(EventConstants.ATTEMPT_STATUS) ? payLoadObject.getString(EventConstants.ATTEMPT_STATUS) : EventConstants.ATTEMPTED;
+					
+					//Score - EVALUATED Case is not considered at this point
+					if(answerStatus.equalsIgnoreCase(EventConstants.ATTEMPTED)){						
+						this.score = 0;
+					} else if (answerStatus.equalsIgnoreCase(EventConstants.INCORRECT)) {
+						this.score = 0;
+					} else if (answerStatus.equalsIgnoreCase(EventConstants.CORRECT)) {
+						this.score = 1;
+					}
+				}else{
+				  this.answerStatus = EventConstants.UNEVALUATED;
+				}				
+								
+			}
 		}
 
 	} // End Class

@@ -14,5 +14,25 @@
          "cluster":"Test Cluster"
 },
 "org.gooru.nucleus.handlers.insights.events.bootstrap.InsightsWriteVerticle":{
+},
+"org.gooru.nucleus.handlers.insights.events.bootstrap.MessageConsumerVerticle":{
+"thead.pool.size":10,
+"defaultKafkaConsumerSettings":{
+"bootstrap.servers":"127.0.0.1:9092",
+"consumer.topics":"test-QA,EVENTLOGS-QA,NILE-CONTENT-LOG",
+"group.id":"test",
+"session.timeout.ms":"6000",
+"message.bus.send.timeout.seconds":10
 }
+},
+"defaultKafkaProducerSettings":{
+ "bootstrap.servers":"127.0.0.1:9092",
+ "key.serializer":"org.apache.kafka.common.serialization.StringSerializer",
+ "value.serializer":"org.apache.kafka.common.serialization.StringSerializer",
+ "batch.size":10,
+ "retries":2,
+ "linger.ms":1,
+ "buffer.memory":33554432,
+ "topic":"NILE-LTI-EVENT"
+ }
 }

@@ -33,7 +33,7 @@ if (!JavaVersion.current().java8Compatible) {
 // Define a version registry so that we can avoid hard coding of the version numbers
 // Note that this applies only to dependencies and not to the plugins and build
 ext {
-    vertxVersion = '3.2.1'
+    vertxVersion = '3.3.3'
     slf4jVersion = '1.7.12'
     junitVersion = '4.12'
     logbackVersion = '1.0.13'
@@ -55,7 +55,7 @@ repositories {
 dependencies {
     // Vertx specific dependencies
     compile "io.vertx:vertx-core:${vertxVersion}"
-    compile "io.vertx:vertx-hazelcast:${vertxVersion}"
+    //compile "io.vertx:vertx-hazelcast:${vertxVersion}"
 
     // Other dependencies
     compile "ch.qos.logback:logback-classic:${logbackVersion}"
@@ -65,6 +65,10 @@ dependencies {
     compile 'org.javalite:activejdbc:1.4.11'
     compile 'org.javalite:activejdbc-instrumentation:1.4.11'
     
+    
+	//Kafka
+	compile group: 'org.apache.kafka', name: 'kafka-clients', version: '0.10.1.1'
+	
     // Test dependencies
     testCompile "junit:junit:${junitVersion}"
 }
