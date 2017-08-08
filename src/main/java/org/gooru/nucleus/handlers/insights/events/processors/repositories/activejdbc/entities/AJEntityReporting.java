@@ -74,6 +74,11 @@ public class AJEntityReporting extends Model {
         + "WHERE class_id = ? AND course_id = ? AND unit_id = ? AND lesson_id = ? AND collection_id = ? "
         + "AND session_id = ? AND actor_id = ? AND question_count IS NOT NULL";
     
+    public static final String GET_QUESTION_COUNT_SESS = 
+            "SELECT question_count from base_reports "
+            + "WHERE collection_id = ? "
+            + "AND session_id = ? AND event_name = 'collection.play' AND question_count IS NOT NULL";
+    
     public static final String COMPUTE_ASSESSMENT_SCORE = "SELECT SUM(questionData.question_score) AS score, SUM(questionData.resource_timeSpent) as time_spent "
               +"FROM  (SELECT DISTINCT ON (resource_id)  score AS question_score , time_spent as resource_timespent, session_id FROM base_reports "
               +"WHERE collection_id = ? AND session_id = ? AND event_name = 'collection.resource.play' AND event_type = 'stop' "
@@ -97,8 +102,10 @@ public class AJEntityReporting extends Model {
             + "AND lesson_id = ? AND collection_id = ? AND resource_id = ? "
             + "ORDER BY updated_at desc ,session_id LIMIT 1";
     
-    public static final String UPDATE_SCORE = "UPDATE base_reports set score = ?, max_score = ? WHERE session_id =  ? AND resource_id = ?;";
+    public static final String UPDATE_QUESTION_SCORE = "UPDATE base_reports set score = ?, max_score = ? WHERE session_id =  ? AND resource_id = ?;";
     
+    public static final String UPDATE_ASSESSMENT_SCORE = "UPDATE base_reports set score = ? WHERE collection_id = ? AND session_id =  ? AND event_name = 'collection.play';";
+
     public static final String RESOURCE_ATTEMPT_STATUS_TYPE = "attempt_status";    
     public static final String PGTYPE_TEXT = "text";
     public static final String PGTYPE_NUMERIC = "numeric";
