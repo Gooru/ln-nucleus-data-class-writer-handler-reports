@@ -668,12 +668,14 @@ public final class EventParser {
 	       LOGGER.debug("Process Collection.Resource.Play Events - Stop");
 				this.timespent = this.endTime - this.startTime;			
 				if (EventConstants.QUESTION.equals(resourceType)) {
-					this.answerStatus = payLoadObject.containsKey(EventConstants.ATTEMPT_STATUS) ? payLoadObject.getString(EventConstants.ATTEMPT_STATUS) : EventConstants.ATTEMPTED;
+					this.answerStatus = payLoadObject.containsKey(EventConstants.ATTEMPT_STATUS) ? 
+							payLoadObject.getString(EventConstants.ATTEMPT_STATUS) : EventConstants.ATTEMPTED;
 					
 					//Score - EVALUATED Case is not considered at this point
 					if(answerStatus.equalsIgnoreCase(EventConstants.ATTEMPTED)){						
 						this.score = 0;
-					} else if (answerStatus.equalsIgnoreCase(EventConstants.INCORRECT)) {
+					} else if (answerStatus.equalsIgnoreCase(EventConstants.INCORRECT) ||
+							answerStatus.equalsIgnoreCase(EventConstants.SKIPPED)) {
 						this.score = 0;
 					} else if (answerStatus.equalsIgnoreCase(EventConstants.CORRECT)) {
 						this.score = 1;
