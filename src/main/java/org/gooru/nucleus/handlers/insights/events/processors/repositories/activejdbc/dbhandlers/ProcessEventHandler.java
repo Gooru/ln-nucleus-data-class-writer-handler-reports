@@ -162,7 +162,11 @@ class ProcessEventHandler implements DBHandler {
   				//The score will be updated once the Q/A is graded by the teacher
   				//Once the Q/A is graded the answer status should also be updated to "EVALUATED"
   		  		//This is derived right now, but should ideally come from the Player Events
+  				LOGGER.info("Setting up grading type and grade status for OE questions");
+  				LOGGER.info("grading Type is " + event.getGradeType());
   		  		//baseReport.set("grading_type", EventConstants.TEACHER);
+  				baseReport.set("grading_type", event.getGradeType());
+  				
   		  		baseReport.setBoolean("is_graded", false);
   		  	}
     	}    	
