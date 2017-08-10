@@ -154,7 +154,7 @@ class ProcessEventHandler implements DBHandler {
   				//Grading Type is set by default to "system", so no need to update the grading_type here.
   				baseReport.set("score", event.getScore());        
   		        baseReport.setBoolean("is_graded", true);  			
-  			} else if (event.getEventName().equals(EventConstants.STOP) && 
+  			} else if (event.getEventType().equalsIgnoreCase(EventConstants.STOP) && 
   		  			(event.getAnswerStatus().equalsIgnoreCase(EventConstants.ATTEMPTED))) {
   				//We may store 0 score for Attempted (as we have been doing). However the Player events 
   				//need to start sending the apt values for asnwer_status for OE questions once they start 
@@ -162,7 +162,7 @@ class ProcessEventHandler implements DBHandler {
   				//The score will be updated once the Q/A is graded by the teacher
   				//Once the Q/A is graded the answer status should also be updated to "EVALUATED"
   		  		//This is derived right now, but should ideally come from the Player Events
-  		  		baseReport.set("grading_type", EventConstants.TEACHER);
+  		  		//baseReport.set("grading_type", EventConstants.TEACHER);
   		  		baseReport.setBoolean("is_graded", false);
   		  	}
     	}    	
