@@ -18,4 +18,6 @@ public interface BaseReportingRepo {
     
     MessageResponse createUserTaxonomySubject();
     
+    MessageResponse processStudentGrades();
+
 }

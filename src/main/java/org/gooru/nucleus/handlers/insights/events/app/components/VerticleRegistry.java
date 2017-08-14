@@ -12,7 +12,6 @@ import java.util.List;
  */
 public class VerticleRegistry implements Iterable<String> {
 
-  private static final String WRITER_VERTICLE = "org.gooru.nucleus.handlers.insights.events.bootstrap.InsightsWriteVerticle";
   private static final String WRITER_CONSUMER_VERTICLE = "org.gooru.nucleus.handlers.insights.events.bootstrap.MessageConsumerVerticle";
 
   private final Iterator<String> internalIterator;
@@ -20,7 +19,6 @@ public class VerticleRegistry implements Iterable<String> {
   public VerticleRegistry() {
     List<String> initializers = new ArrayList<>();
     initializers.add(WRITER_CONSUMER_VERTICLE);
-    //initializers.add(WRITER_VERTICLE);
     internalIterator = initializers.iterator();
   }
 

@@ -8,7 +8,6 @@ public class RepoBuilder {
     public static BaseReportingRepo buildBaseReportingRepo(ProcessorContext context) {
         return AJRepoBuilder.buildBaseReportingRepo(context);
     }
-
 }
 
 

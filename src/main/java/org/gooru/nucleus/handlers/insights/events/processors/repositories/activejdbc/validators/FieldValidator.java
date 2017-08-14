@@ -9,6 +9,11 @@ import io.vertx.core.json.JsonObject;
  * Created by ashish on 28/1/16.
  */
 public interface FieldValidator {
+	
+    static boolean validateStringAllowNullOrEmpty(Object o, int len) {
+        return o == null || (o instanceof String && (((String) o).isEmpty() || ((String) o).length() <= len));
+    }
+    
     static boolean validateStringIfPresent(Object o, int len) {
         return o == null || o instanceof String && !((String) o).isEmpty() && ((String) o).length() < len;
     }
@@ -69,17 +74,29 @@ public interface FieldValidator {
     static boolean validateBooleanIfPresent(Object o) {
         return o == null || o instanceof Boolean;
     }
+    
+    static boolean validateIntegerIfPresent(Object o) {
+        return o == null || o instanceof Integer;
+    }
+    
+    static boolean validateDoubleIfPresent(Object o) {
+        boolean result = (o == null || o instanceof Double);
+        if (!result) {
+            result = validateIntegerIfPresent(o);
+        }
+        return result;
+    }
 
     static boolean validateUuid(Object o) {
         try {
-            UUID uuid = UUID.fromString((String) o);
+            UUID.fromString((String) o);
             return true;
         } catch (IllegalArgumentException e) {
             return false;
         }
     }
 
-    static boolean validateUuidIfPresent(String o) {
+    static boolean validateUuidIfPresent(Object o) {
         return o == null || validateUuid(o);
     }
 

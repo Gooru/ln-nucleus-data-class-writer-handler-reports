@@ -83,13 +83,14 @@ class ProcessEventHandler implements DBHandler {
       baseReport.set("question_type", event.getQuestionType());
       baseReport.set("resource_type", event.getResourceType());
       baseReport.set("reaction", event.getReaction());
-      baseReport.set("score", event.getScore());    	
+      //baseReport.set("score", event.getScore());
+    	
       baseReport.set("resource_attempt_status", event.getAnswerStatus());    	    	    	
       baseReport.set("views", event.getViews());
       baseReport.set("time_spent", event.getTimespent());
       baseReport.set("tenant_id",event.getTenantId());
       baseReport.set("max_score",event.getMaxScore());
-      baseReport.set("grading_type",event.getGradeType());
+      
       baseReport.set("app_id",event.getAppId());
       baseReport.set("partner_id",event.getPartnerId());
       //pathId = 0L indicates the main Path. We store pathId only for the altPaths
@@ -100,10 +101,9 @@ class ProcessEventHandler implements DBHandler {
       baseReport.set("created_at",new Timestamp(event.getStartTime()));
       baseReport.set("updated_at",new Timestamp(event.getEndTime()));
       
-      baseReport.set("collection_sub_type",event.getCollectionSubType());
-      
+      baseReport.set("collection_sub_type",event.getCollectionSubType());      
       baseReport.set("event_id", event.getEventId());
-      baseReport.set("content_source", event.getContentSource());
+      baseReport.set("content_source", event.getContentSource());      
       
       if (event.getTimeZone() != null) {        	
       	String timeZone = event.getTimeZone();        	
@@ -115,12 +115,12 @@ class ProcessEventHandler implements DBHandler {
           	baseReport.setDateinTZ(localeDate);
       	}
       }
-
-
+      
     	if ((event.getEventName().equals(EventConstants.COLLECTION_PLAY))){
     	  duplicateRow =  AJEntityReporting.findBySQL(AJEntityReporting.FIND_COLLECTION_EVENT,event.getSessionId(),event.getContentGooruId(),event.getEventType(), event.getEventName());
     	  baseReport.set("collection_id", event.getContentGooruId());
-    		baseReport.set("question_count", event.getQuestionCount());
+    	  baseReport.set("question_count", event.getQuestionCount());
+    	  baseReport.set("score", event.getScore());
     		
 			if (event.getEventType().equalsIgnoreCase(EventConstants.STOP)) {
 				scoreTS = AJEntityReporting.findBySQL(AJEntityReporting.COMPUTE_ASSESSMENT_SCORE, event.getContentGooruId(), event.getSessionId());
@@ -141,8 +141,35 @@ class ProcessEventHandler implements DBHandler {
     	  duplicateRow = AJEntityReporting.findBySQL(AJEntityReporting.FIND_RESOURCE_EVENT, event.getParentGooruId(), event.getSessionId(),event.getContentGooruId(),event.getEventType());
     		baseReport.set("collection_id", event.getParentGooruId());
     		baseReport.set("resource_id", event.getContentGooruId());
-    		baseReport.set("answer_object", event.getAnswerObject().toString());
-    	}
+    		baseReport.set("answer_object", event.getAnswerObject().toString());    		
+    		//Redundant - Start event doesn't really have score, but since we have been storing it till now
+    		if (event.getEventType().equalsIgnoreCase(EventConstants.START)) {
+    			baseReport.set("score", event.getScore());
+    		}
+    		
+    		//Rubrics
+    		//Refactor this piece of code once I get the exact information from Front End 
+  			if (event.getEventType().equalsIgnoreCase(EventConstants.STOP) && (event.getAnswerStatus().equalsIgnoreCase(EventConstants.INCORRECT)  
+  					|| event.getAnswerStatus().equalsIgnoreCase(EventConstants.CORRECT))) {
+  				//Grading Type is set by default to "system", so no need to update the grading_type here.
+  				baseReport.set("score", event.getScore());        
+  		        baseReport.setBoolean("is_graded", true);  			
+  			} else if (event.getEventType().equalsIgnoreCase(EventConstants.STOP) && 
+  		  			(event.getAnswerStatus().equalsIgnoreCase(EventConstants.ATTEMPTED))) {
+  				//We may store 0 score for Attempted (as we have been doing). However the Player events 
+  				//need to start sending the apt values for asnwer_status for OE questions once they start 
+  				//with their development of Rubric Grading of OE Questions.   
+  				//The score will be updated once the Q/A is graded by the teacher
+  				//Once the Q/A is graded the answer status should also be updated to "EVALUATED"
+  		  		//This is derived right now, but should ideally come from the Player Events
+  				LOGGER.info("Setting up grading type and grade status for OE questions");
+  				LOGGER.info("grading Type is " + event.getGradeType());
+  		  		//baseReport.set("grading_type", EventConstants.TEACHER);
+  				baseReport.set("grading_type", event.getGradeType());
+  				
+  		  		baseReport.setBoolean("is_graded", false);
+  		  	}
+    	}    	
     	
     	if((event.getEventName().equals(EventConstants.REACTION_CREATE))) {
     	  baseReport.set("collection_id", event.getParentGooruId());
@@ -171,8 +198,7 @@ class ProcessEventHandler implements DBHandler {
                   long view = (Long.valueOf(dup.get("views").toString()) + event.getViews());
                   long ts = (Long.valueOf(dup.get("time_spent").toString()) + event.getTimespent());
                   long react = event.getReaction() != 0 ? event.getReaction() : 0;
-//                  Object attmptStatus = dup.get(AJEntityReporting.RESOURCE_ATTEMPT_STATUS);
-//                  Object ansObj = dup.get(AJEntityReporting.ANSWER_OBJECT);
+                  //update the Answer Object and Answer Status from the latest event
                   Base.exec(AJEntityReporting.UPDATE_RESOURCE_EVENT, view, ts, event.getScore(), new Timestamp(event.getEndTime()), 
                 		  react, event.getAnswerStatus(), event.getAnswerObject().toString(), id);
                 });
