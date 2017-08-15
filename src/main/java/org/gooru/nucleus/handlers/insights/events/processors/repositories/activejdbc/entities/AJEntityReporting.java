@@ -102,9 +102,9 @@ public class AJEntityReporting extends Model {
             + "AND lesson_id = ? AND collection_id = ? AND resource_id = ? "
             + "ORDER BY updated_at desc ,session_id LIMIT 1";
     
-    public static final String UPDATE_QUESTION_SCORE = "UPDATE base_reports set score = ?, max_score = ? WHERE session_id =  ? AND resource_id = ?;";
+    public static final String UPDATE_QUESTION_SCORE = "UPDATE base_reports SET score = ?, max_score = ?, is_graded = ? WHERE session_id = ? AND resource_id = ?";
     
-    public static final String UPDATE_ASSESSMENT_SCORE = "UPDATE base_reports set score = ? WHERE collection_id = ? AND session_id =  ? AND event_name = 'collection.play';";
+    public static final String UPDATE_ASSESSMENT_SCORE = "UPDATE base_reports SET score = ? WHERE collection_id = ? AND session_id =  ? AND event_name = 'collection.play'";
 
     public static final String RESOURCE_ATTEMPT_STATUS_TYPE = "attempt_status";    
     public static final String PGTYPE_TEXT = "text";
