@@ -793,7 +793,7 @@ public class EventConstants {
 
 	public static final String CORRECT = "correct";
 
-	public static final String INCORRECT = "in-correct";
+	public static final String INCORRECT = "incorrect";
 
 	public static final String SKIPPED = "skipped";
 

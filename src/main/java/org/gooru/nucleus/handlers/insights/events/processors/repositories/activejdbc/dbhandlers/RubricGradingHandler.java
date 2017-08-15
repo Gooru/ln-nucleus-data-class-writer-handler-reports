@@ -56,14 +56,10 @@ public class RubricGradingHandler implements DBHandler {
     @Override
       public ExecutionResult<MessageResponse> executeRequest() {
     
-        LOGGER.info("Rubric Grading Infra Setup");
-        LOGGER.info("context.request" + context.request());
-    
         rubricGrading = new AJEntityRubricGrading();
     
         JsonObject req = context.request();
-        LOGGER.info(req.encodePrettily());
-    
+        
         new DefAJEntityRubricGradingEntityBuilder().build(rubricGrading, context.request(), AJEntityRubricGrading.getConverterRegistry());
         boolean result = rubricGrading.save();
         if (!result) {
@@ -76,6 +72,7 @@ public class RubricGradingHandler implements DBHandler {
           }
         }
         LOGGER.debug("Student Rubric grades stored successfully for the student " + context.request().getValue(AJEntityRubricGrading.STUDENT_ID));
+
         Object sessionId = rubricGrading.get(AJEntityRubricGrading.SESSION_ID);
         if (sessionId == null) {
           sessionId = Base.firstCell(AJEntityReporting.FIND_SESSION_ID, rubricGrading.get(AJEntityRubricGrading.CLASS_ID),
@@ -90,8 +87,10 @@ public class RubricGradingHandler implements DBHandler {
           LOGGER.debug("session id : {} ", sessionId);
           LOGGER.debug("resource id : {} ", rubricGrading.get(AJEntityRubricGrading.RESOURCE_ID));
     
+          Double score = 0.0;
+          
           Base.exec(AJEntityReporting.UPDATE_QUESTION_SCORE, rubricGrading.get(AJEntityRubricGrading.STUDENT_SCORE),
-                  rubricGrading.get(AJEntityRubricGrading.MAX_SCORE), sessionId, rubricGrading.get(AJEntityRubricGrading.RESOURCE_ID));
+                  rubricGrading.get(AJEntityRubricGrading.MAX_SCORE), true, sessionId, rubricGrading.get(AJEntityRubricGrading.RESOURCE_ID));
           
           LOGGER.debug("Computing assessment score...");
           LazyList<AJEntityReporting> scoreTS = AJEntityReporting.findBySQL(AJEntityReporting.COMPUTE_ASSESSMENT_SCORE, rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID), sessionId);
