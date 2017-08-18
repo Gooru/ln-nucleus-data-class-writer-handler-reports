@@ -598,7 +598,8 @@ public final class EventParser {
 					this.answerObject = payLoadObject.getJsonArray(EventConstants.ANSWER_OBECT);					
 				}else{
 					this.answerObject = new JsonArray();					
-				}				
+				}			
+	      this.sourceId = payLoadObject.containsKey("sourceId") ? payLoadObject.getString("sourceId") : null;
 				this.reportsContext = payLoadObject.containsKey(EventConstants.REPORTS_CONTEXT) ? payLoadObject.getString(EventConstants.REPORTS_CONTEXT) : EventConstants.PERFORMANCE;
 				this.gradeType = payLoadObject.containsKey(EventConstants.GRADING_TYPE) ? payLoadObject.getString(EventConstants.GRADING_TYPE) : EventConstants.SYSTEM;
 				this.gradeStatus = payLoadObject.containsKey(EventConstants.GRADE_STATUS) ? payLoadObject.getString(EventConstants.GRADE_STATUS) : EventConstants.NA;
@@ -627,7 +628,7 @@ public final class EventParser {
 								
 				this.timezone = this.event.containsKey(EventConstants.TIMEZONE) ? event.getString(EventConstants.TIMEZONE) : null;
 
-				this.sourceId = (context.containsKey("source") ? context.getString("source") : null);
+				//this.sourceId = (context.containsKey("source") ? context.getString("source") : null);
 				this.accessToken = (this.session.containsKey("sessionToken") ? this.session.getString("sessionToken") : null);
 				if (this.eventName.equals(EventConstants.COLLECTION_PLAY)){
 					LOGGER.debug("Inside Collection.Play");
