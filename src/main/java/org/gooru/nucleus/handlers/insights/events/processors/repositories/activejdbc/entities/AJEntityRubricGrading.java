@@ -59,6 +59,9 @@ public class AJEntityRubricGrading extends Model {
     public static final String SESSION_ID = "session_id";
     public static final String RESOURCE_ID = "resource_id";
     
+    //Collection Type is newly added
+    public static final String COLLECTION_TYPE = "collection_type";
+    
     public static final String MAX_SCORE = "max_score";
     public static final String STUDENT_SCORE = "student_score";
     public static final String CATEGORY_SCORE = "category_score";
@@ -67,11 +70,20 @@ public class AJEntityRubricGrading extends Model {
     public static final String GRADER = "grader";
     public static final String GRADER_ID = "grader_id";
     
-    public static final String CREATE_TIMESTAMP = "created_at";
-    public static final String UPDATE_TIMESTAMP = "updated_at";   
+    public static final String CREATED_AT = "created_at";
+    public static final String UPDATED_AT = "updated_at";   
 
+    public static final String ATTR_ASSESSMENT = "assessment";
+    public static final String ATTR_COLLECTION = "collection";
     
     public static final List<String> VALID_GRADER = Arrays.asList("Self", "Teacher");  
+    
+    public static final String THIS_QUESTION_GRADES_FIND = "SELECT id, student_score, max_score FROM student_rubric_grading "
+            + "WHERE student_id = ? AND class_id = ? AND course_id = ? AND unit_id = ? AND lesson_id = ? AND collection_id = ? "
+            + "AND resource_id = ? AND session_id = ?";
+    
+    public static final String UPDATE_QUESTION_GRADES = "UPDATE student_rubric_grading SET student_score = ?, max_score = ?, "
+    		+ "overall_comment = ?, category_score = ?, updated_at = ? WHERE id = ?";
     
     private static final Map<String, FieldValidator> validatorRegistry;
     private static final Map<String, FieldConverter> converterRegistry;
@@ -141,5 +153,10 @@ public class AJEntityRubricGrading extends Model {
         }
     }
  
+    public AJEntityRubricGrading() {
+        // Turning off create_at and updated_at columns are getting updated by
+        // activeJDBC.
+        this.manageTime(false);
+      }
 
 }

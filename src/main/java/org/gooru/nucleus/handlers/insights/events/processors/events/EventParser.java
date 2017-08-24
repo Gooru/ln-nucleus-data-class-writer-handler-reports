@@ -568,6 +568,7 @@ public final class EventParser {
 				
 				this.views = 0;
 				this.timespent = 0;
+				this.maxScore = 1.0;
 				this.apiKey = session.containsKey(EventConstants.API_KEY) ? session.getString(EventConstants.API_KEY) : EventConstants.NA;
 				this.contentGooruId = context.containsKey(EventConstants.CONTENT_GOORU_OID) ? context.getString(EventConstants.CONTENT_GOORU_OID) : EventConstants.NA;
 

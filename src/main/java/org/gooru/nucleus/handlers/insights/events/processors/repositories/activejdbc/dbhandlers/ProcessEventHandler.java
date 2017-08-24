@@ -89,6 +89,8 @@ class ProcessEventHandler implements DBHandler {
       baseReport.set("views", event.getViews());
       baseReport.set("time_spent", event.getTimespent());
       baseReport.set("tenant_id",event.getTenantId());
+      
+      LOGGER.info("The value of maxScore is" + event.getMaxScore());
       baseReport.set("max_score",event.getMaxScore());
       
       baseReport.set("app_id",event.getAppId());
