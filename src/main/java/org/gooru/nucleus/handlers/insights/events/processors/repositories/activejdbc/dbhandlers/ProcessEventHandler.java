@@ -128,7 +128,8 @@ class ProcessEventHandler implements DBHandler {
 				scoreTS = AJEntityReporting.findBySQL(AJEntityReporting.COMPUTE_ASSESSMENT_SCORE, event.getContentGooruId(), event.getSessionId());
 				if (!scoreTS.isEmpty()) {
 					scoreTS.forEach(m -> {
-						scoreObj = Double.valueOf(m.get(AJEntityReporting.SCORE).toString());
+						//If ALL Questions in Assessments are Free Response Questions, awaiting grading, score will be NULL
+						scoreObj = (m.get(AJEntityReporting.SCORE) != null ? Double.valueOf(m.get(AJEntityReporting.SCORE).toString()) : null);
 						tsObj = Long.valueOf(m.get(AJEntityReporting.TIMESPENT).toString());
 					});
 					baseReport.set("score", ((scoreObj != null ? scoreObj : 0) * 100) / event.getQuestionCount());
@@ -152,7 +153,8 @@ class ProcessEventHandler implements DBHandler {
     		//Rubrics
     		//Refactor this piece of code once I get the exact information from Front End 
   			if (event.getEventType().equalsIgnoreCase(EventConstants.STOP) && (event.getAnswerStatus().equalsIgnoreCase(EventConstants.INCORRECT)  
-  					|| event.getAnswerStatus().equalsIgnoreCase(EventConstants.CORRECT))) {
+  					|| event.getAnswerStatus().equalsIgnoreCase(EventConstants.CORRECT) 
+  					|| event.getAnswerStatus().equalsIgnoreCase(EventConstants.SKIPPED))) {
   				//Grading Type is set by default to "system", so no need to update the grading_type here.
   				baseReport.set("score", event.getScore());        
   		        baseReport.setBoolean("is_graded", true);  			

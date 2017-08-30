@@ -549,15 +549,15 @@ public final class EventParser {
 				this.user = this.event.getJsonObject(EventConstants.USER);
 				this.payLoadObject = this.event.getJsonObject(EventConstants.PAY_LOAD);
 				if(this.payLoadObject == null){
-          this.payLoadObject = new JsonObject();
+                this.payLoadObject = new JsonObject();
         }
 				this.metrics = this.event.getJsonObject(EventConstants.METRICS);
 				if(this.metrics == null){
-          this.metrics = new JsonObject();
+                this.metrics = new JsonObject();
         }
 				this.session = this.event.getJsonObject(EventConstants.SESSION);
 				if(this.session == null){
-          this.session = new JsonObject();
+                this.session = new JsonObject();
         }
 				this.version = this.event.getJsonObject(EventConstants.VERSION);
 				
@@ -567,8 +567,7 @@ public final class EventParser {
 				this.eventName = this.event.getString(EventConstants.EVENT_NAME);
 				
 				this.views = 0;
-				this.timespent = 0;
-				this.maxScore = 1.0;
+				this.timespent = 0;				
 				this.apiKey = session.containsKey(EventConstants.API_KEY) ? session.getString(EventConstants.API_KEY) : EventConstants.NA;
 				this.contentGooruId = context.containsKey(EventConstants.CONTENT_GOORU_OID) ? context.getString(EventConstants.CONTENT_GOORU_OID) : EventConstants.NA;
 
@@ -665,8 +664,12 @@ public final class EventParser {
 			if (this.eventType.equals(EventConstants.START)){
 				LOGGER.debug("Process Collection.Resource.Play Events - Start");
 				this.views = 1; 
+				//Set default max_score
+				this.maxScore = 1.0;
 			} else if (this.eventType.equals(EventConstants.STOP)) {
-	       LOGGER.debug("Process Collection.Resource.Play Events - Stop");
+				//Set default max_score
+				this.maxScore = 1.0;
+	            LOGGER.debug("Process Collection.Resource.Play Events - Stop");
 				this.timespent = this.endTime - this.startTime;			
 				if (EventConstants.QUESTION.equals(resourceType)) {
 					this.answerStatus = payLoadObject.containsKey(EventConstants.ATTEMPT_STATUS) ? 

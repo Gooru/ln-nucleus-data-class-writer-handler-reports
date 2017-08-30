@@ -140,33 +140,30 @@ public class RubricGradingHandler implements DBHandler {
           
           if (collType.toString().equalsIgnoreCase(AJEntityRubricGrading.ATTR_ASSESSMENT)) {
         	  LOGGER.debug("Computing assessment score...");
-              LazyList<AJEntityReporting> scoreTS = AJEntityReporting.findBySQL(AJEntityReporting.COMPUTE_ASSESSMENT_SCORE, rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID), sessionId);
+              LazyList<AJEntityReporting> scoreTS = AJEntityReporting.findBySQL(AJEntityReporting.COMPUTE_ASSESSMENT_SCORE_POST_GRADING, 
+            		  rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID), sessionId);
               LOGGER.debug("scoreTS {} ", scoreTS);
 
-              if (!scoreTS.isEmpty()) {
+              if (scoreTS != null && !scoreTS.isEmpty()) {
                 scoreTS.forEach(m -> {
-                  score = Double.valueOf(m.get(AJEntityReporting.SCORE).toString());
+                  score = (m.get(AJEntityReporting.SCORE) != null ? Double.valueOf(m.get(AJEntityReporting.SCORE).toString()) : null);
                   LOGGER.debug("score {} ", score);
-                  max_score = Double.valueOf(m.get(AJEntityReporting.MAX_SCORE).toString());
-                  LOGGER.debug("max_score {} ", max_score);
-        
+                  max_score = (m.get(AJEntityReporting.MAX_SCORE) != null ? Double.valueOf(m.get(AJEntityReporting.MAX_SCORE).toString()) : null);
+                  LOGGER.debug("max_score {} ", max_score);        
                 });
                             
                 if (score != null && max_score != null && max_score != 0.0) {
                   score = ((score * 100) / max_score);
                   LOGGER.debug("Re-Computed assessment score {} ", score);
-                } else {
-                  score = 0.0;
                 }
-        
               }
-              Base.exec(AJEntityReporting.UPDATE_ASSESSMENT_SCORE, score, rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID), sessionId);
+              Base.exec(AJEntityReporting.UPDATE_ASSESSMENT_SCORE, score, max_score, rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID), sessionId);
               LOGGER.debug("Assessment score updated successfully...");
 
         	  
           }
       }
-        LOGGER.info("DONE");
+        LOGGER.debug("DONE");
         return new ExecutionResult<>(MessageResponseFactory.createCreatedResponse(), ExecutionStatus.SUCCESSFUL);
       }   
     
