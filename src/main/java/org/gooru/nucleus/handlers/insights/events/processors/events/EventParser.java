@@ -662,16 +662,22 @@ public final class EventParser {
 		public void processCollectionResourcePlayEvents(){
 			
 			if (this.eventType.equals(EventConstants.START)){
-				LOGGER.debug("Process Collection.Resource.Play Events - Start");
 				this.views = 1; 
-				//Set default max_score
-				this.maxScore = 1.0;
+				
+				if (this.questionType != null && EventConstants.QUESTION.equals(resourceType) 
+						&& !this.questionType.equalsIgnoreCase("OE")) {
+					//Set default max_score ONLY for Non-OE questions
+					this.maxScore = 1.0;					
+				}				
 			} else if (this.eventType.equals(EventConstants.STOP)) {
-				//Set default max_score
-				this.maxScore = 1.0;
-	            LOGGER.debug("Process Collection.Resource.Play Events - Stop");
+
 				this.timespent = this.endTime - this.startTime;			
 				if (EventConstants.QUESTION.equals(resourceType)) {
+					if (this.questionType != null && !this.questionType.equalsIgnoreCase("OE")) {
+						//Set default max_score ONLY for Non-OE questions
+						this.maxScore = 1.0;					
+					}
+
 					this.answerStatus = payLoadObject.containsKey(EventConstants.ATTEMPT_STATUS) ? 
 							payLoadObject.getString(EventConstants.ATTEMPT_STATUS) : EventConstants.ATTEMPTED;
 					

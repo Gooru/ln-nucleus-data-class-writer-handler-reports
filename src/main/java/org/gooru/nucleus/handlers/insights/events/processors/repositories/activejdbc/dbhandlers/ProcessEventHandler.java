@@ -38,6 +38,7 @@ class ProcessEventHandler implements DBHandler {
     private AJEntityReporting baseReport;
     private EventParser event;
     Double scoreObj;
+    Double maxScoreObj;
     Long tsObj;
 
 
@@ -83,14 +84,11 @@ class ProcessEventHandler implements DBHandler {
       baseReport.set("question_type", event.getQuestionType());
       baseReport.set("resource_type", event.getResourceType());
       baseReport.set("reaction", event.getReaction());
-      //baseReport.set("score", event.getScore());
     	
       baseReport.set("resource_attempt_status", event.getAnswerStatus());    	    	    	
       baseReport.set("views", event.getViews());
       baseReport.set("time_spent", event.getTimespent());
       baseReport.set("tenant_id",event.getTenantId());
-      
-      LOGGER.info("The value of maxScore is" + event.getMaxScore());
       baseReport.set("max_score",event.getMaxScore());
       
       baseReport.set("app_id",event.getAppId());
@@ -119,7 +117,8 @@ class ProcessEventHandler implements DBHandler {
       }
       
     	if ((event.getEventName().equals(EventConstants.COLLECTION_PLAY))){
-    	  duplicateRow =  AJEntityReporting.findBySQL(AJEntityReporting.FIND_COLLECTION_EVENT,event.getSessionId(),event.getContentGooruId(),event.getEventType(), event.getEventName());
+    	  duplicateRow =  AJEntityReporting.findBySQL(AJEntityReporting.FIND_COLLECTION_EVENT,event.getSessionId(),
+    			  event.getContentGooruId(),event.getEventType(), event.getEventName());
     	  baseReport.set("collection_id", event.getContentGooruId());
     	  baseReport.set("question_count", event.getQuestionCount());
     	  baseReport.set("score", event.getScore());
@@ -129,10 +128,19 @@ class ProcessEventHandler implements DBHandler {
 				if (!scoreTS.isEmpty()) {
 					scoreTS.forEach(m -> {
 						//If ALL Questions in Assessments are Free Response Questions, awaiting grading, score will be NULL
-						scoreObj = (m.get(AJEntityReporting.SCORE) != null ? Double.valueOf(m.get(AJEntityReporting.SCORE).toString()) : null);
+						scoreObj = (m.get(AJEntityReporting.SCORE) != null ? 
+								Double.valueOf(m.get(AJEntityReporting.SCORE).toString()) : null);
+						maxScoreObj = (m.get(AJEntityReporting.MAX_SCORE) != null ? 
+								Double.valueOf(m.get(AJEntityReporting.MAX_SCORE).toString()) : null);
 						tsObj = Long.valueOf(m.get(AJEntityReporting.TIMESPENT).toString());
 					});
-					baseReport.set("score", ((scoreObj != null ? scoreObj : 0) * 100) / event.getQuestionCount());
+					
+					//maxScore should be Null only in the case when all the questions in an Assessment are Free Response Question
+					//In that case Score will not be calculated unless the questions are graded via the grading flow
+					if (maxScoreObj != null && maxScoreObj != 0.0 && scoreObj != null) {
+						baseReport.set("score", ((scoreObj * 100) / maxScoreObj));
+						baseReport.set("max_score", maxScoreObj);
+					}
 					if (event.getCollectionType().equalsIgnoreCase(EventConstants.ASSESSMENT)) {
 						baseReport.set("time_spent", (tsObj != null ? tsObj : 0));
 					}
@@ -141,7 +149,8 @@ class ProcessEventHandler implements DBHandler {
     	}
     	    	
     	if ((event.getEventName().equals(EventConstants.COLLECTION_RESOURCE_PLAY))) {
-    	  duplicateRow = AJEntityReporting.findBySQL(AJEntityReporting.FIND_RESOURCE_EVENT, event.getParentGooruId(), event.getSessionId(),event.getContentGooruId(),event.getEventType());
+    	  duplicateRow = AJEntityReporting.findBySQL(AJEntityReporting.FIND_RESOURCE_EVENT, event.getParentGooruId(), 
+    			  event.getSessionId(),event.getContentGooruId(),event.getEventType());
     		baseReport.set("collection_id", event.getParentGooruId());
     		baseReport.set("resource_id", event.getContentGooruId());
     		baseReport.set("answer_object", event.getAnswerObject().toString());    		
@@ -150,8 +159,7 @@ class ProcessEventHandler implements DBHandler {
     			baseReport.set("score", event.getScore());
     		}
     		
-    		//Rubrics
-    		//Refactor this piece of code once I get the exact information from Front End 
+    		//Rubrics    		 
   			if (event.getEventType().equalsIgnoreCase(EventConstants.STOP) && (event.getAnswerStatus().equalsIgnoreCase(EventConstants.INCORRECT)  
   					|| event.getAnswerStatus().equalsIgnoreCase(EventConstants.CORRECT) 
   					|| event.getAnswerStatus().equalsIgnoreCase(EventConstants.SKIPPED))) {
@@ -159,18 +167,8 @@ class ProcessEventHandler implements DBHandler {
   				baseReport.set("score", event.getScore());        
   		        baseReport.setBoolean("is_graded", true);  			
   			} else if (event.getEventType().equalsIgnoreCase(EventConstants.STOP) && 
-  		  			(event.getAnswerStatus().equalsIgnoreCase(EventConstants.ATTEMPTED))) {
-  				//We may store 0 score for Attempted (as we have been doing). However the Player events 
-  				//need to start sending the apt values for asnwer_status for OE questions once they start 
-  				//with their development of Rubric Grading of OE Questions.   
-  				//The score will be updated once the Q/A is graded by the teacher
-  				//Once the Q/A is graded the answer status should also be updated to "EVALUATED"
-  		  		//This is derived right now, but should ideally come from the Player Events
-  				LOGGER.info("Setting up grading type and grade status for OE questions");
-  				LOGGER.info("grading Type is " + event.getGradeType());
-  		  		//baseReport.set("grading_type", EventConstants.TEACHER);
-  				baseReport.set("grading_type", event.getGradeType());
-  				
+  		  			(event.getAnswerStatus().equalsIgnoreCase(EventConstants.ATTEMPTED))) { 
+   				baseReport.set("grading_type", event.getGradeType());  				
   		  		baseReport.setBoolean("is_graded", false);
   		  	}
     	}    	
