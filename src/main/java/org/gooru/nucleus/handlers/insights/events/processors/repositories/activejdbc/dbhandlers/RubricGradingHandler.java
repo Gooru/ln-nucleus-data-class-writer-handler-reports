@@ -137,9 +137,8 @@ public class RubricGradingHandler implements DBHandler {
           
           Base.exec(AJEntityReporting.UPDATE_QUESTION_SCORE, rubricGrading.get(AJEntityRubricGrading.STUDENT_SCORE),
                   rubricGrading.get(AJEntityRubricGrading.MAX_SCORE), true, sessionId.toString(), rubricGrading.get(AJEntityRubricGrading.RESOURCE_ID));
-          
-          if (collType.toString().equalsIgnoreCase(AJEntityRubricGrading.ATTR_ASSESSMENT)) {
-        	  LOGGER.debug("Computing assessment score...");
+         
+        	  LOGGER.debug("Computing total score...");
               LazyList<AJEntityReporting> scoreTS = AJEntityReporting.findBySQL(AJEntityReporting.COMPUTE_ASSESSMENT_SCORE_POST_GRADING, 
             		  rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID), sessionId);
               LOGGER.debug("scoreTS {} ", scoreTS);
@@ -154,14 +153,11 @@ public class RubricGradingHandler implements DBHandler {
                             
                 if (score != null && max_score != null && max_score != 0.0) {
                   score = ((score * 100) / max_score);
-                  LOGGER.debug("Re-Computed assessment score {} ", score);
+                  LOGGER.debug("Re-Computed total score {} ", score);
                 }
               }
               Base.exec(AJEntityReporting.UPDATE_ASSESSMENT_SCORE, score, max_score, rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID), sessionId);
-              LOGGER.debug("Assessment score updated successfully...");
-
-        	  
-          }
+              LOGGER.debug("Total score updated successfully...");
       }
         LOGGER.debug("DONE");
         return new ExecutionResult<>(MessageResponseFactory.createCreatedResponse(), ExecutionStatus.SUCCESSFUL);

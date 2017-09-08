@@ -154,23 +154,27 @@ class ProcessEventHandler implements DBHandler {
     		baseReport.set("collection_id", event.getParentGooruId());
     		baseReport.set("resource_id", event.getContentGooruId());
     		baseReport.set("answer_object", event.getAnswerObject().toString());    		
-    		//Redundant - Start event doesn't really have score, but since we have been storing it till now
-    		if (event.getEventType().equalsIgnoreCase(EventConstants.START)) {
-    			baseReport.set("score", event.getScore());
-    		}
     		
-    		//Rubrics    		 
-  			if (event.getEventType().equalsIgnoreCase(EventConstants.STOP) && (event.getAnswerStatus().equalsIgnoreCase(EventConstants.INCORRECT)  
-  					|| event.getAnswerStatus().equalsIgnoreCase(EventConstants.CORRECT) 
-  					|| event.getAnswerStatus().equalsIgnoreCase(EventConstants.SKIPPED))) {
-  				//Grading Type is set by default to "system", so no need to update the grading_type here.
-  				baseReport.set("score", event.getScore());        
-  		        baseReport.setBoolean("is_graded", true);  			
-  			} else if (event.getEventType().equalsIgnoreCase(EventConstants.STOP) && 
-  		  			(event.getAnswerStatus().equalsIgnoreCase(EventConstants.ATTEMPTED))) { 
-   				baseReport.set("grading_type", event.getGradeType());  				
-  		  		baseReport.setBoolean("is_graded", false);
-  		  	}
+    		if (event.getResourceType().equals(EventConstants.QUESTION)) {
+        		if (event.getEventType().equalsIgnoreCase(EventConstants.START) && (event.getQuestionType().equalsIgnoreCase(EventConstants.OE))) {
+        			baseReport.set("grading_type", event.getGradeType());
+        		} else if (event.getEventType().equalsIgnoreCase(EventConstants.START)) {        			
+        			baseReport.set("score", event.getScore());
+        			baseReport.setBoolean("is_graded", true);
+      		  	}
+        		
+      			if (event.getEventType().equalsIgnoreCase(EventConstants.STOP) && (event.getAnswerStatus().equalsIgnoreCase(EventConstants.INCORRECT)  
+      					|| event.getAnswerStatus().equalsIgnoreCase(EventConstants.CORRECT) 
+      					|| event.getAnswerStatus().equalsIgnoreCase(EventConstants.SKIPPED))) {
+      				//Grading Type is set by default to "system", so no need to update the grading_type here.
+      				baseReport.set("score", event.getScore());        
+      		        baseReport.setBoolean("is_graded", true);  			
+      			} else if (event.getEventType().equalsIgnoreCase(EventConstants.STOP) && 
+      		  			(event.getAnswerStatus().equalsIgnoreCase(EventConstants.ATTEMPTED))) { 
+       				baseReport.set("grading_type", event.getGradeType());  				
+      		  		baseReport.setBoolean("is_graded", false);
+      		  	}    			
+    		}
     	}    	
     	
     	if((event.getEventName().equals(EventConstants.REACTION_CREATE))) {
@@ -201,8 +205,16 @@ class ProcessEventHandler implements DBHandler {
                   long ts = (Long.valueOf(dup.get("time_spent").toString()) + event.getTimespent());
                   long react = event.getReaction() != 0 ? event.getReaction() : 0;
                   //update the Answer Object and Answer Status from the latest event
-                  Base.exec(AJEntityReporting.UPDATE_RESOURCE_EVENT, view, ts, event.getScore(), new Timestamp(event.getEndTime()), 
-                		  react, event.getAnswerStatus(), event.getAnswerObject().toString(), id);
+                  //Rubrics - if the Answer Status is attempted then the default score that should be set is null
+                  if (event.getResourceType().equals(EventConstants.QUESTION) && event.getEventType().equalsIgnoreCase(EventConstants.STOP) 
+                		  && event.getAnswerStatus().equalsIgnoreCase(EventConstants.ATTEMPTED)) {
+                      Base.exec(AJEntityReporting.UPDATE_RESOURCE_EVENT, view, ts, null, new Timestamp(event.getEndTime()), 
+                    		  react, event.getAnswerStatus(), event.getAnswerObject().toString(), id);                	  
+                  } else {
+                      Base.exec(AJEntityReporting.UPDATE_RESOURCE_EVENT, view, ts, event.getScore(), new Timestamp(event.getEndTime()), 
+                    		  react, event.getAnswerStatus(), event.getAnswerObject().toString(), id);                	  
+                  }
+
                 });
       
               }
@@ -212,7 +224,13 @@ class ProcessEventHandler implements DBHandler {
                   long view = (Long.valueOf(dup.get("views").toString()) + event.getViews());
                   long ts = (Long.valueOf(dup.get("time_spent").toString()) + event.getTimespent());
                   long react = event.getReaction() != 0 ? event.getReaction() : 0;
-                  Base.exec(AJEntityReporting.UPDATE_COLLECTION_EVENT, view, ts, event.getScore(), new Timestamp(event.getEndTime()), react,id);
+                  if (event.getEventType().equalsIgnoreCase(EventConstants.STOP)) {
+                	  Base.exec(AJEntityReporting.UPDATE_COLLECTION_EVENT, view, ts, scoreObj, maxScoreObj, 
+                			  new Timestamp(event.getEndTime()), react,id);                	  
+                  } else {
+                	  Base.exec(AJEntityReporting.UPDATE_COLLECTION_EVENT, view, ts, event.getScore(), event.getMaxScore(), 
+                			  new Timestamp(event.getEndTime()), react,id);                	  
+                  }                  
                 });
               }
             }
