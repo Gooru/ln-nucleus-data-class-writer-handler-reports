@@ -71,7 +71,9 @@ public class RubricGradingHandler implements DBHandler {
       public ExecutionResult<MessageResponse> executeRequest() {
     
         rubricGrading = new AJEntityRubricGrading();    
-        JsonObject req = context.request();  
+        JsonObject req = context.request(); 
+        String teacherId = req.getString("userIdFromSession");
+        req.remove("userIdFromSession");
         LazyList<AJEntityReporting> duplicateRow = null;
         
         new DefAJEntityRubricGradingEntityBuilder().build(rubricGrading, req, AJEntityRubricGrading.getConverterRegistry());
@@ -94,7 +96,7 @@ public class RubricGradingHandler implements DBHandler {
         	if (collType != null){
             	rubricGrading.set("collection_type", collType.toString());        	
             }
-        	  rubricGrading.set(AJEntityRubricGrading.GRADER_ID, req.getString("userIdFromSession"));
+        	  rubricGrading.set(AJEntityRubricGrading.GRADER_ID,teacherId);
         	  req.remove("userIdFromSession");
             rubricGrading.set("grader", "Teacher");
             //Timestamps are mandatory 
