@@ -4,8 +4,8 @@ import java.sql.Timestamp;
 import java.util.List;
 import java.util.Map;
 
-import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityClassAuthorizedUsers;
 import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityClassAuthorizedUsers;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityReporting;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityRubricGrading;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.EntityBuilder;
@@ -53,26 +53,30 @@ public class RubricGradingHandler implements DBHandler {
 
     @Override
     public ExecutionResult<MessageResponse> validateRequest() {
-    	  //TODO: Update Teacher Validation Logic
-//        if (context.getUserIdFromRequest() != null) {
-//          List<Map> owner = Base.findAll(AJEntityClassAuthorizedUsers.SELECT_CLASS_OWNER, class_id, this.context.userIdFromSession());
-//          if (owner.isEmpty()) {
-//            LOGGER.debug("validateRequest() FAILED");
-//            return new ExecutionResult<>(MessageResponseFactory.createForbiddenResponse("User is not a teacher/collaborator"), ExecutionStatus.FAILED);
-//          }
-//        }    	
-    	LOGGER.debug("validateRequest() OK");
-        return new ExecutionResult<>(null, ExecutionStatus.CONTINUE_PROCESSING);
+      if (context.request().getString("userIdFromSession") != null) {
+        List<Map> owner = Base.findAll(AJEntityClassAuthorizedUsers.SELECT_CLASS_OWNER, context.request().getString("class_id"),
+                context.request().getString("userIdFromSession"));
+        if (owner.isEmpty()) {
+          LOGGER.warn("User is not a teacher or collaborator");
+          // return new
+          // ExecutionResult<>(MessageResponseFactory.createForbiddenResponse("User
+          // is not a teacher/collaborator"), ExecutionStatus.FAILED);
+        }
+      }
+      LOGGER.debug("validateRequest() OK");
+      return new ExecutionResult<>(null, ExecutionStatus.CONTINUE_PROCESSING);
     }
 
     @Override
       public ExecutionResult<MessageResponse> executeRequest() {
     
         rubricGrading = new AJEntityRubricGrading();    
-        JsonObject req = context.request();        
+        JsonObject req = context.request(); 
+        String teacherId = req.getString("userIdFromSession");
+        req.remove("userIdFromSession");
         LazyList<AJEntityReporting> duplicateRow = null;
         
-        new DefAJEntityRubricGradingEntityBuilder().build(rubricGrading, context.request(), AJEntityRubricGrading.getConverterRegistry());
+        new DefAJEntityRubricGradingEntityBuilder().build(rubricGrading, req, AJEntityRubricGrading.getConverterRegistry());
         Object collType = Base.firstCell(AJEntityReporting.FIND_COLLECTION_TYPE, rubricGrading.get(AJEntityRubricGrading.CLASS_ID),
                 rubricGrading.get(AJEntityRubricGrading.COURSE_ID), rubricGrading.get(AJEntityRubricGrading.UNIT_ID),
                 rubricGrading.get(AJEntityRubricGrading.LESSON_ID), rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID));
@@ -92,6 +96,8 @@ public class RubricGradingHandler implements DBHandler {
         	if (collType != null){
             	rubricGrading.set("collection_type", collType.toString());        	
             }
+        	  rubricGrading.set(AJEntityRubricGrading.GRADER_ID,teacherId);
+        	  req.remove("userIdFromSession");
             rubricGrading.set("grader", "Teacher");
             //Timestamps are mandatory 
             rubricGrading.set("created_at", new Timestamp(Long.valueOf(rubricGrading.get(AJEntityRubricGrading.CREATED_AT).toString())));
@@ -99,7 +105,7 @@ public class RubricGradingHandler implements DBHandler {
             
             boolean result = rubricGrading.save();
             if (!result) {
-              LOGGER.error("Grades cannot be inserted into the DB for the student " + context.request().getValue(AJEntityRubricGrading.STUDENT_ID));
+              LOGGER.error("Grades cannot be inserted into the DB for the student " + req.getValue(AJEntityRubricGrading.STUDENT_ID));
               if (rubricGrading.hasErrors()) {
                 Map<String, String> map = rubricGrading.errors();
                 JsonObject errors = new JsonObject();
@@ -107,7 +113,7 @@ public class RubricGradingHandler implements DBHandler {
                 return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(errors), ExecutionResult.ExecutionStatus.FAILED);
               }
             }
-            LOGGER.debug("Student Rubric grades stored successfully for the student " + context.request().getValue(AJEntityRubricGrading.STUDENT_ID));        	
+            LOGGER.debug("Student Rubric grades stored successfully for the student " + req.getValue(AJEntityRubricGrading.STUDENT_ID));        	
         } else if (duplicateRow != null) {
         	LOGGER.debug("Found duplicate row in the DB, this question appears to be graded previously, will be updated");
             duplicateRow.forEach(dup -> {
