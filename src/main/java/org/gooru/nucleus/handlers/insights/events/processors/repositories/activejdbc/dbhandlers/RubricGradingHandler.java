@@ -74,6 +74,8 @@ public class RubricGradingHandler implements DBHandler {
         JsonObject req = context.request(); 
         String teacherId = req.getString("userIdFromSession");
         req.remove("userIdFromSession");
+        //Analytics will not store gut_codes in the Rubric Grading Table.
+        req.remove(AJEntityRubricGrading.GUT_CODES);
         LazyList<AJEntityReporting> duplicateRow = null;
         
         new DefAJEntityRubricGradingEntityBuilder().build(rubricGrading, req, AJEntityRubricGrading.getConverterRegistry());
@@ -96,8 +98,8 @@ public class RubricGradingHandler implements DBHandler {
         	if (collType != null){
             	rubricGrading.set("collection_type", collType.toString());        	
             }
-        	  rubricGrading.set(AJEntityRubricGrading.GRADER_ID,teacherId);
-        	  req.remove("userIdFromSession");
+        	
+        	rubricGrading.set(AJEntityRubricGrading.GRADER_ID,teacherId);
             rubricGrading.set("grader", "Teacher");
             //Timestamps are mandatory 
             rubricGrading.set("created_at", new Timestamp(Long.valueOf(rubricGrading.get(AJEntityRubricGrading.CREATED_AT).toString())));

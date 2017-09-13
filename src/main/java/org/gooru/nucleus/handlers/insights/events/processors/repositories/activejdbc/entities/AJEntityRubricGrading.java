@@ -99,7 +99,7 @@ public class AJEntityRubricGrading extends Model {
         converterMap.put(METADATA, (FieldConverter::convertFieldToJson));
         converterMap.put(TAXONOMY, (FieldConverter::convertFieldToJson));
         converterMap.put(DESCRIPTION, (fieldValue -> FieldConverter.convertEmptyStringToNull((String) fieldValue)));        
-        converterMap.put(GUT_CODES, (fieldValue -> FieldConverter.convertFieldToTextArray((String) fieldValue)));
+        converterMap.put(GUT_CODES, (fieldValue -> FieldConverter.convertJsonToTextArray(fieldValue)));        
         
         converterMap.put(CATEGORY_SCORE, (FieldConverter::convertFieldToJson));
         converterMap.put(OVERALL_COMMENT,
