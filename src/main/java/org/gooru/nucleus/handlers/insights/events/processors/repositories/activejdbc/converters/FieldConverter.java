@@ -57,6 +57,20 @@ public interface FieldConverter {
         }
     }
     
+    static PGobject convertJsonToTextArray(Object value) {
+        PGobject pgObject = new PGobject();
+        pgObject.setType(TEXT_ARRAY_TYPE);
+        try {
+        	//This is done specifically for gut_codes coming from Core Rubrics since the gut_codes format
+        	//is updated to Json there.
+        	String str = value != null ? String.valueOf(value).replace("[", "{").replace("]","}") : null;
+            pgObject.setValue(str == null ? null : str);
+            return pgObject;
+        } catch (SQLException e) {
+            return null;
+        }
+    }
+    
     static PGobject convertEmptyStringToNull(String s) {
         if (s != null && s.isEmpty()) {
             return null;
