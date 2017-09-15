@@ -335,7 +335,7 @@ class ProcessEventHandler implements DBHandler {
           Long epohTime = strUtcDate;
       	Date utcDate = new Date(epohTime);
 
-          SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss z");
+          SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
           simpleDateFormat.setTimeZone(TimeZone.getTimeZone("Etc/UTC"));
           String strUTCDate = simpleDateFormat.format(utcDate);
           simpleDateFormat.setTimeZone(TimeZone.getTimeZone(timeZone));
