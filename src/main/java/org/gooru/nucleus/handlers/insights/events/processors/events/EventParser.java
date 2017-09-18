@@ -549,15 +549,15 @@ public final class EventParser {
 				this.user = this.event.getJsonObject(EventConstants.USER);
 				this.payLoadObject = this.event.getJsonObject(EventConstants.PAY_LOAD);
 				if(this.payLoadObject == null){
-          this.payLoadObject = new JsonObject();
+                this.payLoadObject = new JsonObject();
         }
 				this.metrics = this.event.getJsonObject(EventConstants.METRICS);
 				if(this.metrics == null){
-          this.metrics = new JsonObject();
+                this.metrics = new JsonObject();
         }
 				this.session = this.event.getJsonObject(EventConstants.SESSION);
 				if(this.session == null){
-          this.session = new JsonObject();
+                this.session = new JsonObject();
         }
 				this.version = this.event.getJsonObject(EventConstants.VERSION);
 				
@@ -567,7 +567,7 @@ public final class EventParser {
 				this.eventName = this.event.getString(EventConstants.EVENT_NAME);
 				
 				this.views = 0;
-				this.timespent = 0;
+				this.timespent = 0;				
 				this.apiKey = session.containsKey(EventConstants.API_KEY) ? session.getString(EventConstants.API_KEY) : EventConstants.NA;
 				this.contentGooruId = context.containsKey(EventConstants.CONTENT_GOORU_OID) ? context.getString(EventConstants.CONTENT_GOORU_OID) : EventConstants.NA;
 
@@ -598,7 +598,8 @@ public final class EventParser {
 					this.answerObject = payLoadObject.getJsonArray(EventConstants.ANSWER_OBECT);					
 				}else{
 					this.answerObject = new JsonArray();					
-				}				
+				}			
+	      this.sourceId = payLoadObject.containsKey("sourceId") ? payLoadObject.getString("sourceId") : null;
 				this.reportsContext = payLoadObject.containsKey(EventConstants.REPORTS_CONTEXT) ? payLoadObject.getString(EventConstants.REPORTS_CONTEXT) : EventConstants.PERFORMANCE;
 				this.gradeType = payLoadObject.containsKey(EventConstants.GRADING_TYPE) ? payLoadObject.getString(EventConstants.GRADING_TYPE) : EventConstants.SYSTEM;
 				this.gradeStatus = payLoadObject.containsKey(EventConstants.GRADE_STATUS) ? payLoadObject.getString(EventConstants.GRADE_STATUS) : EventConstants.NA;
@@ -627,7 +628,7 @@ public final class EventParser {
 								
 				this.timezone = this.event.containsKey(EventConstants.TIMEZONE) ? event.getString(EventConstants.TIMEZONE) : null;
 
-				this.sourceId = (context.containsKey("source") ? context.getString("source") : null);
+				//this.sourceId = (context.containsKey("source") ? context.getString("source") : null);
 				this.accessToken = (this.session.containsKey("sessionToken") ? this.session.getString("sessionToken") : null);
 				if (this.eventName.equals(EventConstants.COLLECTION_PLAY)){
 					LOGGER.debug("Inside Collection.Play");
@@ -662,18 +663,28 @@ public final class EventParser {
 		public void processCollectionResourcePlayEvents(){
 			
 			if (this.eventType.equals(EventConstants.START)){
-				LOGGER.debug("Process Collection.Resource.Play Events - Start");
 				this.views = 1; 
+				
+				if (this.questionType != null && EventConstants.QUESTION.equals(resourceType) 
+						&& !this.questionType.equalsIgnoreCase("OE")) {
+					//Set default max_score ONLY for Non-OE questions
+					this.maxScore = 1.0;					
+				}				
 			} else if (this.eventType.equals(EventConstants.STOP)) {
-	       LOGGER.debug("Process Collection.Resource.Play Events - Stop");
+
 				this.timespent = this.endTime - this.startTime;			
 				if (EventConstants.QUESTION.equals(resourceType)) {
-					this.answerStatus = payLoadObject.containsKey(EventConstants.ATTEMPT_STATUS) ? payLoadObject.getString(EventConstants.ATTEMPT_STATUS) : EventConstants.ATTEMPTED;
+					if (this.questionType != null && !this.questionType.equalsIgnoreCase("OE")) {
+						//Set default max_score ONLY for Non-OE questions
+						this.maxScore = 1.0;					
+					}
+
+					this.answerStatus = payLoadObject.containsKey(EventConstants.ATTEMPT_STATUS) ? 
+							payLoadObject.getString(EventConstants.ATTEMPT_STATUS) : EventConstants.ATTEMPTED;
 					
 					//Score - EVALUATED Case is not considered at this point
-					if(answerStatus.equalsIgnoreCase(EventConstants.ATTEMPTED)){						
-						this.score = 0;
-					} else if (answerStatus.equalsIgnoreCase(EventConstants.INCORRECT)) {
+					if (answerStatus.equalsIgnoreCase(EventConstants.INCORRECT) ||
+							answerStatus.equalsIgnoreCase(EventConstants.SKIPPED)) {
 						this.score = 0;
 					} else if (answerStatus.equalsIgnoreCase(EventConstants.CORRECT)) {
 						this.score = 1;

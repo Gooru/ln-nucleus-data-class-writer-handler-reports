@@ -793,7 +793,7 @@ public class EventConstants {
 
 	public static final String CORRECT = "correct";
 
-	public static final String INCORRECT = "in-correct";
+	public static final String INCORRECT = "incorrect";
 
 	public static final String SKIPPED = "skipped";
 
@@ -867,6 +867,10 @@ public class EventConstants {
   public static final String PATH_ID = "pathId";
   
   public static final String TIMEZONE = "timezone";
+  
+	public static final String TEACHER = "teacher";
+  
+  public static final String RESOURCE_RUBRIC_GRADE = "resource.rubric.grade";
 
 	private EventConstants() {
 		throw new AssertionError();

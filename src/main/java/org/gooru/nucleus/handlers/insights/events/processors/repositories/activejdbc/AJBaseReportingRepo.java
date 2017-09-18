@@ -40,4 +40,8 @@
     public MessageResponse createUserTaxonomySubject() {
       return TransactionExecutor.executeTransaction(DBHandlerBuilder.buildUserTaxonomySubjectHandler(context));
     }
+    @Override
+    public MessageResponse processStudentGrades() {
+      return TransactionExecutor.executeTransaction(DBHandlerBuilder.buildRubricGradingHandler(context));
+    }
   }

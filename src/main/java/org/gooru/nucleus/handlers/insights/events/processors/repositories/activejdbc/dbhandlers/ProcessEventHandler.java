@@ -38,6 +38,7 @@ class ProcessEventHandler implements DBHandler {
     private AJEntityReporting baseReport;
     private EventParser event;
     Double scoreObj;
+    Double maxScoreObj;
     Long tsObj;
 
 
@@ -83,13 +84,13 @@ class ProcessEventHandler implements DBHandler {
       baseReport.set("question_type", event.getQuestionType());
       baseReport.set("resource_type", event.getResourceType());
       baseReport.set("reaction", event.getReaction());
-      baseReport.set("score", event.getScore());    	
+    	
       baseReport.set("resource_attempt_status", event.getAnswerStatus());    	    	    	
       baseReport.set("views", event.getViews());
       baseReport.set("time_spent", event.getTimespent());
       baseReport.set("tenant_id",event.getTenantId());
       baseReport.set("max_score",event.getMaxScore());
-      baseReport.set("grading_type",event.getGradeType());
+      
       baseReport.set("app_id",event.getAppId());
       baseReport.set("partner_id",event.getPartnerId());
       //pathId = 0L indicates the main Path. We store pathId only for the altPaths
@@ -100,10 +101,9 @@ class ProcessEventHandler implements DBHandler {
       baseReport.set("created_at",new Timestamp(event.getStartTime()));
       baseReport.set("updated_at",new Timestamp(event.getEndTime()));
       
-      baseReport.set("collection_sub_type",event.getCollectionSubType());
-      
+      baseReport.set("collection_sub_type",event.getCollectionSubType());      
       baseReport.set("event_id", event.getEventId());
-      baseReport.set("content_source", event.getContentSource());
+      baseReport.set("content_source", event.getContentSource());      
       
       if (event.getTimeZone() != null) {        	
       	String timeZone = event.getTimeZone();        	
@@ -115,21 +115,32 @@ class ProcessEventHandler implements DBHandler {
           	baseReport.setDateinTZ(localeDate);
       	}
       }
-
-
+      
     	if ((event.getEventName().equals(EventConstants.COLLECTION_PLAY))){
-    	  duplicateRow =  AJEntityReporting.findBySQL(AJEntityReporting.FIND_COLLECTION_EVENT,event.getSessionId(),event.getContentGooruId(),event.getEventType(), event.getEventName());
+    	  duplicateRow =  AJEntityReporting.findBySQL(AJEntityReporting.FIND_COLLECTION_EVENT,event.getSessionId(),
+    			  event.getContentGooruId(),event.getEventType(), event.getEventName());
     	  baseReport.set("collection_id", event.getContentGooruId());
-    		baseReport.set("question_count", event.getQuestionCount());
+    	  baseReport.set("question_count", event.getQuestionCount());
+    	  baseReport.set("score", event.getScore());
     		
 			if (event.getEventType().equalsIgnoreCase(EventConstants.STOP)) {
 				scoreTS = AJEntityReporting.findBySQL(AJEntityReporting.COMPUTE_ASSESSMENT_SCORE, event.getContentGooruId(), event.getSessionId());
 				if (!scoreTS.isEmpty()) {
 					scoreTS.forEach(m -> {
-						scoreObj = Double.valueOf(m.get(AJEntityReporting.SCORE).toString());
+						//If ALL Questions in Assessments are Free Response Questions, awaiting grading, score will be NULL
+						scoreObj = (m.get(AJEntityReporting.SCORE) != null ? 
+								Double.valueOf(m.get(AJEntityReporting.SCORE).toString()) : null);
+						maxScoreObj = (m.get(AJEntityReporting.MAX_SCORE) != null ? 
+								Double.valueOf(m.get(AJEntityReporting.MAX_SCORE).toString()) : null);
 						tsObj = Long.valueOf(m.get(AJEntityReporting.TIMESPENT).toString());
 					});
-					baseReport.set("score", ((scoreObj != null ? scoreObj : 0) * 100) / event.getQuestionCount());
+					
+					//maxScore should be Null only in the case when all the questions in an Assessment are Free Response Question
+					//In that case Score will not be calculated unless the questions are graded via the grading flow
+					if (maxScoreObj != null && maxScoreObj != 0.0 && scoreObj != null) {
+						baseReport.set("score", ((scoreObj * 100) / maxScoreObj));
+						baseReport.set("max_score", maxScoreObj);
+					}
 					if (event.getCollectionType().equalsIgnoreCase(EventConstants.ASSESSMENT)) {
 						baseReport.set("time_spent", (tsObj != null ? tsObj : 0));
 					}
@@ -138,11 +149,33 @@ class ProcessEventHandler implements DBHandler {
     	}
     	    	
     	if ((event.getEventName().equals(EventConstants.COLLECTION_RESOURCE_PLAY))) {
-    	  duplicateRow = AJEntityReporting.findBySQL(AJEntityReporting.FIND_RESOURCE_EVENT, event.getParentGooruId(), event.getSessionId(),event.getContentGooruId(),event.getEventType());
+    	  duplicateRow = AJEntityReporting.findBySQL(AJEntityReporting.FIND_RESOURCE_EVENT, event.getParentGooruId(), 
+    			  event.getSessionId(),event.getContentGooruId(),event.getEventType());
     		baseReport.set("collection_id", event.getParentGooruId());
     		baseReport.set("resource_id", event.getContentGooruId());
-    		baseReport.set("answer_object", event.getAnswerObject().toString());
-    	}
+    		baseReport.set("answer_object", event.getAnswerObject().toString());    		
+    		
+    		if (event.getResourceType().equals(EventConstants.QUESTION)) {
+        		if (event.getEventType().equalsIgnoreCase(EventConstants.START) && (event.getQuestionType().equalsIgnoreCase(EventConstants.OE))) {
+        			baseReport.set("grading_type", event.getGradeType());
+        		} else if (event.getEventType().equalsIgnoreCase(EventConstants.START)) {        			
+        			baseReport.set("score", event.getScore());
+        			baseReport.setBoolean("is_graded", true);
+      		  	}
+        		
+      			if (event.getEventType().equalsIgnoreCase(EventConstants.STOP) && (event.getAnswerStatus().equalsIgnoreCase(EventConstants.INCORRECT)  
+      					|| event.getAnswerStatus().equalsIgnoreCase(EventConstants.CORRECT) 
+      					|| event.getAnswerStatus().equalsIgnoreCase(EventConstants.SKIPPED))) {
+      				//Grading Type is set by default to "system", so no need to update the grading_type here.
+      				baseReport.set("score", event.getScore());        
+      		        baseReport.setBoolean("is_graded", true);  			
+      			} else if (event.getEventType().equalsIgnoreCase(EventConstants.STOP) && 
+      		  			(event.getAnswerStatus().equalsIgnoreCase(EventConstants.ATTEMPTED))) { 
+       				baseReport.set("grading_type", event.getGradeType());  				
+      		  		baseReport.setBoolean("is_graded", false);
+      		  	}    			
+    		}
+    	}    	
     	
     	if((event.getEventName().equals(EventConstants.REACTION_CREATE))) {
     	  baseReport.set("collection_id", event.getParentGooruId());
@@ -171,10 +204,17 @@ class ProcessEventHandler implements DBHandler {
                   long view = (Long.valueOf(dup.get("views").toString()) + event.getViews());
                   long ts = (Long.valueOf(dup.get("time_spent").toString()) + event.getTimespent());
                   long react = event.getReaction() != 0 ? event.getReaction() : 0;
-//                  Object attmptStatus = dup.get(AJEntityReporting.RESOURCE_ATTEMPT_STATUS);
-//                  Object ansObj = dup.get(AJEntityReporting.ANSWER_OBJECT);
-                  Base.exec(AJEntityReporting.UPDATE_RESOURCE_EVENT, view, ts, event.getScore(), new Timestamp(event.getEndTime()), 
-                		  react, event.getAnswerStatus(), event.getAnswerObject().toString(), id);
+                  //update the Answer Object and Answer Status from the latest event
+                  //Rubrics - if the Answer Status is attempted then the default score that should be set is null
+                  if (event.getResourceType().equals(EventConstants.QUESTION) && event.getEventType().equalsIgnoreCase(EventConstants.STOP) 
+                		  && event.getAnswerStatus().equalsIgnoreCase(EventConstants.ATTEMPTED)) {
+                      Base.exec(AJEntityReporting.UPDATE_RESOURCE_EVENT, view, ts, null, new Timestamp(event.getEndTime()), 
+                    		  react, event.getAnswerStatus(), event.getAnswerObject().toString(), id);                	  
+                  } else {
+                      Base.exec(AJEntityReporting.UPDATE_RESOURCE_EVENT, view, ts, event.getScore(), new Timestamp(event.getEndTime()), 
+                    		  react, event.getAnswerStatus(), event.getAnswerObject().toString(), id);                	  
+                  }
+
                 });
       
               }
@@ -184,7 +224,13 @@ class ProcessEventHandler implements DBHandler {
                   long view = (Long.valueOf(dup.get("views").toString()) + event.getViews());
                   long ts = (Long.valueOf(dup.get("time_spent").toString()) + event.getTimespent());
                   long react = event.getReaction() != 0 ? event.getReaction() : 0;
-                  Base.exec(AJEntityReporting.UPDATE_COLLECTION_EVENT, view, ts, event.getScore(), new Timestamp(event.getEndTime()), react,id);
+                  if (event.getEventType().equalsIgnoreCase(EventConstants.STOP)) {
+                	  Base.exec(AJEntityReporting.UPDATE_COLLECTION_EVENT, view, ts, scoreObj, maxScoreObj, 
+                			  new Timestamp(event.getEndTime()), react,id);                	  
+                  } else {
+                	  Base.exec(AJEntityReporting.UPDATE_COLLECTION_EVENT, view, ts, event.getScore(), event.getMaxScore(), 
+                			  new Timestamp(event.getEndTime()), react,id);                	  
+                  }                  
                 });
               }
             }
@@ -289,7 +335,7 @@ class ProcessEventHandler implements DBHandler {
           Long epohTime = strUtcDate;
       	Date utcDate = new Date(epohTime);
 
-          SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss z");
+          SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
           simpleDateFormat.setTimeZone(TimeZone.getTimeZone("Etc/UTC"));
           String strUTCDate = simpleDateFormat.format(utcDate);
           simpleDateFormat.setTimeZone(TimeZone.getTimeZone(timeZone));
