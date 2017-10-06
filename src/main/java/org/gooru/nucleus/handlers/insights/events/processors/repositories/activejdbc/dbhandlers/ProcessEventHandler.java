@@ -106,8 +106,7 @@ class ProcessEventHandler implements DBHandler {
       baseReport.set("content_source", event.getContentSource());      
       
       if (event.getTimeZone() != null) {        	
-      	String timeZone = event.getTimeZone();        	
-      	LOGGER.debug("Timezone is " + timeZone);
+      	String timeZone = event.getTimeZone();
       	baseReport.set("time_zone", timeZone);        	
       	String localeDate = UTCToLocale(event.getEndTime(), timeZone);
       	
@@ -120,8 +119,10 @@ class ProcessEventHandler implements DBHandler {
     	  duplicateRow =  AJEntityReporting.findBySQL(AJEntityReporting.FIND_COLLECTION_EVENT,event.getSessionId(),
     			  event.getContentGooruId(),event.getEventType(), event.getEventName());
     	  baseReport.set("collection_id", event.getContentGooruId());
-    	  baseReport.set("question_count", event.getQuestionCount());
-    	  baseReport.set("score", event.getScore());
+    	  baseReport.set("question_count", event.getQuestionCount());    	  
+    	  if (event.getEventType().equalsIgnoreCase(EventConstants.START)) {
+    		  baseReport.set("score", event.getScore());    		  
+    	  }    	  
     		
 			if (event.getEventType().equalsIgnoreCase(EventConstants.STOP)) {
 				scoreTS = AJEntityReporting.findBySQL(AJEntityReporting.COMPUTE_ASSESSMENT_SCORE, event.getContentGooruId(), event.getSessionId());
