@@ -39,6 +39,7 @@ public class DailyClassActivityEventHandler implements DBHandler {
     private AJEntityDailyClassActivity dcaReport;
     private EventParser event;
     Double scoreObj;
+    Double maxScoreObj;
     Long tsObj;
 
 
@@ -117,18 +118,33 @@ public class DailyClassActivityEventHandler implements DBHandler {
         }
         
     	if ((event.getEventName().equals(EventConstants.COLLECTION_PLAY))){
-    	  duplicateRow =  AJEntityDailyClassActivity.findBySQL(AJEntityDailyClassActivity.FIND_COLLECTION_EVENT,event.getSessionId(),event.getContentGooruId(),event.getEventType(), event.getEventName());
+    	  duplicateRow =  AJEntityDailyClassActivity.findBySQL(AJEntityDailyClassActivity.FIND_COLLECTION_EVENT,event.getSessionId(),
+    			  event.getContentGooruId(),event.getEventType(), event.getEventName());
     	  dcaReport.set("collection_id", event.getContentGooruId());
-    		dcaReport.set("question_count", event.getQuestionCount());
+    	  dcaReport.set("question_count", event.getQuestionCount());    	  
+      	  if (event.getEventType().equalsIgnoreCase(EventConstants.START)) {
+      		  dcaReport.set("score", event.getScore());    		  
+      	  }    	  
     		
 			if (event.getEventType().equalsIgnoreCase(EventConstants.STOP)) {
-				scoreTS = AJEntityDailyClassActivity.findBySQL(AJEntityDailyClassActivity.COMPUTE_ASSESSMENT_SCORE, event.getSessionId());
+				scoreTS = AJEntityDailyClassActivity.findBySQL(AJEntityDailyClassActivity.COMPUTE_ASSESSMENT_SCORE, event.getContentGooruId(), 
+						event.getSessionId());
 				if (!scoreTS.isEmpty()) {
-					scoreTS.forEach(m -> {
-						scoreObj = Double.valueOf(m.get(AJEntityDailyClassActivity.SCORE).toString());
-						tsObj = Long.valueOf(m.get(AJEntityDailyClassActivity.TIMESPENT).toString());
+					scoreTS.forEach(m -> {						
+						//If ALL Questions in Assessments are Free Response Questions, awaiting grading, score will be NULL
+  						scoreObj = (m.get(AJEntityDailyClassActivity.SCORE) != null ? 
+  								Double.valueOf(m.get(AJEntityDailyClassActivity.SCORE).toString()) : null);
+  						maxScoreObj = (m.get(AJEntityDailyClassActivity.MAX_SCORE) != null ? 
+  								Double.valueOf(m.get(AJEntityDailyClassActivity.MAX_SCORE).toString()) : null);
+  						tsObj = Long.valueOf(m.get(AJEntityDailyClassActivity.TIMESPENT).toString());
 					});
-					dcaReport.set("score", ((scoreObj != null ? scoreObj : 0) * 100) / event.getQuestionCount());
+					
+  					//maxScore should be Null only in the case when all the questions in an Assessment are Free Response Question
+  					//In that case Score will not be calculated unless the questions are graded via the grading flow
+  					if (maxScoreObj != null && maxScoreObj != 0.0 && scoreObj != null) {
+  						dcaReport.set("score", ((scoreObj * 100) / maxScoreObj));
+  						dcaReport.set("max_score", maxScoreObj);  					}
+
 					if (event.getCollectionType().equalsIgnoreCase(EventConstants.ASSESSMENT)) {
 						dcaReport.set("time_spent", (tsObj != null ? tsObj : 0));
 					}
@@ -136,12 +152,42 @@ public class DailyClassActivityEventHandler implements DBHandler {
 			}
     	}
     	    	
+//    	if ((event.getEventName().equals(EventConstants.COLLECTION_RESOURCE_PLAY))) {
+//    	  duplicateRow = AJEntityDailyClassActivity.findBySQL(AJEntityDailyClassActivity.FIND_RESOURCE_EVENT, 
+//    			  event.getParentGooruId(), event.getSessionId(),event.getContentGooruId(),event.getEventType());
+//    		dcaReport.set("collection_id", event.getParentGooruId());
+//    		dcaReport.set("resource_id", event.getContentGooruId());    		
+//    		dcaReport.set("answer_object", event.getAnswerObject().toString());
+//    	}
+    	
     	if ((event.getEventName().equals(EventConstants.COLLECTION_RESOURCE_PLAY))) {
-    	  duplicateRow = AJEntityDailyClassActivity.findBySQL(AJEntityDailyClassActivity.FIND_RESOURCE_EVENT, event.getParentGooruId(), event.getSessionId(),event.getContentGooruId(),event.getEventType());
-    		dcaReport.set("collection_id", event.getParentGooruId());
-    		dcaReport.set("resource_id", event.getContentGooruId());    		
-    		dcaReport.set("answer_object", event.getAnswerObject().toString());
-    	}
+      	  duplicateRow = AJEntityDailyClassActivity.findBySQL(AJEntityDailyClassActivity.FIND_RESOURCE_EVENT, event.getParentGooruId(), 
+      			  event.getSessionId(),event.getContentGooruId(),event.getEventType());
+      		dcaReport.set("collection_id", event.getParentGooruId());
+      		dcaReport.set("resource_id", event.getContentGooruId());
+      		dcaReport.set("answer_object", event.getAnswerObject().toString());    		
+      		
+      		if (event.getResourceType().equals(EventConstants.QUESTION)) {
+          		if (event.getEventType().equalsIgnoreCase(EventConstants.START) && (event.getQuestionType().equalsIgnoreCase(EventConstants.OE))) {
+          			dcaReport.set("grading_type", event.getGradeType());
+          		} else if (event.getEventType().equalsIgnoreCase(EventConstants.START)) {        			
+          			dcaReport.set("score", event.getScore());
+          			dcaReport.setBoolean("is_graded", true);
+        		  	}          		
+        			if (event.getEventType().equalsIgnoreCase(EventConstants.STOP) && (event.getAnswerStatus().equalsIgnoreCase(EventConstants.INCORRECT)  
+        					|| event.getAnswerStatus().equalsIgnoreCase(EventConstants.CORRECT) 
+        					|| event.getAnswerStatus().equalsIgnoreCase(EventConstants.SKIPPED))) {
+        				//Grading Type is set by default to "system", so no need to update the grading_type here.
+        				dcaReport.set("score", event.getScore());        
+        		        dcaReport.setBoolean("is_graded", true);  			
+        			} else if (event.getEventType().equalsIgnoreCase(EventConstants.STOP) && 
+        		  			(event.getAnswerStatus().equalsIgnoreCase(EventConstants.ATTEMPTED))) { 
+         				dcaReport.set("grading_type", event.getGradeType());  				
+        		  		dcaReport.setBoolean("is_graded", false);
+        		  	}    			
+      		}
+      	}    	
+
 
     	 if ((event.getEventName().equals(EventConstants.REACTION_CREATE))) {
          dcaReport.set("collection_id", event.getParentGooruId());
@@ -169,10 +215,16 @@ public class DailyClassActivityEventHandler implements DBHandler {
                   long view = (Long.valueOf(dup.get("views").toString()) + event.getViews());
                   long ts = (Long.valueOf(dup.get("time_spent").toString()) + event.getTimespent());
                   long react = event.getReaction() != 0 ? event.getReaction() : 0;
-//                  Object attmptStatus = dup.get(AJEntityDailyClassActivity.RESOURCE_ATTEMPT_STATUS);
-//                  Object ansObj = dup.get(AJEntityDailyClassActivity.ANSWER_OBJECT);
-                  Base.exec(AJEntityDailyClassActivity.UPDATE_RESOURCE_EVENT, view, ts, event.getScore(), new Timestamp(event.getEndTime()), 
-                		  react, event.getAnswerStatus(), event.getAnswerObject().toString(), id);
+                  //update the Answer Object and Answer Status from the latest event
+                  //Rubrics - if the Answer Status is attempted then the default score that should be set is null
+                  if (event.getResourceType().equals(EventConstants.QUESTION) && event.getEventType().equalsIgnoreCase(EventConstants.STOP) 
+                		  && event.getAnswerStatus().equalsIgnoreCase(EventConstants.ATTEMPTED)) {
+                      Base.exec(AJEntityDailyClassActivity.UPDATE_RESOURCE_EVENT, view, ts, null, new Timestamp(event.getEndTime()), 
+                    		  react, event.getAnswerStatus(), event.getAnswerObject().toString(), id);                	  
+                  } else {
+                      Base.exec(AJEntityDailyClassActivity.UPDATE_RESOURCE_EVENT, view, ts, event.getScore(), new Timestamp(event.getEndTime()), 
+                    		  react, event.getAnswerStatus(), event.getAnswerObject().toString(), id);                	  
+                  }
                 });
       
               }
@@ -181,8 +233,14 @@ public class DailyClassActivityEventHandler implements DBHandler {
                   int id = Integer.valueOf(dup.get("id").toString());
                   long view = (Long.valueOf(dup.get("views").toString()) + event.getViews());
                   long ts = (Long.valueOf(dup.get("time_spent").toString()) + event.getTimespent());
-                  long react = event.getReaction() != 0 ? event.getReaction() : 0;
-                  Base.exec(AJEntityDailyClassActivity.UPDATE_COLLECTION_EVENT, view, ts, event.getScore(), new Timestamp(event.getEndTime()), react,id);
+                  long react = event.getReaction() != 0 ? event.getReaction() : 0;                  
+                  if (event.getEventType().equalsIgnoreCase(EventConstants.STOP)) {
+                	  Base.exec(AJEntityDailyClassActivity.UPDATE_COLLECTION_EVENT, view, ts, scoreObj, maxScoreObj, 
+                			  new Timestamp(event.getEndTime()), react,id);                	  
+                  } else {
+                	  Base.exec(AJEntityDailyClassActivity.UPDATE_COLLECTION_EVENT, view, ts, event.getScore(), event.getMaxScore(), 
+                			  new Timestamp(event.getEndTime()), react,id);                	  
+                  }
                 });
               }
             }
