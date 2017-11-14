@@ -63,9 +63,6 @@ public class AJEntityDailyClassActivity extends Model {
     public static final String CREATE_TIMESTAMP = "created_at";
     public static final String UPDATE_TIMESTAMP = "updated_at";   
     
-    //public static final String SELECT_BASEREPORT_MAX_SEQUENCE_ID =
-      //      "SELECT max(sequence_id) FROM base_reports";
-
     public static final String GET_COLLECTION_SCORE = 
         "SELECT SUM(score) as score from daily_class_activity "
         + "WHERE class_id = ? AND course_id = ? AND unit_id = ? AND lesson_id = ? AND collection_id = ? AND session_id = ? AND actor_id = ?";
@@ -75,20 +72,27 @@ public class AJEntityDailyClassActivity extends Model {
         + "WHERE class_id = ? AND course_id = ? AND unit_id = ? AND lesson_id = ? AND collection_id = ? "
         + "AND session_id = ? AND actor_id = ? AND question_count IS NOT NULL";
     
-    public static final String COMPUTE_ASSESSMENT_SCORE = "SELECT SUM(questionData.question_score) AS score, SUM(questionData.resource_timeSpent) as time_spent "
-              +"FROM  (SELECT DISTINCT ON (resource_id)  score AS question_score , time_spent as resource_timespent, session_id FROM daily_class_activity "
-              +"WHERE event_name = 'collection.resource.play' AND event_type = 'stop' AND session_id = ? "
-              +"AND resource_type = 'question' ORDER BY resource_id, updated_at desc) questionData GROUP BY session_id";    
+    public static final String COMPUTE_ASSESSMENT_SCORE = "SELECT SUM(questionData.question_score) AS score, SUM(questionData.max_score) "
+    		+ "AS max_score, SUM(questionData.resource_timeSpent) AS time_spent FROM  (SELECT DISTINCT ON (resource_id) score AS "
+    		+ "question_score, max_score AS max_score, time_spent AS resource_timespent, session_id FROM daily_class_activity "
+    		+ "WHERE collection_id = ? AND session_id = ? AND event_name = 'collection.resource.play' AND event_type = 'stop' "
+    		+ "AND resource_type = 'question' ORDER BY resource_id, updated_at desc) questionData GROUP BY session_id";
     
     public static final String FIND_COLLECTION_EVENT = "SELECT id, views, time_spent, score, reaction, resource_attempt_status, answer_object "
     		+ "FROM daily_class_activity "
             + "WHERE session_id = ? AND collection_id = ? AND event_type = ? AND event_name = ? ";
     
-    public static final String UPDATE_COLLECTION_EVENT = "UPDATE daily_class_activity SET views = ?, time_spent= ?, score = ?, updated_at = ?, "
+//    public static final String UPDATE_COLLECTION_EVENT = "UPDATE daily_class_activity SET views = ?, time_spent= ?, score = ?, updated_at = ?, "
+//            + "reaction = ? WHERE id = ?";
+    
+    public static final String UPDATE_COLLECTION_EVENT = "UPDATE daily_class_activity SET views = ?, time_spent= ?, score = ?, max_score = ?, updated_at = ?, "
             + "reaction = ? WHERE id = ?";
     
+//    public static final String UPDATE_RESOURCE_EVENT = "UPDATE daily_class_activity SET views = ?, time_spent= ?, score = ?, updated_at = ?, "
+//            + "reaction = ?, resource_attempt_status = ?, answer_object = ? WHERE id = ?";
+    
     public static final String UPDATE_RESOURCE_EVENT = "UPDATE daily_class_activity SET views = ?, time_spent= ?, score = ?, updated_at = ?, "
-            + "reaction = ?, resource_attempt_status = ?, answer_object = ? WHERE id = ?";
+    		+ "reaction = ?, resource_attempt_status = ?, answer_object = ? WHERE id = ?";
 
     
     public static final String FIND_RESOURCE_EVENT = "SELECT id, views, time_spent, score, reaction, resource_attempt_status, answer_object"
