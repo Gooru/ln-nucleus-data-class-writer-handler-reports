@@ -13,15 +13,14 @@ public class ProcessorContext {
     private String userId;
     
     public ProcessorContext(JsonObject request, EventParser event) {
-        this.request = request != null ? request.copy() : null;  
-
+        this.request = request != null ? request.copy() : null;
         this.event = event;
     }
     
+    //Remove userId from this method. Its not needed any more.(not even for Rubrics)
     public ProcessorContext(String userId, JsonObject request) {
       this.request = request != null ? request.copy() : null;
-      this.userId = userId;        
-      
+      this.userId = userId;
   }
 
     public JsonObject request() {

@@ -43,5 +43,9 @@
     @Override
     public MessageResponse processStudentGrades() {
       return TransactionExecutor.executeTransaction(DBHandlerBuilder.buildRubricGradingHandler(context));
+    }    
+    @Override
+    public MessageResponse updateAssessmentScore() {
+      return TransactionExecutor.executeTransaction(DBHandlerBuilder.buildScoreUpdateHandler(context));
     }
   }

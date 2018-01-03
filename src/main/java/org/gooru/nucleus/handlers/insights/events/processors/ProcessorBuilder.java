@@ -1,6 +1,7 @@
 package org.gooru.nucleus.handlers.insights.events.processors;
 
 import io.vertx.core.json.JsonObject;
+import io.vertx.core.eventbus.Message;
 
 public final class ProcessorBuilder {
 
@@ -15,4 +16,9 @@ public final class ProcessorBuilder {
     public static Processor buildRubrics(JsonObject message) {
       return new RubricsMessageProcessor(message);
     }
+
+    public static Processor buildUpdater(Message<Object> message) {
+        return new UpdateMessageProcessor(message);
+    }
+    
 }

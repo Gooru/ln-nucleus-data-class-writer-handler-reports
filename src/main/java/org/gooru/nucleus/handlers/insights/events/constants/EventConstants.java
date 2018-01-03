@@ -871,6 +871,8 @@ public class EventConstants {
 	public static final String TEACHER = "teacher";
   
   public static final String RESOURCE_RUBRIC_GRADE = "resource.rubric.grade";
+  
+	public static final String COLLECTION_RESOURCE_UPDATE = "collection.resource.update";
 
 	private EventConstants() {
 		throw new AssertionError();
