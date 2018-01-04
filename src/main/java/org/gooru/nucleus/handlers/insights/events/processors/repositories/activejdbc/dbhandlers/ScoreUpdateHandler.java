@@ -3,6 +3,8 @@ package org.gooru.nucleus.handlers.insights.events.processors.repositories.activ
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityClassAuthorizedUsers;
@@ -18,6 +20,7 @@ import org.javalite.activejdbc.LazyList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 
@@ -31,6 +34,9 @@ public class ScoreUpdateHandler implements DBHandler {
   private static final Logger LOGGER = LoggerFactory.getLogger(ScoreUpdateHandler.class);
   private static final String USER_ID_FROM_SESSION = "userIdFromSession";
   private static final String STUDENT_ID = "student_id";
+  private static final String RESOURCES = "resources";
+  private static final String CORRECT = "correct";
+  private static final String INCORRECT = "incorrect";  
   private final ProcessorContext context;
   private AJEntityReporting BaseReports;
   private Double score;
@@ -77,41 +83,39 @@ public class ScoreUpdateHandler implements DBHandler {
         String teacherId = req.getString(USER_ID_FROM_SESSION);
         req.remove(USER_ID_FROM_SESSION);
         String studentId = req.getString(STUDENT_ID);
-        req.remove(STUDENT_ID);
+        req.remove(STUDENT_ID);        
+        JsonArray resources = req.getJsonArray(RESOURCES);
+        
+        List<JsonObject> jObj = IntStream.range(0, resources.size())
+                .mapToObj(index -> (JsonObject) resources.getValue(index))
+                .collect(Collectors.toList());
+        req.remove(RESOURCES);        
         
         new DefAJEntityReportingBuilder().build(BaseReports, req, AJEntityReporting.getConverterRegistry());
         
-        //TODO: Move this to a validator function
-        if (BaseReports.get(AJEntityReporting.SCORE) == null || BaseReports.get(AJEntityReporting.SESSION_ID) == null  
-        		|| BaseReports.get(AJEntityReporting.RESOURCE_ID) == null || BaseReports.get(AJEntityReporting.COLLECTION_OID) == null) {
+        //TODO: Create a Validator functions to add validations for attributes
+        if (BaseReports.get(AJEntityReporting.CLASS_GOORU_OID) == null || BaseReports.get(AJEntityReporting.SESSION_ID) == null 
+        		|| BaseReports.get(AJEntityReporting.COLLECTION_OID) == null) {
         	
             return new ExecutionResult<>(
                     MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload"),
                     ExecutionStatus.FAILED);        	
         }
-
-        //TODO: Move this to a validator function
-        if ((Double.valueOf(BaseReports.get(AJEntityReporting.SCORE).toString()) == 0.0) && !(BaseReports.get(AJEntityReporting.RESOURCE_ATTEMPT_STATUS).toString().equalsIgnoreCase("incorrect"))    
-        		|| (Double.valueOf(BaseReports.get(AJEntityReporting.SCORE).toString()) == 1.0) && !(BaseReports.get(AJEntityReporting.RESOURCE_ATTEMPT_STATUS).toString().equalsIgnoreCase("correct"))) {
-        	
-            return new ExecutionResult<>(
-                    MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload"),
-                    ExecutionStatus.FAILED);        	
-        }
-        
-          LOGGER.debug("Student Score : {} ", BaseReports.get(AJEntityReporting.SCORE));
-          LOGGER.debug("session id : {} ", BaseReports.get(AJEntityReporting.SESSION_ID));
-          LOGGER.debug("resource id : {} ", BaseReports.get(AJEntityReporting.RESOURCE_ID));
-          LOGGER.debug("student id : {} ", studentId);
           
           //Since this NOT a Free-Response Question, the Max_Score can be safely assumed to be 1.0. So no need to update the same.
-          Base.exec(AJEntityReporting.UPDATE_QUESTION_SCORE_U, BaseReports.get(AJEntityReporting.SCORE),
-                  true, BaseReports.get(AJEntityReporting.RESOURCE_ATTEMPT_STATUS), studentId, BaseReports.get(AJEntityReporting.SESSION_ID), BaseReports.get(AJEntityReporting.COLLECTION_OID),
-                  BaseReports.get(AJEntityReporting.RESOURCE_ID));
+          jObj.forEach(attr -> {          
+          String ans_status = attr.getString(AJEntityReporting.RESOURCE_ATTEMPT_STATUS);          
+          Base.exec(AJEntityReporting.UPDATE_QUESTION_SCORE_U, ans_status.equalsIgnoreCase(CORRECT) ? 1.0 : 0.0,
+                  true, attr.getString(AJEntityReporting.RESOURCE_ATTEMPT_STATUS), studentId, BaseReports.get(AJEntityReporting.CLASS_GOORU_OID),                   
+                  BaseReports.get(AJEntityReporting.SESSION_ID), 
+                  BaseReports.get(AJEntityReporting.COLLECTION_OID),
+                  attr.getString(AJEntityReporting.RESOURCE_ID));                 
+          });
          
         	  LOGGER.debug("Computing total score...");
               LazyList<AJEntityReporting> scoreTS = AJEntityReporting.findBySQL(AJEntityReporting.COMPUTE_ASSESSMENT_SCORE_POST_GRADING_U, 
-            		  studentId, BaseReports.get(AJEntityReporting.COLLECTION_OID), BaseReports.get(AJEntityReporting.SESSION_ID));
+            		  studentId, BaseReports.get(AJEntityReporting.CLASS_GOORU_OID), BaseReports.get(AJEntityReporting.COLLECTION_OID), 
+            		  BaseReports.get(AJEntityReporting.SESSION_ID));
               LOGGER.debug("scoreTS {} ", scoreTS);
 
               if (scoreTS != null && !scoreTS.isEmpty()) {	
@@ -127,7 +131,7 @@ public class ScoreUpdateHandler implements DBHandler {
                   LOGGER.debug("Re-Computed total Assessment score {} ", score);
                 }
               }
-              Base.exec(AJEntityReporting.UPDATE_ASSESSMENT_SCORE_U, score, max_score, studentId, 
+              Base.exec(AJEntityReporting.UPDATE_ASSESSMENT_SCORE_U, score, max_score, studentId, BaseReports.get(AJEntityReporting.CLASS_GOORU_OID),
             		  BaseReports.get(AJEntityReporting.SESSION_ID), BaseReports.get(AJEntityReporting.COLLECTION_OID));
               LOGGER.debug("Total score updated successfully...");
       

@@ -33,7 +33,7 @@ public class AJEntityReporting extends Model {
   	public static final String GOORUUID = "actor_id";    
   	public static final String TENANT_ID = "tenant_id";
       
-  	public static final Object CLASS_GOORU_OID = "class_id";
+  	public static final String CLASS_GOORU_OID = "class_id";
   	public static final String COURSE_GOORU_OID = "course_id";
   	public static final String UNIT_GOORU_OID = "unit_id";
   	public static final String LESSON_GOORU_OID = "lesson_id";
@@ -127,16 +127,16 @@ public class AJEntityReporting extends Model {
     		+ "AND event_name = 'collection.play' AND event_type = 'stop'";
     
     public static final String UPDATE_QUESTION_SCORE_U = "UPDATE base_reports SET score = ?, is_graded = ?, resource_attempt_status = ? "
-    		+ "WHERE actor_id = ? AND session_id = ? AND collection_id = ? AND resource_id = ? AND event_name = 'collection.resource.play' "
+    		+ "WHERE actor_id = ? AND class_id = ? AND session_id = ? AND collection_id = ? AND resource_id = ? AND event_name = 'collection.resource.play' "
     		+ "AND event_type = 'stop'";
     
-    public static final String UPDATE_ASSESSMENT_SCORE_U = "UPDATE base_reports SET score = ?, max_score = ? WHERE actor_id = ? AND session_id =  ? "
-    		+ "AND collection_id = ? AND event_name = 'collection.play' AND event_type = 'stop'";
+    public static final String UPDATE_ASSESSMENT_SCORE_U = "UPDATE base_reports SET score = ?, max_score = ? WHERE actor_id = ? AND class_id = ? "
+    		+ "AND session_id =  ? AND collection_id = ? AND event_name = 'collection.play' AND event_type = 'stop'";
     
     public static final String COMPUTE_ASSESSMENT_SCORE_POST_GRADING_U = "SELECT SUM(questionData.question_score) AS score, "
     		+ "SUM(questionData.max_score) AS max_score FROM  "
     		+ "(SELECT DISTINCT ON (resource_id)  score AS question_score, max_score, "
-    		+ "session_id FROM base_reports WHERE actor_id = ? AND collection_id = ? AND session_id = ? AND "
+    		+ "session_id FROM base_reports WHERE actor_id = ? AND class_id = ? AND collection_id = ? AND session_id = ? AND "
     		+ "event_name = 'collection.resource.play' AND event_type = 'stop' AND resource_type = 'question' "
     		+ "ORDER BY resource_id, updated_at desc) questionData GROUP BY session_id";
 
