@@ -13,12 +13,14 @@ import java.util.List;
 public class VerticleRegistry implements Iterable<String> {
 
   private static final String WRITER_CONSUMER_VERTICLE = "org.gooru.nucleus.handlers.insights.events.bootstrap.MessageConsumerVerticle";
+  private static final String EVENT_UPDATE_VERTICLE = "org.gooru.nucleus.handlers.insights.events.bootstrap.EventUpdateVerticle";
 
   private final Iterator<String> internalIterator;
 
   public VerticleRegistry() {
     List<String> initializers = new ArrayList<>();
     initializers.add(WRITER_CONSUMER_VERTICLE);
+    initializers.add(EVENT_UPDATE_VERTICLE);
     internalIterator = initializers.iterator();
   }
 

@@ -42,14 +42,13 @@ class MessageProcessor implements Processor {
   public MessageResponse process() {
     MessageResponse result;
     try {
-      // Validate the message itself
+
+      //Validate the message itself
       ExecutionResult<MessageResponse> validateResult = validateAndInitialize();
       if (validateResult.isCompleted()) {
         return validateResult.result();
       }
-
       context = createContext();
-
       /*
        * if(!event.isStudent()){ LOGGER.
        * warn("Receiving teacher activity in player. Ignoring teacher activity.."
