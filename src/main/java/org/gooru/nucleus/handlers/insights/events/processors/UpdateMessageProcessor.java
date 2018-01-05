@@ -42,19 +42,9 @@ public class UpdateMessageProcessor implements Processor {
 	      if (validateResult.isCompleted()) {
 	        return validateResult.result();
 	      }
-	      context = createContext();
+	      context = createContext();	      
+	      result = updateAssessmentScore();
 
-	      final String eventName = request.getString(EventConstants._EVENT_NAME);
-	      LOGGER.debug(eventName);
-	      switch (eventName) {	      
-	      case EventConstants.COLLECTION_RESOURCE_UPDATE:
-	        result = updateAssessmentScore();
-	        break;
-	      default:
-	          LOGGER.error("Invalid operation type passed in, not able to handle");
-	          return MessageResponseFactory
-	              .createInvalidRequestResponse(RESOURCE_BUNDLE.getString("invalid.operation"));
-	      }
 	      return result;
 	      
 	    } catch (Throwable e) {
