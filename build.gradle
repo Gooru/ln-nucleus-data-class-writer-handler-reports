@@ -33,11 +33,11 @@ if (!JavaVersion.current().java8Compatible) {
 // Define a version registry so that we can avoid hard coding of the version numbers
 // Note that this applies only to dependencies and not to the plugins and build
 ext {
-    vertxVersion = '3.3.3'
+    vertxVersion = '3.5.0'
     slf4jVersion = '1.7.12'
     junitVersion = '4.12'
     logbackVersion = '1.0.13'
-    hikariVersion = '2.4.3'
+    hikariVersion = '2.7.6'
     postgresVersion = '9.4-1206-jdbc42'
 }
 
