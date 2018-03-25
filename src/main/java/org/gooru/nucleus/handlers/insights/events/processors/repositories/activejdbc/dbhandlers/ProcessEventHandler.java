@@ -226,8 +226,13 @@ class ProcessEventHandler implements DBHandler {
                   long ts = (Long.valueOf(dup.get("time_spent").toString()) + event.getTimespent());
                   long react = event.getReaction() != 0 ? event.getReaction() : 0;
                   if (event.getEventType().equalsIgnoreCase(EventConstants.STOP)) {
-                	  Base.exec(AJEntityReporting.UPDATE_COLLECTION_EVENT, view, ts, scoreObj, maxScoreObj, 
-                			  new Timestamp(event.getEndTime()), react,id);                	  
+  					//maxScore should be Null only in the case when all the questions in an Assessment are Free Response Question
+  					//In that case Score will not be calculated unless the questions are graded via the grading flow  					
+                	if (maxScoreObj != null && maxScoreObj != 0.0 && scoreObj != null) {
+  						double sco = (scoreObj * 100) / maxScoreObj;
+  						Base.exec(AJEntityReporting.UPDATE_COLLECTION_EVENT, view, ts, sco, maxScoreObj, 
+                  			  new Timestamp(event.getEndTime()), react,id);
+  					}                	                  	  
                   } else {
                 	  Base.exec(AJEntityReporting.UPDATE_COLLECTION_EVENT, view, ts, event.getScore(), event.getMaxScore(), 
                 			  new Timestamp(event.getEndTime()), react,id);                	  

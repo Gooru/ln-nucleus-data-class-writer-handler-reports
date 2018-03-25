@@ -6,9 +6,11 @@ public final class MessagebusEndpoints {
      * as both sender and receiver should be in sync
      */
 		
-	//Mukul - Newly added constant for Class Reports
+	// Class Reporting EndPoint
     public static final String MBEP_ANALYTICS_WRITE = "org.gooru.nucleus.message.bus.analytics.write";
     public static final String MBEP_EVENT = "org.gooru.nucleus.message.bus.publisher.event";
+    //Teacher Score Override - Update Event
+    public static final String MBEP_ANALYTICS_UPDATE = "org.gooru.nucleus.message.bus.analytics.update";
 
     private MessagebusEndpoints() {
         throw new AssertionError();

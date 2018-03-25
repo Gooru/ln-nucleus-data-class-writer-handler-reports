@@ -13,7 +13,7 @@
          "keyspace":"event_logger_insights",
          "cluster":"Test Cluster"
 },
-"org.gooru.nucleus.handlers.insights.events.bootstrap.InsightsWriteVerticle":{
+"org.gooru.nucleus.handlers.insights.events.bootstrap.EventUpdateVerticle":{
 },
 "org.gooru.nucleus.handlers.insights.events.bootstrap.MessageConsumerVerticle":{
 "thead.pool.size":10,

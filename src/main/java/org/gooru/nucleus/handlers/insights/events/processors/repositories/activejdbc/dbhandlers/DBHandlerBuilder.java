@@ -34,4 +34,8 @@ import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
     public static DBHandler buildRubricGradingHandler(ProcessorContext context) {
       return new RubricGradingHandler(context);
     }
+    
+    public static DBHandler buildScoreUpdateHandler(ProcessorContext context) {
+        return new ScoreUpdateHandler(context);
+      }
 }

@@ -1,7 +1,14 @@
 package org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities;
 
 import java.sql.SQLException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.converters.ConverterRegistry;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.converters.FieldConverter;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.validators.FieldValidator;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.validators.ValidatorRegistry;
 import org.javalite.activejdbc.Model;
 import org.javalite.activejdbc.annotations.Table;
 import org.postgresql.util.PGobject;
@@ -26,7 +33,7 @@ public class AJEntityReporting extends Model {
   	public static final String GOORUUID = "actor_id";    
   	public static final String TENANT_ID = "tenant_id";
       
-  	public static final Object CLASS_GOORU_OID = "class_id";
+  	public static final String CLASS_GOORU_OID = "class_id";
   	public static final String COURSE_GOORU_OID = "course_id";
   	public static final String UNIT_GOORU_OID = "unit_id";
   	public static final String LESSON_GOORU_OID = "lesson_id";
@@ -114,10 +121,26 @@ public class AJEntityReporting extends Model {
     public static final String FIND_COLLECTION_TYPE = "SELECT collection_type FROM base_reports WHERE class_id = ? AND course_id = ? "
     		+ "AND unit_id = ? AND lesson_id = ? AND collection_id = ? AND event_name = 'collection.play' LIMIT 1";
     
-    public static final String UPDATE_QUESTION_SCORE = "UPDATE base_reports SET score = ?, max_score = ?, is_graded = ? WHERE session_id = ? AND resource_id = ?";
-    
+    //TODO: Update these queries related to Rubrics Scoring.
+    public static final String UPDATE_QUESTION_SCORE = "UPDATE base_reports SET score = ?, max_score = ?, is_graded = ? WHERE session_id = ? AND resource_id = ?";    
     public static final String UPDATE_ASSESSMENT_SCORE = "UPDATE base_reports SET score = ?, max_score = ? WHERE collection_id = ? AND session_id =  ? "
     		+ "AND event_name = 'collection.play' AND event_type = 'stop'";
+    
+    public static final String UPDATE_QUESTION_SCORE_U = "UPDATE base_reports SET score = ?, is_graded = ?, resource_attempt_status = ? "
+    		+ "WHERE actor_id = ? AND class_id = ? AND session_id = ? AND collection_id = ? AND resource_id = ? AND event_name = 'collection.resource.play' "
+    		+ "AND event_type = 'stop'";
+    
+    public static final String UPDATE_ASSESSMENT_SCORE_U = "UPDATE base_reports SET score = ?, max_score = ? WHERE actor_id = ? AND class_id = ? "
+    		+ "AND session_id =  ? AND collection_id = ? AND event_name = 'collection.play' AND event_type = 'stop'";
+    
+    public static final String COMPUTE_ASSESSMENT_SCORE_POST_GRADING_U = "SELECT SUM(questionData.question_score) AS score, "
+    		+ "SUM(questionData.max_score) AS max_score FROM  "
+    		+ "(SELECT DISTINCT ON (resource_id)  score AS question_score, max_score, "
+    		+ "session_id FROM base_reports WHERE actor_id = ? AND class_id = ? AND collection_id = ? AND session_id = ? AND "
+    		+ "event_name = 'collection.resource.play' AND event_type = 'stop' AND resource_type = 'question' "
+    		+ "ORDER BY resource_id, updated_at desc) questionData GROUP BY session_id";
+
+    
 
     public static final String RESOURCE_ATTEMPT_STATUS_TYPE = "attempt_status";    
     public static final String PGTYPE_TEXT = "text";
@@ -142,6 +165,52 @@ public class AJEntityReporting extends Model {
     /***************************/
     
     public static final String SELECT_BASE_REPORT_ID = "SELECT id FROM base_reports WHERE collection_id = ? AND session_id = ? AND resource_id = ? AND event_type = ? ";
+    
+    //*********************************************************************************************************************************************
+    
+    private static final Map<String, FieldValidator> validatorRegistry;
+    private static final Map<String, FieldConverter> converterRegistry;
+
+    static {
+        validatorRegistry = initializeValidators();
+        converterRegistry = initializeConverters();
+    }
+
+    private static Map<String, FieldConverter> initializeConverters() {
+        Map<String, FieldConverter> converterMap = new HashMap<>();
+        converterMap.put(ANSWER_OBJECT, (fieldValue -> FieldConverter.convertJsonToTextArray(fieldValue)));        
+        return Collections.unmodifiableMap(converterMap);
+    }
+
+    private static Map<String, FieldValidator> initializeValidators() {
+        Map<String, FieldValidator> validatorMap = new HashMap<>();
+        validatorMap.put(ANSWER_OBJECT, FieldValidator::validateJsonIfPresent);
+        return Collections.unmodifiableMap(validatorMap);
+    }
+
+    public static ValidatorRegistry getValidatorRegistry() {
+        return new BaseReportsValidationRegistry();
+    }
+
+    public static ConverterRegistry getConverterRegistry() {
+        return new BaseReportsConverterRegistry();
+    }
+
+    private static class BaseReportsValidationRegistry implements ValidatorRegistry {
+        @Override
+        public FieldValidator lookupValidator(String fieldName) {
+            return validatorRegistry.get(fieldName);
+        }
+    }
+
+    private static class BaseReportsConverterRegistry implements ConverterRegistry {
+        @Override
+        public FieldConverter lookupConverter(String fieldName) {
+            return converterRegistry.get(fieldName);
+        }
+    }
+    
+    //**********************************************************************************************************************************************
     
     private void setPGObject(String field, String type, String value) {
         PGobject pgObject = new PGobject();
