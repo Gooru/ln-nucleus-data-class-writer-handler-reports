@@ -4,26 +4,26 @@ package org.gooru.nucleus.handlers.insights.events.constants;
 import java.util.regex.Pattern;
 
 public class EventConstants {
-	
+
 	public static final String FIRST_SESSION = "FS~";
 
-    public static final  String RECENT_SESSION = "RS~";
+	public static final  String RECENT_SESSION = "RS~";
 
-    public static final  String RS= "RS";
+	public static final  String RS= "RS";
 
-    public static final  String AS= "AS";
+	public static final  String AS= "AS";
 
-    public static final  String ALL_SESSION = "AS~";
+	public static final  String ALL_SESSION = "AS~";
 
-    public static final  String SEPERATOR = "~";
+	public static final  String SEPERATOR = "~";
 
-    public static final  String HASH = "#";
+	public static final  String HASH = "#";
 
-    public static final  String HYPHEN = "-";
+	public static final  String HYPHEN = "-";
 
-    public static final  String COMMA = ",";
+	public static final  String COMMA = ",";
 
-    public static final  String EMPTY = "";
+	public static final  String EMPTY = "";
 
 	public static final  String CONTEXT = "context";
 
@@ -54,7 +54,7 @@ public class EventConstants {
 	public static final  String EVENT_NAME = "eventName";
 
 	public static final  String TENANT_ID = "tenantId";
-	
+
 	public static final  String CONTENT_GOORU_OID = "contentGooruId";
 
 	public static final  String SOURCE_GOORU_OID = "sourceGooruId";
@@ -108,7 +108,7 @@ public class EventConstants {
 	public static final  String IS_STUDENT = "isStudent";
 
 	public static final  String STUDENT_ID = "studentId";
-	
+
 	public static final  String SESSION = "session";
 
 	public static final  String SESSIONS = "sessions";
@@ -164,7 +164,7 @@ public class EventConstants {
 	public static final  String ATTEMPTED = "attempted";
 
 	public static final  String UNEVALUATED = "unevaluated";
-	
+
 	public static final  String OPTIONS = "options";
 
 	public static final  String COUNTER = "counter";
@@ -748,7 +748,7 @@ public class EventConstants {
 	public static final  Pattern PLAY_EVENTS_PATTERN = Pattern.compile("collection.play|collection.resource.play|reaction.create|resource.play");
 
 	public static final  Pattern OBJECT_CREATOR_EVENTS_PATTERN = Pattern.compile("collection.play|collection.resource.play|reaction.create|resource.play|item.delete|item.move|item.remove");
-	
+
 	public static final  String VIEW_CALC_EVENTS = "collection.play|collection.resource.play|resource.play";
 
 	public static final  String CONTENT_FORMATS = "course|unit|lesson|collection|assessment|resource|question";
@@ -816,7 +816,7 @@ public class EventConstants {
 	public static final String REACTION_CREATE = "reaction.create";
 
 	public static final String CLASS_JOIN = "class.join";
-	
+
 	public static final String CLASS_STUDENT_REMOVE = "class.student.remove";
 
 	public static final String COLLABORATORS_UPDATE = "collaborators.update";
@@ -832,47 +832,53 @@ public class EventConstants {
 	public static final String ITEM_ADD = "item.add";
 
 	public static final String ITEM_REMOVE = "item.remove";
-	
+
 	public static final String PUBLISH_METRICS = "publishMetrics";
 
 	public static final String _CLASS_UID = "class_uid";
-	
+
 	public static final String _CONTENT_UID = "content_uid";
-	
+
 	public static final String _CONTENT_TYPE = "content_type";
-	
+
 	public static final String _TOTAL_COUNT = "total_count";
-	
+
 	//Updates for Daily Class Activity
 	public static final String CONTENT_SOURCE = "contentSource";
-	
+
 	public static final String DAILY_CLASS_ACTIVITY = "DailyClassActivity";
-	
+
 	public static final String INDEPENDENT_LEARNER_COURSE_MAP = "IL-CourseMap";
-	
+
 	public static final String INCLASS_COURSE_MAP = "InClass-CourseMap";
 
 	public static final String INCLASS_COLLECTION = "InClass-Collection";
-	
+
 	public static final String INDEPENDENT_LEARNER_COLLECTION = "IL-Collection";
-	
+
 	public static final String APP_ID = "appId";
-	
+
 	public static final String PARTNER_ID = "partnerId";
-  
+
 	public static final String COLLECTION_SUB_TYPE = "collectionSubType";
-	
+
 	public static final String MAX_SCORE = "maxScore";
 
-  public static final String PATH_ID = "pathId";
-  
-  public static final String TIMEZONE = "timezone";
-  
+	public static final String PATH_ID = "pathId";
+
+	public static final String TIMEZONE = "timezone";
+
 	public static final String TEACHER = "teacher";
-  
-  public static final String RESOURCE_RUBRIC_GRADE = "resource.rubric.grade";
-  
+
+	public static final String RESOURCE_RUBRIC_GRADE = "resource.rubric.grade";
+
 	public static final String COLLECTION_RESOURCE_UPDATE = "collection.resource.update";
+	
+	public static final String EXTERNAL_ASSESSMENT = "assessment-external";
+	
+	public static final String EXTERNAL_COLLECTION = "collection-external";
+	
+	public static final String TIMESPENT = "timeSpent";
 
 	private EventConstants() {
 		throw new AssertionError();

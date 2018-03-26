@@ -116,7 +116,7 @@ class ProcessEventHandler implements DBHandler {
       }
       
     	if ((event.getEventName().equals(EventConstants.COLLECTION_PLAY))){
-    	  duplicateRow =  AJEntityReporting.findBySQL(AJEntityReporting.FIND_COLLECTION_EVENT,event.getSessionId(),
+    	  duplicateRow =  AJEntityReporting.findBySQL(AJEntityReporting.FIND_COLLECTION_EVENT, event.getGooruUUID(), event.getSessionId(),
     			  event.getContentGooruId(),event.getEventType(), event.getEventName());
     	  baseReport.set("collection_id", event.getContentGooruId());
     	  baseReport.set("question_count", event.getQuestionCount());    	  
@@ -125,32 +125,44 @@ class ProcessEventHandler implements DBHandler {
     	  }    	  
     		
 			if (event.getEventType().equalsIgnoreCase(EventConstants.STOP)) {
-				scoreTS = AJEntityReporting.findBySQL(AJEntityReporting.COMPUTE_ASSESSMENT_SCORE, event.getContentGooruId(), event.getSessionId());
-				if (!scoreTS.isEmpty()) {
-					scoreTS.forEach(m -> {
-						//If ALL Questions in Assessments are Free Response Questions, awaiting grading, score will be NULL
-						scoreObj = (m.get(AJEntityReporting.SCORE) != null ? 
-								Double.valueOf(m.get(AJEntityReporting.SCORE).toString()) : null);
-						maxScoreObj = (m.get(AJEntityReporting.MAX_SCORE) != null ? 
-								Double.valueOf(m.get(AJEntityReporting.MAX_SCORE).toString()) : null);
-						tsObj = Long.valueOf(m.get(AJEntityReporting.TIMESPENT).toString());
-					});
-					
-					//maxScore should be Null only in the case when all the questions in an Assessment are Free Response Question
-					//In that case Score will not be calculated unless the questions are graded via the grading flow
-					if (maxScoreObj != null && maxScoreObj != 0.0 && scoreObj != null) {
-						baseReport.set("score", ((scoreObj * 100) / maxScoreObj));
-						baseReport.set("max_score", maxScoreObj);
+				if (event.getCollectionType().equalsIgnoreCase(EventConstants.EXTERNAL_ASSESSMENT) || 
+						event.getCollectionType().equalsIgnoreCase(EventConstants.EXTERNAL_COLLECTION)) {
+					double ms = event.getMaxScore();
+					if (ms > 0.0) {
+						baseReport.set("score", (event.getScore() *100)/ms );						
+					} else {
+						baseReport.set("score", 0.0);
 					}
-					if (event.getCollectionType().equalsIgnoreCase(EventConstants.ASSESSMENT)) {
-						baseReport.set("time_spent", (tsObj != null ? tsObj : 0));
-					}
-				}
+					baseReport.set("max_score", ms);
+					baseReport.set("time_spent", event.getTimespent());					
+				} else {
+					scoreTS = AJEntityReporting.findBySQL(AJEntityReporting.COMPUTE_ASSESSMENT_SCORE, event.getContentGooruId(), event.getSessionId());
+					if (!scoreTS.isEmpty()) {
+						scoreTS.forEach(m -> {
+							//If ALL Questions in Assessments are Free Response Questions, awaiting grading, score will be NULL
+							scoreObj = (m.get(AJEntityReporting.SCORE) != null ? 
+									Double.valueOf(m.get(AJEntityReporting.SCORE).toString()) : null);
+							maxScoreObj = (m.get(AJEntityReporting.MAX_SCORE) != null ? 
+									Double.valueOf(m.get(AJEntityReporting.MAX_SCORE).toString()) : null);
+							tsObj = Long.valueOf(m.get(AJEntityReporting.TIMESPENT).toString());
+						});
+						
+						//maxScore should be Null only in the case when all the questions in an Assessment are Free Response Question
+						//In that case Score will not be calculated unless the questions are graded via the grading flow
+						if (maxScoreObj != null && maxScoreObj > 0.0 && scoreObj != null) {
+							baseReport.set("score", ((scoreObj * 100) / maxScoreObj));
+							baseReport.set("max_score", maxScoreObj);
+						}
+						if (event.getCollectionType().equalsIgnoreCase(EventConstants.ASSESSMENT)) {
+							baseReport.set("time_spent", (tsObj != null ? tsObj : 0));
+						}
+					}					
+				} 
 			}
     	}
     	    	
     	if ((event.getEventName().equals(EventConstants.COLLECTION_RESOURCE_PLAY))) {
-    	  duplicateRow = AJEntityReporting.findBySQL(AJEntityReporting.FIND_RESOURCE_EVENT, event.getParentGooruId(), 
+    	  duplicateRow = AJEntityReporting.findBySQL(AJEntityReporting.FIND_RESOURCE_EVENT, event.getGooruUUID(), event.getParentGooruId(), 
     			  event.getSessionId(),event.getContentGooruId(),event.getEventType());
     		baseReport.set("collection_id", event.getParentGooruId());
     		baseReport.set("resource_id", event.getContentGooruId());
@@ -191,11 +203,9 @@ class ProcessEventHandler implements DBHandler {
           if (baseReport.isValid()) {
             if (duplicateRow == null || duplicateRow.isEmpty()) {
               if (baseReport.insert()) {
-                LOGGER.info("Record inserted successfully in Reports DB");
-                // return new ExecutionResult<>(MessageResponseFactory.createCreatedResponse(), ExecutionStatus.SUCCESSFUL);
+                LOGGER.info("Record inserted successfully in Reports DB");                
               } else {
                 LOGGER.error("Error while inserting event into Reports DB: " + context.request().toString());
-               //  return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(), ExecutionStatus.FAILED);
               }
             } else {
               LOGGER.debug("Found duplicate row in the DB, so updating duplicate row.....");
@@ -226,16 +236,27 @@ class ProcessEventHandler implements DBHandler {
                   long ts = (Long.valueOf(dup.get("time_spent").toString()) + event.getTimespent());
                   long react = event.getReaction() != 0 ? event.getReaction() : 0;
                   if (event.getEventType().equalsIgnoreCase(EventConstants.STOP)) {
-  					//maxScore should be Null only in the case when all the questions in an Assessment are Free Response Question
-  					//In that case Score will not be calculated unless the questions are graded via the grading flow  					
-                	if (maxScoreObj != null && maxScoreObj != 0.0 && scoreObj != null) {
-  						double sco = (scoreObj * 100) / maxScoreObj;
-  						Base.exec(AJEntityReporting.UPDATE_COLLECTION_EVENT, view, ts, sco, maxScoreObj, 
-                  			  new Timestamp(event.getEndTime()), react,id);
-  					}                	                  	  
+                	  if (event.getCollectionType().equalsIgnoreCase(EventConstants.EXTERNAL_ASSESSMENT) || 
+                			  event.getCollectionType().equalsIgnoreCase(EventConstants.EXTERNAL_COLLECTION)) {
+                		  double sco = 0.0;
+                		  double maxSco = event.getMaxScore();    					
+                		  if (maxSco > 0.0) {
+                			  sco = ((event.getScore() * 100)/maxSco);
+                		  }
+                		  Base.exec(AJEntityReporting.UPDATE_COLLECTION_EVENT, view, ts, sco, maxSco, 
+                				  new Timestamp(event.getEndTime()), react, id);
+                	  } else {
+                		  //maxScore should be Null only in the case when all the questions in an Assessment are Free Response Question
+                		  //In that case Score will not be calculated unless the questions are graded via the grading flow  					
+                		  if (maxScoreObj != null && maxScoreObj > 0.0 && scoreObj != null) {
+                			  double sco = (scoreObj * 100) / maxScoreObj;
+                			  Base.exec(AJEntityReporting.UPDATE_COLLECTION_EVENT, view, ts, sco, maxScoreObj, 
+                					  new Timestamp(event.getEndTime()), react, id);
+                		  }      					
+                	  }
                   } else {
                 	  Base.exec(AJEntityReporting.UPDATE_COLLECTION_EVENT, view, ts, event.getScore(), event.getMaxScore(), 
-                			  new Timestamp(event.getEndTime()), react,id);                	  
+                			  new Timestamp(event.getEndTime()), react, id);                	  
                   }                  
                 });
               }
@@ -245,32 +266,7 @@ class ProcessEventHandler implements DBHandler {
             return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(),
                     ExecutionStatus.FAILED);
         }
-       
-      //Taxonomy report...
-      if (!event.getTaxonomyIds().isEmpty()) {
-        PreparedStatement ps = Base.startBatch(AJEntityTaxonomyReporting.INSERT_TAXONOMY_REPORT);
-        int seqId = 1;
-        for (String internalTaxonomyCode : event.getTaxonomyIds().fieldNames()) {
-          String displayCode = event.getTaxonomyIds().getString(internalTaxonomyCode);
-          Map<String, String> taxObject = new HashMap<>();
-          splitByTaxonomyCode(internalTaxonomyCode, taxObject);
-          Base.addBatch(ps, seqId, event.getSessionId(), event.getGooruUUID(), taxObject.get(MessageConstants.SUBJECT),
-                  taxObject.get(MessageConstants.COURSE), taxObject.get(MessageConstants.DOMAIN), taxObject.get(MessageConstants.STANDARDS),
-                  taxObject.containsKey(MessageConstants.LEARNING_TARGETS) ? taxObject.get(MessageConstants.LEARNING_TARGETS) : EventConstants.NA,
-                  displayCode, event.getParentGooruId(), event.getContentGooruId(), event.getResourceType(), event.getQuestionType(),
-                  event.getAnswerObject().toString(), event.getAnswerStatus(), 1, 0, event.getScore(), event.getTimespent());
-        }
-        Base.executeBatch(ps);
-        LOGGER.debug("Taxonomy report data inserted successfully:" + event.getSessionId());
-        try {
-          ps.close();
-        } catch (SQLException e) {
-          LOGGER.error("SQL exception while inserting event: {}", e);
-          return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(), ExecutionStatus.FAILED);
-        }
-      }else{
-        LOGGER.debug("No Taxonomy mapping..");
-      }
+
         // Pushing LTI event
         if ((event.getEventName().equals(EventConstants.COLLECTION_PLAY)) && event.getEventType().equalsIgnoreCase(EventConstants.STOP)) {
           sendLTIEvent();
@@ -285,52 +281,6 @@ class ProcessEventHandler implements DBHandler {
         return false;
     }
     
-  private void splitByTaxonomyCode(String taxonomyCode, Map<String, String> taxObject) {
-    int codeLength = taxonomyCode.split(MessageConstants.HYPHEN).length;
-    LOGGER.debug("taxonomy code size : {} ", codeLength);
-    int first = taxonomyCode.indexOf(MessageConstants.HYPHEN);
-    int second = taxonomyCode.indexOf(MessageConstants.HYPHEN, first + 1);
-    int third = taxonomyCode.indexOf(MessageConstants.HYPHEN, second + 1);
-    int fourth = taxonomyCode.indexOf(MessageConstants.HYPHEN, third + 1);
-    switch (codeLength) {
-    case 1:
-      taxObject.put(MessageConstants.SUBJECT, taxonomyCode.trim());
-      taxObject.put(MessageConstants.COURSE, EventConstants.NA);
-      taxObject.put(MessageConstants.DOMAIN, EventConstants.NA);
-      taxObject.put(MessageConstants.STANDARDS, EventConstants.NA);
-      taxObject.put(MessageConstants.LEARNING_TARGETS, EventConstants.NA);
-      break;
-    case 2:
-      taxObject.put(MessageConstants.SUBJECT, taxonomyCode.substring(0, first).trim());
-      taxObject.put(MessageConstants.COURSE, taxonomyCode.trim());
-      taxObject.put(MessageConstants.DOMAIN, EventConstants.NA);
-      taxObject.put(MessageConstants.STANDARDS, EventConstants.NA);
-      taxObject.put(MessageConstants.LEARNING_TARGETS, EventConstants.NA);
-      break;
-    case 3:
-      taxObject.put(MessageConstants.SUBJECT, taxonomyCode.substring(0, first).trim());
-      taxObject.put(MessageConstants.COURSE, taxonomyCode.substring(0, second).trim());
-      taxObject.put(MessageConstants.DOMAIN, taxonomyCode.trim());
-      taxObject.put(MessageConstants.STANDARDS, EventConstants.NA);
-      taxObject.put(MessageConstants.LEARNING_TARGETS, EventConstants.NA);
-      break;
-    case 4:
-      taxObject.put(MessageConstants.SUBJECT, taxonomyCode.substring(0, first).trim());
-      taxObject.put(MessageConstants.COURSE, taxonomyCode.substring(0, second).trim());
-      taxObject.put(MessageConstants.DOMAIN, taxonomyCode.substring(0, third).trim());
-      taxObject.put(MessageConstants.STANDARDS, taxonomyCode.trim());
-      taxObject.put(MessageConstants.LEARNING_TARGETS, EventConstants.NA);
-      break;
-    case 5:
-      taxObject.put(MessageConstants.SUBJECT, taxonomyCode.substring(0, first).trim());
-      taxObject.put(MessageConstants.COURSE, taxonomyCode.substring(0, second).trim());
-      taxObject.put(MessageConstants.DOMAIN, taxonomyCode.substring(0, third).trim());
-      taxObject.put(MessageConstants.STANDARDS, taxonomyCode.substring(0, fourth).trim());
-      taxObject.put(MessageConstants.LEARNING_TARGETS, taxonomyCode.trim());
-      break;
-    }
-    LOGGER.debug("taxObject : {} ", taxObject);
-  }
   
   //********************************************************************************************************
 
