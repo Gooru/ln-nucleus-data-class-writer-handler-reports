@@ -100,8 +100,8 @@ public class AJEntityReporting extends Model {
             + "WHERE collection_id = ? AND session_id = ? AND event_name = 'collection.resource.play' AND event_type = 'stop' "
             + "AND resource_type = 'question' ORDER BY resource_id, updated_at desc) questionData GROUP BY session_id";
     
-    public static final String FIND_COLLECTION_EVENT = "SELECT id,views,time_spent,score,reaction,resource_attempt_status,answer_object FROM base_reports "
-            + "WHERE session_id = ? AND collection_id = ? AND event_type = ? AND event_name = ? ";
+    public static final String FIND_COLLECTION_EVENT = "SELECT id, views, time_spent, score, reaction, resource_attempt_status, answer_object FROM base_reports "
+            + "WHERE actor_id = ? AND session_id = ? AND collection_id = ? AND event_type = ? AND event_name = ? ";
     
     public static final String UPDATE_COLLECTION_EVENT = "UPDATE base_reports SET views = ?, time_spent= ?, score = ?, max_score = ?, updated_at = ?, "
             + "reaction = ? WHERE id = ?";
@@ -110,8 +110,8 @@ public class AJEntityReporting extends Model {
             + "reaction = ?, resource_attempt_status = ?, answer_object = ? WHERE id = ?";
 
     
-    public static final String FIND_RESOURCE_EVENT = "SELECT id,views,time_spent,score,reaction,resource_attempt_status,answer_object FROM base_reports "
-            + "WHERE collection_id = ? AND session_id = ? AND resource_id = ? AND event_type = ?";
+    public static final String FIND_RESOURCE_EVENT = "SELECT id, views, time_spent, score, reaction, resource_attempt_status, answer_object FROM base_reports "
+            + "WHERE actor_id = ? AND collection_id = ? AND session_id = ? AND resource_id = ? AND event_type = ?";
     
     public static final String FIND_SESSION_ID = "SELECT session_id "
             + "FROM base_reports WHERE class_id = ? AND course_id = ? AND unit_id = ? "
