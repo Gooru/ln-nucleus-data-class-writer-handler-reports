@@ -322,9 +322,6 @@ class ProcessEventHandler implements DBHandler {
   //********************************************************************************************************
 
   private void sendCPEventtoGEP() {
-	    
-	  //TODO: thoroughly test Collection TS and Collection Score calculations even on the main stream
-	  //TODO: Test if LTI events are being generated alongwith these events
 	    JsonObject gepEvent = createCPEvent();
 	    JsonObject result = new JsonObject();	   
 	    
@@ -365,11 +362,16 @@ class ProcessEventHandler implements DBHandler {
 	  }
   
   private void sendCollStartEventtoGEP() {
-	    
-	  //TODO: thoroughly test Collection TS and Collection Score calculations even on the main stream
-	  //TODO: Test if LTI events are being generated alongwith these events
-	    JsonObject gepEvent = createCollStartEvent();
+
+	  JsonObject gepEvent = createCollStartEvent();
+	  JsonObject result = new JsonObject();
+	  
+	  result.putNull(GEPConstants.SCORE);
+	  result.putNull(GEPConstants.MAX_SCORE);
+	  result.put(GEPConstants.TIMESPENT, 0.0);
     	
+	  gepEvent.put(GEPConstants.RESULT, result);
+	  
 	    try {
 	      LOGGER.debug("The Collection Start GEP Event is : {} ", gepEvent);
 	      MessageDispatcher.getInstance().sendGEPEvent2Kafka(TOPIC_GEP_USAGE_EVENTS, gepEvent);
