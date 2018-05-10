@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.TimeZone;
 
 import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
+import org.gooru.nucleus.handlers.insights.events.constants.GEPConstants;
 import org.gooru.nucleus.handlers.insights.events.constants.MessageConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.MessageDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
@@ -34,6 +35,7 @@ import io.vertx.core.json.JsonObject;
 class ProcessEventHandler implements DBHandler {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ProcessEventHandler.class);
+	public static final String TOPIC_GEP_USAGE_EVENTS = "org.gooru.da.sink.logW.usage.events";
     private final ProcessorContext context;
     private AJEntityReporting baseReport;
     private EventParser event;
@@ -267,10 +269,19 @@ class ProcessEventHandler implements DBHandler {
                     ExecutionStatus.FAILED);
         }
 
-        // Pushing LTI event
+          if ((event.getEventName().equals(EventConstants.COLLECTION_PLAY)) && event.getEventType().equalsIgnoreCase(EventConstants.START)) {              
+        	  sendCollStartEventtoGEP();
+            }
+         
+
         if ((event.getEventName().equals(EventConstants.COLLECTION_PLAY)) && event.getEventType().equalsIgnoreCase(EventConstants.STOP)) {
           sendLTIEvent();
+          sendCPEventtoGEP();
         }
+        
+        if ((event.getEventName().equals(EventConstants.COLLECTION_RESOURCE_PLAY)) && event.getEventType().equalsIgnoreCase(EventConstants.STOP)) {
+            sendCRPEventtoGEP();
+          }
 
         return new ExecutionResult<>(MessageResponseFactory.createCreatedResponse(), ExecutionStatus.SUCCESSFUL);
 
@@ -310,6 +321,193 @@ class ProcessEventHandler implements DBHandler {
   
   //********************************************************************************************************
 
+  private void sendCPEventtoGEP() {
+	    JsonObject gepEvent = createCPEvent();
+	    JsonObject result = new JsonObject();	   
+	    
+		if (event.getCollectionType().equalsIgnoreCase(EventConstants.EXTERNAL_ASSESSMENT) || 
+				event.getCollectionType().equalsIgnoreCase(EventConstants.EXTERNAL_COLLECTION)) {
+			double ms = event.getMaxScore();
+			if (ms > 0.0) {
+				result.put(GEPConstants.SCORE, (event.getScore() *100)/ms );						
+			} else {
+				result.put(GEPConstants.SCORE, 0.0);
+			}			
+			result.put(GEPConstants.MAX_SCORE, ms);
+			result.put(GEPConstants.TIMESPENT, event.getTimespent());
+			
+		} else {
+			if (maxScoreObj != null && maxScoreObj > 0.0 && scoreObj != null) {
+				result.put(GEPConstants.SCORE, ((scoreObj * 100) / maxScoreObj));
+				result.put(GEPConstants.MAX_SCORE, maxScoreObj);
+			} else {
+				//TODO: Should the score be sent as NULL or 0.0
+				result.putNull(GEPConstants.SCORE);
+				result.put(GEPConstants.MAX_SCORE, 0.0);
+			}
+			result.put(GEPConstants.TIMESPENT, (tsObj != null ? tsObj : 0));						
+		}
+	    
+		//This is for future Use. Currently no Reaction is associated the Assessment/Collection
+    	result.put(GEPConstants.REACTION, 0);    	
+    	gepEvent.put(GEPConstants.RESULT, result);
+    	
+	    try {
+	      LOGGER.debug("The Collection GEP Event is : {} ", gepEvent);
+	      MessageDispatcher.getInstance().sendGEPEvent2Kafka(TOPIC_GEP_USAGE_EVENTS, gepEvent);
+	      LOGGER.info("Successfully dispatched Collection Perf GEP Event..");
+	    } catch (Exception e) {
+	      LOGGER.error("Error while dispatching Collection Perf GEP Event ", e);
+	    }
+	  }
+  
+  private void sendCollStartEventtoGEP() {
+
+	  JsonObject gepEvent = createCollStartEvent();
+	  JsonObject result = new JsonObject();
+	  
+	  result.putNull(GEPConstants.SCORE);
+	  result.putNull(GEPConstants.MAX_SCORE);
+	  result.put(GEPConstants.TIMESPENT, 0.0);
+    	
+	  gepEvent.put(GEPConstants.RESULT, result);
+	  
+	    try {
+	      LOGGER.debug("The Collection Start GEP Event is : {} ", gepEvent);
+	      MessageDispatcher.getInstance().sendGEPEvent2Kafka(TOPIC_GEP_USAGE_EVENTS, gepEvent);
+	      LOGGER.info("Successfully dispatched Collection Start GEP Event..");
+	    } catch (Exception e) {
+	      LOGGER.error("Error while dispatching Collection Start GEP Event ", e);
+	    }
+	  }
+
+  
+  private void sendCRPEventtoGEP() {
+	    
+	    JsonObject gepEvent = createCRPEvent();
+	    JsonObject result = new JsonObject();
+
+	    //Currently there are no EVENTS generated for EXTERNAL_C/A. 
+//		if (event.getCollectionType().equalsIgnoreCase(EventConstants.EXTERNAL_ASSESSMENT) || 
+//				event.getCollectionType().equalsIgnoreCase(EventConstants.EXTERNAL_COLLECTION)) {
+//			
+//		}
+	    
+	    if (event.getResourceType().equals(EventConstants.QUESTION)) {
+  			if (event.getAnswerStatus().equalsIgnoreCase(EventConstants.INCORRECT)  
+  					|| event.getAnswerStatus().equalsIgnoreCase(EventConstants.CORRECT) 
+  					|| event.getAnswerStatus().equalsIgnoreCase(EventConstants.SKIPPED)) {
+  				double sco = event.getScore();
+  				double max_sco = event.getMaxScore();
+  				if (max_sco > 0.0) {
+  					result.put(GEPConstants.SCORE, ((sco * 100) / max_sco));
+  					result.put(GEPConstants.MAX_SCORE, max_sco);
+  				} else {
+  					//TODO: Should the score be sent as NULL or 0.0
+  					result.putNull(GEPConstants.SCORE);
+  					result.put(GEPConstants.MAX_SCORE, 0.0);
+  				}  				
+  			} else if (event.getAnswerStatus().equalsIgnoreCase(EventConstants.ATTEMPTED)) { 
+  				result.putNull(GEPConstants.SCORE);
+  				result.put(GEPConstants.MAX_SCORE, 0.0);
+  		  	}   	    	
+	    } else if (event.getResourceType().equals(EventConstants.RESOURCE)) {
+	    	result.putNull(GEPConstants.SCORE);
+	    	result.putNull(GEPConstants.MAX_SCORE);
+	    }
+	    
+	    result.put(GEPConstants.TIMESPENT, event.getTimespent());
+	    result.put(GEPConstants.ANSWER_STATUS, event.getAnswerStatus());
+    	gepEvent.put(GEPConstants.RESULT, result);
+    	
+	    try {
+	      LOGGER.debug("The Collection Resource GEP Event is : {} ", gepEvent);
+	      MessageDispatcher.getInstance().sendGEPEvent2Kafka(TOPIC_GEP_USAGE_EVENTS, gepEvent);
+	      LOGGER.info("Successfully dispatched Collection Resource GEP Event..");
+	    } catch (Exception e) {
+	      LOGGER.error("Error while dispatching Collection Resource GEP Event ", e);
+	    }
+	  }
+  
+  private JsonObject createCollStartEvent(){
+	    JsonObject cpEvent = new JsonObject();
+	    JsonObject context = new JsonObject();	    
+	    
+	    cpEvent.put(GEPConstants.USER_ID, event.getGooruUUID());
+        cpEvent.put(GEPConstants.ACTIVITY_TIME, event.getEndTime());
+        cpEvent.put(GEPConstants.EVENT_ID, event.getEventId());
+        cpEvent.put(GEPConstants.EVENT_NAME, GEPConstants.COLLECTION_START_EVENT);
+        cpEvent.put(GEPConstants.COLLECTION_ID, event.getContentGooruId());
+        cpEvent.put(GEPConstants.COLLECTION_TYPE, event.getCollectionType());
+                	
+        context.put(GEPConstants.CLASS_ID, event.getClassGooruId());
+        context.put(GEPConstants.COURSE_ID, event.getCourseGooruId() );
+        context.put(GEPConstants.UNIT_ID, event.getUnitGooruId());
+        context.put(GEPConstants.LESSON_ID, event.getLessonGooruId());
+        context.put(GEPConstants.PATH_ID, event.getPathId());
+        context.put(GEPConstants.SESSION_ID, event.getSessionId());
+        context.put(GEPConstants.QUESTION_COUNT, event.getQuestionCount());
+        context.put(GEPConstants.PARTNER_ID, event.getPartnerId());
+        context.put(GEPConstants.TENANT_ID, event.getTenantId());            
+        
+        cpEvent.put(GEPConstants.CONTEXT, context);
+
+	    return cpEvent;
+	}  
+  
+  private JsonObject createCPEvent(){
+	    JsonObject cpEvent = new JsonObject();
+	    JsonObject context = new JsonObject();	    
+	    
+	    cpEvent.put(GEPConstants.USER_ID, event.getGooruUUID());
+      cpEvent.put(GEPConstants.ACTIVITY_TIME, event.getEndTime());
+      cpEvent.put(GEPConstants.EVENT_ID, event.getEventId());
+      cpEvent.put(GEPConstants.EVENT_NAME, GEPConstants.COLLECTION_PERF_EVENT);
+      cpEvent.put(GEPConstants.COLLECTION_ID, event.getContentGooruId());
+      cpEvent.put(GEPConstants.COLLECTION_TYPE, event.getCollectionType());
+              	
+      context.put(GEPConstants.CLASS_ID, event.getClassGooruId());
+      context.put(GEPConstants.COURSE_ID, event.getCourseGooruId() );
+      context.put(GEPConstants.UNIT_ID, event.getUnitGooruId());
+      context.put(GEPConstants.LESSON_ID, event.getLessonGooruId());
+      context.put(GEPConstants.PATH_ID, event.getPathId());
+      context.put(GEPConstants.SESSION_ID, event.getSessionId());
+      context.put(GEPConstants.QUESTION_COUNT, event.getQuestionCount());
+      context.put(GEPConstants.PARTNER_ID, event.getPartnerId());
+      context.put(GEPConstants.TENANT_ID, event.getTenantId());            
+      
+      cpEvent.put(GEPConstants.CONTEXT, context);
+
+	    return cpEvent;
+	}  
+  
+  private JsonObject createCRPEvent(){
+	    JsonObject resEvent = new JsonObject();
+	    JsonObject context = new JsonObject();	    
+	    
+	    resEvent.put(GEPConstants.USER_ID, event.getGooruUUID());
+      resEvent.put(GEPConstants.ACTIVITY_TIME, event.getEndTime());
+      resEvent.put(GEPConstants.EVENT_ID, event.getEventId());
+      resEvent.put(GEPConstants.EVENT_NAME, GEPConstants.RESOURCE_PERF_EVENT);
+      resEvent.put(GEPConstants.RESOURCE_ID, event.getContentGooruId());
+      resEvent.put(GEPConstants.RESOURCE_TYPE, event.getResourceType());
+              	
+      context.put(GEPConstants.CLASS_ID, event.getClassGooruId());
+      context.put(GEPConstants.COURSE_ID, event.getCourseGooruId() );
+      context.put(GEPConstants.UNIT_ID, event.getUnitGooruId());
+      context.put(GEPConstants.LESSON_ID, event.getLessonGooruId());
+      context.put(GEPConstants.COLLECTION_ID,event.getParentGooruId());
+      context.put(GEPConstants.COLLECTION_TYPE, event.getCollectionType());
+      context.put(GEPConstants.PATH_ID, event.getPathId());
+      context.put(GEPConstants.SESSION_ID, event.getSessionId());
+      context.put(GEPConstants.PARTNER_ID, event.getPartnerId());
+      context.put(GEPConstants.TENANT_ID, event.getTenantId());            
+      
+      resEvent.put(GEPConstants.CONTEXT, context);
+
+	    return resEvent;
+	}  
+  
   private void sendLTIEvent() {
     //Getting LTI event and publishing into Kafka topic.
     JsonObject ltiEvent = getLTIEventStructure();
@@ -327,6 +525,8 @@ class ProcessEventHandler implements DBHandler {
       LOGGER.error("Error while dispatching LTI message ", e);
     }
   }
+  
+  
   private JsonObject getLTIEventStructure(){
     JsonObject assessmentOutComeEvent = new JsonObject();
     assessmentOutComeEvent.put("userUid", event.getGooruUUID());
