@@ -74,7 +74,8 @@ public class RubricGradingHandler implements DBHandler {
     @Override
       public ExecutionResult<MessageResponse> executeRequest() {
     
-    	rubricGrading = new AJEntityRubricGrading();    
+    	rubricGrading = new AJEntityRubricGrading();
+        LazyList<AJEntityReporting> allGraded = null;
     	JsonObject req = context.request(); 
     	String teacherId = req.getString("userIdFromSession");
     	req.remove("userIdFromSession");
@@ -159,7 +160,7 @@ public class RubricGradingHandler implements DBHandler {
     				LOGGER.debug("max_score {} ", max_score);        
     			});
 
-    			if (score != null && max_score != null && max_score != 0.0) {
+    			if (score != null && max_score != null && max_score > 0.0) {
     				score = ((score * 100) / max_score);
     				LOGGER.debug("Re-Computed total score {} ", score);
     			}
@@ -172,15 +173,20 @@ public class RubricGradingHandler implements DBHandler {
 				rubricGrading.get(AJEntityRubricGrading.COURSE_ID), rubricGrading.get(AJEntityRubricGrading.UNIT_ID),
 				rubricGrading.get(AJEntityRubricGrading.LESSON_ID), rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID),
 				rubricGrading.get(AJEntityRubricGrading.RESOURCE_ID));
-				
+		 	
     	if ((sId != null && sId.toString().equals(sessionId.toString())) && (rubricGrading.get(AJEntityRubricGrading.STUDENT_SCORE) != null)) {
-    		sendResourceScoreUpdateEventtoGEP();
+    		sendResourceScoreUpdateEventtoGEP(collType.toString());
     	}
-    	
+    	 
     	if ((sId != null && sId.toString().equals(sessionId.toString())) && score != null && max_score != null) {
-    		sendCollScoreUpdateEventtoGEP();
+        	  allGraded =  AJEntityReporting.findBySQL(AJEntityReporting.IS_COLLECTION_GRADED, rubricGrading.get(AJEntityRubricGrading.STUDENT_ID), 
+        			  rubricGrading.get(AJEntityRubricGrading.SESSION_ID), 
+        			  rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID), EventConstants.COLLECTION_RESOURCE_PLAY, EventConstants.STOP, "false");
+              if (allGraded == null || allGraded.isEmpty()) {
+            	  sendCollScoreUpdateEventtoGEP(collType.toString());            	  
+              }    		
     	}
-
+		
     	LOGGER.debug("DONE");
     	return new ExecutionResult<>(MessageResponseFactory.createCreatedResponse(), ExecutionStatus.SUCCESSFUL);
       }   
@@ -194,9 +200,9 @@ public class RubricGradingHandler implements DBHandler {
         return false;
     }
     
-    private void sendResourceScoreUpdateEventtoGEP() {
+    private void sendResourceScoreUpdateEventtoGEP(String cType) {
     	
-    	JsonObject gepEvent = createResourceScoreUpdateEvent();
+    	JsonObject gepEvent = createResourceScoreUpdateEvent(cType);
 
     	try {
     		LOGGER.debug("The Collection GEP Event is : {} ", gepEvent);
@@ -207,7 +213,7 @@ public class RubricGradingHandler implements DBHandler {
     	}
     }
     
-    private JsonObject createResourceScoreUpdateEvent() {    	
+    private JsonObject createResourceScoreUpdateEvent(String collectionType) {    	
     	JsonObject resEvent = new JsonObject();
     	JsonObject context = new JsonObject();
     	JsonObject result = new JsonObject();
@@ -224,7 +230,7 @@ public class RubricGradingHandler implements DBHandler {
     	context.put(GEPConstants.UNIT_ID, rubricGrading.get(AJEntityRubricGrading.UNIT_ID));
     	context.put(GEPConstants.LESSON_ID, rubricGrading.get(AJEntityRubricGrading.LESSON_ID));
     	context.put(GEPConstants.COLLECTION_ID, rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID));
-    	context.put(GEPConstants.COLLECTION_TYPE, rubricGrading.get(AJEntityRubricGrading.COLLECTION_TYPE));
+    	context.put(GEPConstants.COLLECTION_TYPE, collectionType);
     	context.put(GEPConstants.SESSION_ID, rubricGrading.get(AJEntityRubricGrading.SESSION_ID));
 
     	resEvent.put(GEPConstants.CONTEXT, context);
@@ -232,15 +238,15 @@ public class RubricGradingHandler implements DBHandler {
     	result.put(GEPConstants.SCORE, rubricGrading.get(AJEntityRubricGrading.STUDENT_SCORE));
     	result.put(GEPConstants.MAX_SCORE, rubricGrading.get(AJEntityRubricGrading.MAX_SCORE));
     	
-    	resEvent.put(GEPConstants.CONTEXT, result);
+    	resEvent.put(GEPConstants.RESULT, result);
 
     	return resEvent;
     	
     }
     
-    private void sendCollScoreUpdateEventtoGEP() {
+    private void sendCollScoreUpdateEventtoGEP(String cType) {
 
-    	JsonObject gepEvent = createCollScoreUpdateEvent();
+    	JsonObject gepEvent = createCollScoreUpdateEvent(cType);
     	
     	try {
     		LOGGER.debug("The Collection GEP Event is : {} ", gepEvent);
@@ -251,7 +257,7 @@ public class RubricGradingHandler implements DBHandler {
     	}
     }
     
-    private JsonObject createCollScoreUpdateEvent() {    	
+    private JsonObject createCollScoreUpdateEvent(String collectionType) {    	
     	JsonObject cpEvent = new JsonObject();
     	JsonObject context = new JsonObject();
     	JsonObject result = new JsonObject();
@@ -261,7 +267,7 @@ public class RubricGradingHandler implements DBHandler {
     	cpEvent.put(GEPConstants.EVENT_ID, UUID.randomUUID().toString());
     	cpEvent.put(GEPConstants.EVENT_NAME, GEPConstants.COLL_SCORE_UPDATE_EVENT);
     	cpEvent.put(GEPConstants.COLLECTION_ID, rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID));
-    	cpEvent.put(GEPConstants.COLLECTION_TYPE, rubricGrading.get(AJEntityRubricGrading.COLLECTION_TYPE));
+    	cpEvent.put(GEPConstants.COLLECTION_TYPE, collectionType);
 
     	context.put(GEPConstants.CLASS_ID, rubricGrading.get(AJEntityRubricGrading.CLASS_ID));
     	context.put(GEPConstants.COURSE_ID, rubricGrading.get(AJEntityRubricGrading.COURSE_ID));
@@ -271,7 +277,7 @@ public class RubricGradingHandler implements DBHandler {
 
     	cpEvent.put(GEPConstants.CONTEXT, context);
     	
-        if (score != null && max_score != null && max_score != 0.0) {
+        if (score != null && max_score != null && max_score > 0.0) {
         	score = ((score * 100) / max_score);
         	result.put(GEPConstants.SCORE, score);
         	result.put(GEPConstants.MAX_SCORE, max_score);
@@ -280,7 +286,7 @@ public class RubricGradingHandler implements DBHandler {
           	result.put(GEPConstants.MAX_SCORE, max_score);
           }        
         
-        cpEvent.put(GEPConstants.CONTEXT, result);
+        cpEvent.put(GEPConstants.RESULT, result);
         
     	return cpEvent;
     	

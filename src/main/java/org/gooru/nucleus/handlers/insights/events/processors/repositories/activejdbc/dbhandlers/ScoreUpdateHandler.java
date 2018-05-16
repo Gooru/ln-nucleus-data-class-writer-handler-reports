@@ -7,6 +7,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.constants.GEPConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.MessageDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
@@ -83,7 +84,8 @@ public class ScoreUpdateHandler implements DBHandler {
     @Override
       public ExecutionResult<MessageResponse> executeRequest() {
     
-        BaseReports = new AJEntityReporting();    
+        BaseReports = new AJEntityReporting();   
+        LazyList<AJEntityReporting> allGraded = null;
         JsonObject req = context.request(); 
         String teacherId = req.getString(USER_ID_FROM_SESSION);
         req.remove(USER_ID_FROM_SESSION);
@@ -131,7 +133,7 @@ public class ScoreUpdateHandler implements DBHandler {
                   LOGGER.debug("max_score {} ", max_score);        
                 });
                             
-                if (score != null && max_score != null && max_score != 0.0) {
+                if (score != null && max_score != null && max_score > 0.0) {
                   score = ((score * 100) / max_score);
                   LOGGER.debug("Re-Computed total Assessment score {} ", score);
                 }
@@ -140,11 +142,18 @@ public class ScoreUpdateHandler implements DBHandler {
             		  BaseReports.get(AJEntityReporting.SESSION_ID), BaseReports.get(AJEntityReporting.COLLECTION_OID));
               LOGGER.debug("Total score updated successfully...");
       
-              //Send Update Events to GEP
+              //Send Score Update Events to GEP
               jObj.forEach(attr -> {          
                   String ans_status = attr.getString(AJEntityReporting.RESOURCE_ATTEMPT_STATUS);
-                  sendResourceScoreUpdateEventtoGEP(ans_status);                 
+                  sendResourceScoreUpdateEventtoGEP(ans_status, attr.getString(AJEntityReporting.RESOURCE_ID));                 
                   });
+              
+              //Send Assessment Score update Event if ALL Questions have been graded
+          	  allGraded =  AJEntityReporting.findBySQL(AJEntityReporting.IS_COLLECTION_GRADED, studentId, BaseReports.get(AJEntityReporting.SESSION_ID), 
+                      BaseReports.get(AJEntityReporting.COLLECTION_OID), EventConstants.COLLECTION_RESOURCE_PLAY, EventConstants.STOP, false);
+              if (allGraded == null || allGraded.isEmpty()) {
+            	  sendCollScoreUpdateEventtoGEP();  
+              }
               
         LOGGER.debug("DONE");
         return new ExecutionResult<>(MessageResponseFactory.createOkayResponse(), ExecutionStatus.SUCCESSFUL);
@@ -160,15 +169,14 @@ public class ScoreUpdateHandler implements DBHandler {
     }
       
     
-    private void sendResourceScoreUpdateEventtoGEP(String ansStatus) {    	
+    private void sendResourceScoreUpdateEventtoGEP(String ansStatus, String resId) {    	
     	JsonObject result = new JsonObject();
-    	JsonObject gepEvent = createResourceScoreUpdateEvent();
+    	JsonObject gepEvent = createResourceScoreUpdateEvent(resId);
     	
     	result.put(GEPConstants.SCORE, ansStatus.equalsIgnoreCase(CORRECT) ? 1.0 : 0.0);
     	result.put(GEPConstants.MAX_SCORE, 1.0);
     	
     	gepEvent.put(GEPConstants.RESULT, result);
-
     	
     	try {
     		LOGGER.debug("The Resource Update GEP Event due to Teacher Override is : {} ", gepEvent);
@@ -179,7 +187,7 @@ public class ScoreUpdateHandler implements DBHandler {
     	}
     }
     
-    private JsonObject createResourceScoreUpdateEvent() {    	
+    private JsonObject createResourceScoreUpdateEvent(String rId) {    	
     	JsonObject resEvent = new JsonObject();
     	JsonObject context = new JsonObject();
 
@@ -188,7 +196,7 @@ public class ScoreUpdateHandler implements DBHandler {
     	resEvent.put(GEPConstants.ACTIVITY_TIME, System.currentTimeMillis());
     	resEvent.put(GEPConstants.EVENT_ID, UUID.randomUUID().toString());
     	resEvent.put(GEPConstants.EVENT_NAME, GEPConstants.RES_SCORE_UPDATE_EVENT);
-    	resEvent.put(GEPConstants.RESOURCE_ID, BaseReports.get(AJEntityReporting.RESOURCE_ID));
+    	resEvent.put(GEPConstants.RESOURCE_ID, rId);
     	resEvent.put(GEPConstants.RESOURCE_TYPE, GEPConstants.QUESTION);
 
     	context.put(GEPConstants.CLASS_ID, BaseReports.get(AJEntityReporting.CLASS_GOORU_OID));
@@ -238,7 +246,7 @@ public class ScoreUpdateHandler implements DBHandler {
 
     	cpEvent.put(GEPConstants.CONTEXT, context);
     	
-        if (score != null && max_score != null && max_score != 0.0) {
+        if (score != null && max_score != null && max_score > 0.0) {
         	score = ((score * 100) / max_score);
         	result.put(GEPConstants.SCORE, score);
         	result.put(GEPConstants.MAX_SCORE, max_score);
@@ -247,7 +255,7 @@ public class ScoreUpdateHandler implements DBHandler {
           	result.put(GEPConstants.MAX_SCORE, max_score);
           }        
         
-        cpEvent.put(GEPConstants.CONTEXT, result);
+        cpEvent.put(GEPConstants.RESULT, result);
         
     	return cpEvent;
     	
