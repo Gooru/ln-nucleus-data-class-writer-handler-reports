@@ -124,6 +124,7 @@ public class AJEntityReporting extends Model {
     public static final String FIND_SESSION_ID = "SELECT session_id "
             + "FROM base_reports WHERE class_id = ? AND course_id = ? AND unit_id = ? "
             + "AND lesson_id = ? AND collection_id = ? AND resource_id = ? "
+            + "AND event_name = 'collection.play' AND event_type = 'stop' "
             + "ORDER BY updated_at desc ,session_id LIMIT 1";
     
     public static final String FIND_COLLECTION_TYPE = "SELECT collection_type FROM base_reports WHERE class_id = ? AND course_id = ? "

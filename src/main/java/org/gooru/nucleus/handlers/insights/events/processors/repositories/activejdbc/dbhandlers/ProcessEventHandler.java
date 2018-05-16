@@ -456,29 +456,29 @@ class ProcessEventHandler implements DBHandler {
 	}  
   
   private JsonObject createCPEvent(){
-	    JsonObject cpEvent = new JsonObject();
-	    JsonObject context = new JsonObject();	    
-	    
-	    cpEvent.put(GEPConstants.USER_ID, event.getGooruUUID());
-      cpEvent.put(GEPConstants.ACTIVITY_TIME, event.getEndTime());
-      cpEvent.put(GEPConstants.EVENT_ID, event.getEventId());
-      cpEvent.put(GEPConstants.EVENT_NAME, GEPConstants.COLLECTION_PERF_EVENT);
-      cpEvent.put(GEPConstants.COLLECTION_ID, event.getContentGooruId());
-      cpEvent.put(GEPConstants.COLLECTION_TYPE, event.getCollectionType());
-              	
-      context.put(GEPConstants.CLASS_ID, event.getClassGooruId());
-      context.put(GEPConstants.COURSE_ID, event.getCourseGooruId() );
-      context.put(GEPConstants.UNIT_ID, event.getUnitGooruId());
-      context.put(GEPConstants.LESSON_ID, event.getLessonGooruId());
-      context.put(GEPConstants.PATH_ID, event.getPathId());
-      context.put(GEPConstants.SESSION_ID, event.getSessionId());
-      context.put(GEPConstants.QUESTION_COUNT, event.getQuestionCount());
-      context.put(GEPConstants.PARTNER_ID, event.getPartnerId());
-      context.put(GEPConstants.TENANT_ID, event.getTenantId());            
-      
-      cpEvent.put(GEPConstants.CONTEXT, context);
+	  JsonObject cpEvent = new JsonObject();
+	  JsonObject context = new JsonObject();	    
 
-	    return cpEvent;
+	  cpEvent.put(GEPConstants.USER_ID, event.getGooruUUID());
+	  cpEvent.put(GEPConstants.ACTIVITY_TIME, event.getEndTime());
+	  cpEvent.put(GEPConstants.EVENT_ID, event.getEventId());
+	  cpEvent.put(GEPConstants.EVENT_NAME, GEPConstants.COLLECTION_PERF_EVENT);
+	  cpEvent.put(GEPConstants.COLLECTION_ID, event.getContentGooruId());
+	  cpEvent.put(GEPConstants.COLLECTION_TYPE, event.getCollectionType());
+
+	  context.put(GEPConstants.CLASS_ID, event.getClassGooruId());
+	  context.put(GEPConstants.COURSE_ID, event.getCourseGooruId() );
+	  context.put(GEPConstants.UNIT_ID, event.getUnitGooruId());
+	  context.put(GEPConstants.LESSON_ID, event.getLessonGooruId());
+	  context.put(GEPConstants.PATH_ID, event.getPathId());
+	  context.put(GEPConstants.SESSION_ID, event.getSessionId());
+	  context.put(GEPConstants.QUESTION_COUNT, event.getQuestionCount());
+	  context.put(GEPConstants.PARTNER_ID, event.getPartnerId());
+	  context.put(GEPConstants.TENANT_ID, event.getTenantId());            
+
+	  cpEvent.put(GEPConstants.CONTEXT, context);
+
+	  return cpEvent;
 	}  
   
   private JsonObject createCRPEvent(){

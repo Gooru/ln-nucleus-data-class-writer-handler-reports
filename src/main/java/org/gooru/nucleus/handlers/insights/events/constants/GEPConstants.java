@@ -18,10 +18,12 @@ public class GEPConstants {
 	public static final String QUESTION_COUNT = "questionCount";
 	public static final String PARTNER_ID = "partnerId";
 	public static final String TENANT_ID = "tenantId";
+	public static final String QUESTION = "question";
 	
 	public static final String ACTIVITY_TIME = "activityTime";
 	public static final String SCORE = "score";
 	public static final String MAX_SCORE = "maxScore";
+	public static final String RAW_SCORE = "rawScore";
 	public static final String REACTION = "reaction";
 	public static final String TIMESPENT = "timeSpent";
 	public static final String ANSWER_STATUS = "answerStatus";
@@ -37,6 +39,8 @@ public class GEPConstants {
 	public static final String COLLECTION_PERF_EVENT = "collection.performance";
 	public static final String COLLECTION_START_EVENT = "collection.start";
 	public static final String RESOURCE_PERF_EVENT = "resource.performance";
+	public static final String COLL_SCORE_UPDATE_EVENT = "collection.score.update";
+	public static final String RES_SCORE_UPDATE_EVENT = "resource.score.update";
 
 
 }
