@@ -247,7 +247,7 @@ public class ScoreUpdateHandler implements DBHandler {
     	cpEvent.put(GEPConstants.CONTEXT, context);
     	
         if (score != null && max_score != null && max_score > 0.0) {
-        	score = ((score * 100) / max_score);
+        	//score = ((score * 100) / max_score);
         	result.put(GEPConstants.SCORE, score);
         	result.put(GEPConstants.MAX_SCORE, max_score);
           } else {
