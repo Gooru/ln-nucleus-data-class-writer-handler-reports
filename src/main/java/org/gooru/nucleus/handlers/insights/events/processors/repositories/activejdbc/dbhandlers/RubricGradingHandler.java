@@ -169,19 +169,21 @@ public class RubricGradingHandler implements DBHandler {
     		LOGGER.debug("Total score updated successfully...");
     	}
 
-		Object sId = Base.firstCell(AJEntityReporting.FIND_SESSION_ID, rubricGrading.get(AJEntityRubricGrading.CLASS_ID),
+		Object sId = Base.firstCell(AJEntityReporting.FIND_SESSION_ID, rubricGrading.get(AJEntityRubricGrading.STUDENT_ID),
+				rubricGrading.get(AJEntityRubricGrading.CLASS_ID),
 				rubricGrading.get(AJEntityRubricGrading.COURSE_ID), rubricGrading.get(AJEntityRubricGrading.UNIT_ID),
-				rubricGrading.get(AJEntityRubricGrading.LESSON_ID), rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID),
-				rubricGrading.get(AJEntityRubricGrading.RESOURCE_ID));
+				rubricGrading.get(AJEntityRubricGrading.LESSON_ID), rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID));
 		 	
     	if ((sId != null && sId.toString().equals(sessionId.toString())) && (rubricGrading.get(AJEntityRubricGrading.STUDENT_SCORE) != null)) {
+    		LOGGER.info("Sending Resource Update Score Event to GEP");
     		sendResourceScoreUpdateEventtoGEP(collType.toString());
     	}
     	 
     	if ((sId != null && sId.toString().equals(sessionId.toString())) && score != null && max_score != null) {
+    		LOGGER.info("Sending Collection Update Score Event to GEP");
         	  allGraded =  AJEntityReporting.findBySQL(AJEntityReporting.IS_COLLECTION_GRADED, rubricGrading.get(AJEntityRubricGrading.STUDENT_ID), 
         			  rubricGrading.get(AJEntityRubricGrading.SESSION_ID), 
-        			  rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID), EventConstants.COLLECTION_RESOURCE_PLAY, EventConstants.STOP, "false");
+        			  rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID), EventConstants.COLLECTION_RESOURCE_PLAY, EventConstants.STOP, false);
               if (allGraded == null || allGraded.isEmpty()) {
             	  sendCollScoreUpdateEventtoGEP(collType.toString());            	  
               }    		
