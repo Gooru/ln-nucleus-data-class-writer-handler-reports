@@ -38,7 +38,7 @@ class ProcessEventHandler implements DBHandler {
 	public static final String TOPIC_GEP_USAGE_EVENTS = "org.gooru.da.sink.logW.usage.events";
     private final ProcessorContext context;
     private AJEntityReporting baseReport;
-    private EventParser event;
+    private EventParser event;    
     Double scoreObj;
     Double maxScoreObj;
     Long tsObj;
@@ -70,10 +70,13 @@ class ProcessEventHandler implements DBHandler {
     @Override
     @SuppressWarnings("rawtypes")
     public ExecutionResult<MessageResponse> executeRequest() {
-      baseReport = new AJEntityReporting();    	
+      baseReport = new AJEntityReporting();
+      boolean isGraded = true;
       event = context.getEvent();    	
-      LazyList<AJEntityReporting> duplicateRow = null;
+      LazyList<AJEntityReporting> duplicateRow = null;      
       LazyList<AJEntityReporting> scoreTS = null;
+      LazyList<AJEntityReporting> allGraded = null;
+      
       baseReport.set("event_name", event.getEventName());
       baseReport.set("event_type", event.getEventType());
       baseReport.set("actor_id", event.getGooruUUID());
@@ -183,11 +186,13 @@ class ProcessEventHandler implements DBHandler {
       					|| event.getAnswerStatus().equalsIgnoreCase(EventConstants.SKIPPED))) {
       				//Grading Type is set by default to "system", so no need to update the grading_type here.
       				baseReport.set("score", event.getScore());        
-      		        baseReport.setBoolean("is_graded", true);  			
+      		        baseReport.setBoolean("is_graded", true);
+      		        isGraded = true;
       			} else if (event.getEventType().equalsIgnoreCase(EventConstants.STOP) && 
       		  			(event.getAnswerStatus().equalsIgnoreCase(EventConstants.ATTEMPTED))) { 
-       				baseReport.set("grading_type", event.getGradeType());  				
-      		  		baseReport.setBoolean("is_graded", false);
+      				baseReport.set("grading_type", event.getGradeType());  				
+      				baseReport.setBoolean("is_graded", false);
+      				isGraded = false;
       		  	}    			
     		}
     	}    	
@@ -276,10 +281,16 @@ class ProcessEventHandler implements DBHandler {
 
         if ((event.getEventName().equals(EventConstants.COLLECTION_PLAY)) && event.getEventType().equalsIgnoreCase(EventConstants.STOP)) {
           sendLTIEvent();
-          sendCPEventtoGEP();
+          //Send Collection Performance Event to GEP only if ALL the questions have been GRADED
+      	  allGraded =  AJEntityReporting.findBySQL(AJEntityReporting.IS_COLLECTION_GRADED, event.getGooruUUID(), event.getSessionId(),
+    			  event.getContentGooruId(), EventConstants.COLLECTION_RESOURCE_PLAY, EventConstants.STOP, false);
+          if (allGraded == null || allGraded.isEmpty()) {
+        	  sendCPEventtoGEP();  
+          }          
         }
-        
-        if ((event.getEventName().equals(EventConstants.COLLECTION_RESOURCE_PLAY)) && event.getEventType().equalsIgnoreCase(EventConstants.STOP)) {
+
+        if ((event.getEventName().equals(EventConstants.COLLECTION_RESOURCE_PLAY)) && event.getEventType().equalsIgnoreCase(EventConstants.STOP) && 
+        		(isGraded == true)) {
             sendCRPEventtoGEP();
           }
 
@@ -456,29 +467,29 @@ class ProcessEventHandler implements DBHandler {
 	}  
   
   private JsonObject createCPEvent(){
-	    JsonObject cpEvent = new JsonObject();
-	    JsonObject context = new JsonObject();	    
-	    
-	    cpEvent.put(GEPConstants.USER_ID, event.getGooruUUID());
-      cpEvent.put(GEPConstants.ACTIVITY_TIME, event.getEndTime());
-      cpEvent.put(GEPConstants.EVENT_ID, event.getEventId());
-      cpEvent.put(GEPConstants.EVENT_NAME, GEPConstants.COLLECTION_PERF_EVENT);
-      cpEvent.put(GEPConstants.COLLECTION_ID, event.getContentGooruId());
-      cpEvent.put(GEPConstants.COLLECTION_TYPE, event.getCollectionType());
-              	
-      context.put(GEPConstants.CLASS_ID, event.getClassGooruId());
-      context.put(GEPConstants.COURSE_ID, event.getCourseGooruId() );
-      context.put(GEPConstants.UNIT_ID, event.getUnitGooruId());
-      context.put(GEPConstants.LESSON_ID, event.getLessonGooruId());
-      context.put(GEPConstants.PATH_ID, event.getPathId());
-      context.put(GEPConstants.SESSION_ID, event.getSessionId());
-      context.put(GEPConstants.QUESTION_COUNT, event.getQuestionCount());
-      context.put(GEPConstants.PARTNER_ID, event.getPartnerId());
-      context.put(GEPConstants.TENANT_ID, event.getTenantId());            
-      
-      cpEvent.put(GEPConstants.CONTEXT, context);
+	  JsonObject cpEvent = new JsonObject();
+	  JsonObject context = new JsonObject();	    
 
-	    return cpEvent;
+	  cpEvent.put(GEPConstants.USER_ID, event.getGooruUUID());
+	  cpEvent.put(GEPConstants.ACTIVITY_TIME, event.getEndTime());
+	  cpEvent.put(GEPConstants.EVENT_ID, event.getEventId());
+	  cpEvent.put(GEPConstants.EVENT_NAME, GEPConstants.COLLECTION_PERF_EVENT);
+	  cpEvent.put(GEPConstants.COLLECTION_ID, event.getContentGooruId());
+	  cpEvent.put(GEPConstants.COLLECTION_TYPE, event.getCollectionType());
+
+	  context.put(GEPConstants.CLASS_ID, event.getClassGooruId());
+	  context.put(GEPConstants.COURSE_ID, event.getCourseGooruId() );
+	  context.put(GEPConstants.UNIT_ID, event.getUnitGooruId());
+	  context.put(GEPConstants.LESSON_ID, event.getLessonGooruId());
+	  context.put(GEPConstants.PATH_ID, event.getPathId());
+	  context.put(GEPConstants.SESSION_ID, event.getSessionId());
+	  context.put(GEPConstants.QUESTION_COUNT, event.getQuestionCount());
+	  context.put(GEPConstants.PARTNER_ID, event.getPartnerId());
+	  context.put(GEPConstants.TENANT_ID, event.getTenantId());            
+
+	  cpEvent.put(GEPConstants.CONTEXT, context);
+
+	  return cpEvent;
 	}  
   
   private JsonObject createCRPEvent(){

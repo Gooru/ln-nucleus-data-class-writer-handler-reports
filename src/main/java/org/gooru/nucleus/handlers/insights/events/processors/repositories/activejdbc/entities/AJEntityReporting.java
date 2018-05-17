@@ -124,6 +124,7 @@ public class AJEntityReporting extends Model {
     public static final String FIND_SESSION_ID = "SELECT session_id "
             + "FROM base_reports WHERE class_id = ? AND course_id = ? AND unit_id = ? "
             + "AND lesson_id = ? AND collection_id = ? AND resource_id = ? "
+            + "AND event_name = 'collection.play' AND event_type = 'stop' "
             + "ORDER BY updated_at desc ,session_id LIMIT 1";
     
     public static final String FIND_COLLECTION_TYPE = "SELECT collection_type FROM base_reports WHERE class_id = ? AND course_id = ? "
@@ -148,7 +149,8 @@ public class AJEntityReporting extends Model {
     		+ "event_name = 'collection.resource.play' AND event_type = 'stop' AND resource_type = 'question' "
     		+ "ORDER BY resource_id, updated_at desc) questionData GROUP BY session_id";
 
-    
+    public static final String IS_COLLECTION_GRADED = "SELECT is_graded FROM base_reports "
+            + "WHERE actor_id = ? AND session_id = ? AND collection_id = ? AND event_type = ? AND event_name = ? AND is_graded = ?";
 
     public static final String RESOURCE_ATTEMPT_STATUS_TYPE = "attempt_status";    
     public static final String PGTYPE_TEXT = "text";
