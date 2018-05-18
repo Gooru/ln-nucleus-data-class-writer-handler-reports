@@ -150,7 +150,7 @@ public class AJEntityReporting extends Model {
     		+ "ORDER BY resource_id, updated_at desc) questionData GROUP BY session_id";
 
     public static final String IS_COLLECTION_GRADED = "SELECT is_graded FROM base_reports "
-            + "WHERE actor_id = ? AND session_id = ? AND collection_id = ? AND event_type = ? AND event_name = ? AND is_graded = ?";
+            + "WHERE actor_id = ? AND session_id = ? AND collection_id = ?  AND event_name = ? AND event_type = ? AND is_graded = ?";
 
     public static final String RESOURCE_ATTEMPT_STATUS_TYPE = "attempt_status";    
     public static final String PGTYPE_TEXT = "text";

@@ -141,7 +141,8 @@ public class ScoreUpdateHandler implements DBHandler {
               Base.exec(AJEntityReporting.UPDATE_ASSESSMENT_SCORE_U, score, max_score, studentId, BaseReports.get(AJEntityReporting.CLASS_GOORU_OID),
             		  BaseReports.get(AJEntityReporting.SESSION_ID), BaseReports.get(AJEntityReporting.COLLECTION_OID));
               LOGGER.debug("Total score updated successfully...");
-      
+
+      		
               //Send Score Update Events to GEP
               jObj.forEach(attr -> {          
                   String ans_status = attr.getString(AJEntityReporting.RESOURCE_ATTEMPT_STATUS);
