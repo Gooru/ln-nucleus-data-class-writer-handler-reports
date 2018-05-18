@@ -192,7 +192,7 @@ public class RubricGradingHandler implements DBHandler {
             	  sendCollScoreUpdateEventtoGEP(collType.toString());            	  
               }    		
     	}
-		
+
     	LOGGER.debug("DONE");
     	return new ExecutionResult<>(MessageResponseFactory.createCreatedResponse(), ExecutionStatus.SUCCESSFUL);
       }   
@@ -225,7 +225,7 @@ public class RubricGradingHandler implements DBHandler {
     	JsonObject result = new JsonObject();
 
     	resEvent.put(GEPConstants.USER_ID, rubricGrading.get(AJEntityRubricGrading.STUDENT_ID));
-    	resEvent.put(GEPConstants.ACTIVITY_TIME, rubricGrading.get(AJEntityRubricGrading.UPDATED_AT));
+    	resEvent.put(GEPConstants.ACTIVITY_TIME, System.currentTimeMillis());
     	resEvent.put(GEPConstants.EVENT_ID, UUID.randomUUID().toString());
     	resEvent.put(GEPConstants.EVENT_NAME, GEPConstants.RES_SCORE_UPDATE_EVENT);
     	resEvent.put(GEPConstants.RESOURCE_ID, rubricGrading.get(AJEntityRubricGrading.RESOURCE_ID));
@@ -269,7 +269,7 @@ public class RubricGradingHandler implements DBHandler {
     	JsonObject result = new JsonObject();
 
     	cpEvent.put(GEPConstants.USER_ID, rubricGrading.get(AJEntityRubricGrading.STUDENT_ID));
-    	cpEvent.put(GEPConstants.ACTIVITY_TIME, rubricGrading.get(AJEntityRubricGrading.UPDATED_AT));
+    	cpEvent.put(GEPConstants.ACTIVITY_TIME, System.currentTimeMillis());
     	cpEvent.put(GEPConstants.EVENT_ID, UUID.randomUUID().toString());
     	cpEvent.put(GEPConstants.EVENT_NAME, GEPConstants.COLL_SCORE_UPDATE_EVENT);
     	cpEvent.put(GEPConstants.COLLECTION_ID, rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID));
@@ -284,7 +284,7 @@ public class RubricGradingHandler implements DBHandler {
     	cpEvent.put(GEPConstants.CONTEXT, context);
     	
         if (score != null && max_score != null && max_score > 0.0) {
-        	score = ((score * 100) / max_score);
+        	//score = ((score * 100) / max_score);
         	result.put(GEPConstants.SCORE, score);
         	result.put(GEPConstants.MAX_SCORE, max_score);
           } else {
