@@ -29,6 +29,10 @@ public final class MessageDispatcher {
     sendMessageToKafka(KafkaRegistry.getInstance().getKafkaTopic(), eventBody);
   }
 
+  public void sendGEPEvent2Kafka(String topic, JsonObject eventBody) {	    
+	    sendMessageToKafka(topic, eventBody);
+	  }
+  
   private void sendMessageToKafka(String topic, JsonObject eventBody) {
     Producer<String, String> producer = KafkaRegistry.getInstance().getKafkaProducer();
     ProducerRecord<String, String> kafkaMsg;
