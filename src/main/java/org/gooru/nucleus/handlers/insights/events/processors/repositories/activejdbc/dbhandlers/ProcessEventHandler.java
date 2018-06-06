@@ -526,7 +526,7 @@ class ProcessEventHandler implements DBHandler {
       ltiEvent.put("timeSpentInMs", tsObj);
     }
     if (maxScoreObj != null && maxScoreObj > 0.0 && scoreObj != null) {
-      ltiEvent.put("score", scoreObj);
+      ltiEvent.put("rawScore", scoreObj);
       ltiEvent.put("maxScore", maxScoreObj);
       ltiEvent.put("scoreInPercentage", (scoreObj * 100) / maxScoreObj);
     } else {
@@ -554,7 +554,7 @@ class ProcessEventHandler implements DBHandler {
     assessmentOutComeEvent.put("type",event.getCollectionType());
     assessmentOutComeEvent.put("timeSpentInMs",0);
     assessmentOutComeEvent.put("scoreInPercentage",0);
-    assessmentOutComeEvent.put("score",0);
+    assessmentOutComeEvent.put("rawScore",0);
     assessmentOutComeEvent.put("maxScore",0);
     assessmentOutComeEvent.put("reaction",0);
     assessmentOutComeEvent.put("completedTime",event.getEndTime());
