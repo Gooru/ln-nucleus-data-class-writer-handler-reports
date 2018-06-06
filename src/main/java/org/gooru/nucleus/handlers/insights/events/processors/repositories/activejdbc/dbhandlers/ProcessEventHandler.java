@@ -525,8 +525,13 @@ class ProcessEventHandler implements DBHandler {
     if (tsObj != null) {
       ltiEvent.put("timeSpentInMs", tsObj);
     }
-    if (scoreObj != null) {
-      ltiEvent.put("scoreInPercentage", (scoreObj * 100) / event.getQuestionCount());
+    if (maxScoreObj != null && maxScoreObj > 0.0 && scoreObj != null) {
+      ltiEvent.put("rawScore", scoreObj);
+      ltiEvent.put("maxScore", maxScoreObj);
+      ltiEvent.put("scoreInPercentage", (scoreObj * 100) / maxScoreObj);
+    } else {
+    	ltiEvent.putNull("score");
+    	ltiEvent.putNull("scoreInPercentage");
     }
     try {
       LOGGER.debug("LTI Event : {} ", ltiEvent);
@@ -549,6 +554,8 @@ class ProcessEventHandler implements DBHandler {
     assessmentOutComeEvent.put("type",event.getCollectionType());
     assessmentOutComeEvent.put("timeSpentInMs",0);
     assessmentOutComeEvent.put("scoreInPercentage",0);
+    assessmentOutComeEvent.put("rawScore",0);
+    assessmentOutComeEvent.put("maxScore",0);
     assessmentOutComeEvent.put("reaction",0);
     assessmentOutComeEvent.put("completedTime",event.getEndTime());
     assessmentOutComeEvent.put("isStudent",event.isStudent());
