@@ -879,6 +879,8 @@ public class EventConstants {
 	public static final String EXTERNAL_COLLECTION = "collection-external";
 	
 	public static final String TIMESPENT = "timeSpent";
+	
+	public static final String PATH_TYPE = "pathType";
 
 	private EventConstants() {
 		throw new AssertionError();

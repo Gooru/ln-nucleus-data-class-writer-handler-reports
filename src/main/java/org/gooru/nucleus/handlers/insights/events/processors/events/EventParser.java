@@ -119,6 +119,8 @@ public final class EventParser {
 	private String sourceId;
 
 	private String accessToken;
+	
+	private String pathType;
 
 	public String getSourceId() {
 		return sourceId;
@@ -537,7 +539,14 @@ public final class EventParser {
 	public void setTimeZone(String timezone) {
 		this.timezone = timezone;
 	}
-
+	
+	public String getPathType() {
+	    return pathType;
+	}
+	
+	public void setPathType(String pathType) {
+	    this.pathType = pathType;
+	}
 
 	private EventParser parse() {
 		try {			
@@ -592,6 +601,7 @@ public final class EventParser {
 			this.partnerId = context.containsKey(EventConstants.PARTNER_ID) ? context.getString(EventConstants.PARTNER_ID) : null;				
 			this.collectionSubType = context.containsKey(EventConstants.COLLECTION_SUB_TYPE) ? context.getString(EventConstants.COLLECTION_SUB_TYPE) : null;        
 			this.pathId = context.containsKey(EventConstants.PATH_ID) ? context.getLong(EventConstants.PATH_ID) : 0L;
+			this.pathType = context.containsKey(EventConstants.PATH_TYPE) ? context.getString(EventConstants.PATH_TYPE) : null;
 			this.sessionId = session.containsKey(EventConstants.SESSION_ID) ? session.getString(EventConstants.SESSION_ID) : EventConstants.NA;        
 			this.questionType = payLoadObject.containsKey(EventConstants.QUESTION_TYPE) ? payLoadObject.getString(EventConstants.QUESTION_TYPE) : EventConstants.NA;				
 			if(payLoadObject.containsKey(EventConstants.ANSWER_OBECT) && payLoadObject.getValue(EventConstants.ANSWER_OBECT) instanceof JsonArray){
