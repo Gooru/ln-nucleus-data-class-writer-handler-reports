@@ -20,6 +20,8 @@ import org.javalite.activejdbc.LazyList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.hazelcast.util.StringUtil;
+
 import io.vertx.core.json.JsonObject;
 
 /**
@@ -94,9 +96,13 @@ class ProcessEventHandler implements DBHandler {
       baseReport.set("partner_id",event.getPartnerId());
       //pathId = 0L indicates the main Path. We store pathId only for the altPaths
       if (event.getPathId() != 0L){
-    	  baseReport.set("path_id",event.getPathId());  
+    	  baseReport.set("path_id",event.getPathId());
+    	  if (!StringUtil.isNullOrEmpty(event.getPathType())) {
+    	      if (EventConstants.PATH_TYPES.matcher(event.getPathType()).matches()) baseReport.set("path_type", event.getPathType());
+    	      else LOGGER.warn("Invalid Path Type is passed in event : {}", event.getPathType());            
+    	  }
       }
-      baseReport.set("path_type", event.getPathType());
+      
       baseReport.set("created_at",new Timestamp(event.getStartTime()));
       baseReport.set("updated_at",new Timestamp(event.getEndTime()));
       
