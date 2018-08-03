@@ -881,6 +881,8 @@ public class EventConstants {
 	public static final String TIMESPENT = "timeSpent";
 	
 	public static final String PATH_TYPE = "pathType";
+	
+	public static final Pattern PATH_TYPES = Pattern.compile("system|teacher|route0");
 
 	private EventConstants() {
 		throw new AssertionError();
