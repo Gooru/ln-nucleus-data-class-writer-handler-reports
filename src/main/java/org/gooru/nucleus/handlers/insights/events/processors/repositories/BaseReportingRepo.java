@@ -21,5 +21,7 @@ public interface BaseReportingRepo {
     MessageResponse processStudentGrades();
     
     MessageResponse updateAssessmentScore();
+    
+    MessageResponse updateStudentSelfReportedScore();
 
 }

@@ -20,5 +20,9 @@ public final class ProcessorBuilder {
     public static Processor buildUpdater(Message<Object> message) {
         return new UpdateMessageProcessor(message);
     }
-    
+
+    public static Processor buildSelfReportingProcessor (Message<Object> message) {
+        return new SelfReportingProcessor(message);
+    }
+
 }
