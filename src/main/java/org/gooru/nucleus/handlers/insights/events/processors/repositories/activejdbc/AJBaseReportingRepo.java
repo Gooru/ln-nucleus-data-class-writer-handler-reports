@@ -48,4 +48,8 @@
     public MessageResponse updateAssessmentScore() {
       return TransactionExecutor.executeTransaction(DBHandlerBuilder.buildScoreUpdateHandler(context));
     }
+    
+    public MessageResponse updateStudentSelfReportedScore() {
+        return TransactionExecutor.executeTransaction(DBHandlerBuilder.buildStudentSelfReportingHandler(context));
+      }
   }
