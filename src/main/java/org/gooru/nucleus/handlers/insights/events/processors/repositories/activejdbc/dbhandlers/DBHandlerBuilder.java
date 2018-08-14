@@ -38,4 +38,8 @@ import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
     public static DBHandler buildScoreUpdateHandler(ProcessorContext context) {
         return new ScoreUpdateHandler(context);
       }
+    
+    public static DBHandler buildStudentSelfReportingHandler(ProcessorContext context) {
+        return new StudentSelfReportingHandler(context);
+      }
 }

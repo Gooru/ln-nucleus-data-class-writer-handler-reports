@@ -59,11 +59,13 @@ public class AJEntityReporting extends Model {
     public static final String COLLECTION_SUB_TYPE = "collection_sub_type";
     public static final String MAX_SCORE = "max_score";
     public static final String PATH_ID = "path_id";
+    public static final String PATH_TYPE = "path_type";
     
     public static final String EVENT_ID = "event_id";
     public static final String TIME_ZONE = "time_zone";
     public static final String DATE_IN_TIME_ZONE = "date_in_time_zone";
     public static final String IS_GRADED = "is_graded";
+    public static final String GRADING_TYPE = "grading_type";
     public static final String CONTENT_SOURCE = "content_source";
 
     public static final String CREATE_TIMESTAMP = "created_at";
@@ -108,8 +110,12 @@ public class AJEntityReporting extends Model {
             + "WHERE collection_id = ? AND session_id = ? AND event_name = 'collection.resource.play' AND event_type = 'stop' "
             + " ORDER BY resource_id, updated_at desc) questionData GROUP BY session_id";
     
-    public static final String FIND_COLLECTION_EVENT = "SELECT id, views, time_spent, score, reaction, resource_attempt_status, answer_object FROM base_reports "
-            + "WHERE actor_id = ? AND session_id = ? AND collection_id = ? AND event_type = ? AND event_name = ? ";
+//    public static final String FIND_COLLECTION_EVENT = "SELECT id, views, time_spent, score, reaction, resource_attempt_status, answer_object FROM base_reports "
+//            + "WHERE actor_id = ? AND session_id = ? AND collection_id = ? AND event_type = ? AND event_name = ? ";
+
+    public static final String CHECK_DUPLICATE_COLLECTION_EVENT = "SELECT id, views, time_spent, score, reaction, resource_attempt_status, answer_object FROM base_reports "
+    		+ "WHERE actor_id = ? AND session_id = ? AND collection_id = ? AND event_type = ? AND event_name = ? ";
+
     
     public static final String UPDATE_COLLECTION_EVENT = "UPDATE base_reports SET views = ?, time_spent= ?, score = ?, max_score = ?, updated_at = ?, "
             + "reaction = ? WHERE id = ?";
@@ -152,6 +158,14 @@ public class AJEntityReporting extends Model {
     public static final String IS_COLLECTION_GRADED = "SELECT is_graded FROM base_reports "
             + "WHERE actor_id = ? AND session_id = ? AND collection_id = ?  AND event_name = ? AND event_type = ? AND is_graded = ?";
 
+    //Student Self Grading
+    public static final String CHECK_IF_EXT_ASSESSMENT_SELF_GRADED = "SELECT id, time_spent, score, reaction FROM base_reports "
+    		+ "WHERE actor_id = ? AND class_id = ? AND collection_id = ? AND session_id = ? AND event_name = ? AND event_type = ? ";
+
+    public static final String UPDATE_SELF_GRADED_EXT_ASSESSMENT = "UPDATE base_reports SET score = ?, max_score = ?, updated_at = ?, "
+    		+ "time_zone = ?, date_in_time_zone = ? WHERE id = ?";
+
+    
     public static final String RESOURCE_ATTEMPT_STATUS_TYPE = "attempt_status";    
     public static final String PGTYPE_TEXT = "text";
     public static final String PGTYPE_NUMERIC = "numeric";

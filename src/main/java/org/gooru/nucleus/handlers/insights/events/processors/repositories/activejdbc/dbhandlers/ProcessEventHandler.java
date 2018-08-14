@@ -121,7 +121,7 @@ class ProcessEventHandler implements DBHandler {
       }
       
     	if ((event.getEventName().equals(EventConstants.COLLECTION_PLAY))){
-    	  duplicateRow =  AJEntityReporting.findBySQL(AJEntityReporting.FIND_COLLECTION_EVENT, event.getGooruUUID(), event.getSessionId(),
+    	  duplicateRow =  AJEntityReporting.findBySQL(AJEntityReporting.CHECK_DUPLICATE_COLLECTION_EVENT, event.getGooruUUID(), event.getSessionId(),
     			  event.getContentGooruId(),event.getEventType(), event.getEventName());
     	  baseReport.set("collection_id", event.getContentGooruId());
     	  baseReport.set("question_count", event.getQuestionCount());    	  
