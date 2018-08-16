@@ -109,8 +109,12 @@ public class StudentSelfReportingHandler implements DBHandler {
 	        baseReports.set(AJEntityReporting.COLLECTION_OID, extCollectionId);	        
 	        percentScore = (req.getValue(PERCENT_SCORE) != null) ? Double.valueOf(req.getValue(PERCENT_SCORE).toString()) : null;	        
 	        if(percentScore != null) {
-	        	baseReports.set(AJEntityReporting.SCORE, percentScore);
-	        	baseReports.set(AJEntityReporting.MAX_SCORE, 100);
+	        	int compVal = percentScore.compareTo(100.00);
+	        	if (compVal > 0) {
+	        		return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse("Numeric Field Overflow - Invalid Percent Score"), ExecutionResult.ExecutionStatus.FAILED);
+	        	} else {
+		        	baseReports.set(AJEntityReporting.SCORE, percentScore);
+		        	baseReports.set(AJEntityReporting.MAX_SCORE, 100);	        	}
 	        } else if (req.getValue(SCORE) == null || req.getValue(SCORE) == null ) {
 	        	return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload"), ExecutionResult.ExecutionStatus.FAILED);
 	        } else {
