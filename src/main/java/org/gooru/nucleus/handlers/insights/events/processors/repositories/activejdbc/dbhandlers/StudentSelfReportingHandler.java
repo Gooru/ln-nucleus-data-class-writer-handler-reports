@@ -143,7 +143,7 @@ public class StudentSelfReportingHandler implements DBHandler {
 	        //baseReports.set(AJEntityReporting.EVENT_ID, UUID.randomUUID());
 
 	    	new DefAJEntityReportingBuilder().build(baseReports, req, AJEntityReporting.getConverterRegistry());
-	        if (baseReports.get(AJEntityReporting.CLASS_GOORU_OID) == null || baseReports.get(AJEntityReporting.COURSE_GOORU_OID) == null || 
+	        if (baseReports.get(AJEntityReporting.COURSE_GOORU_OID) == null || 
 	        		baseReports.get(AJEntityReporting.SESSION_ID) == null) {
 	        	
 	            return new ExecutionResult<>(
