@@ -3,21 +3,13 @@ package org.gooru.nucleus.handlers.insights.events.processors.repositories.activ
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
-import java.util.UUID;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
-import org.gooru.nucleus.handlers.insights.events.constants.GEPConstants;
-import org.gooru.nucleus.handlers.insights.events.processors.MessageDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
-
-import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityClassAuthorizedUsers;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.StudentSelfReportingEventDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityReporting;
-import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityRubricGrading;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.EntityBuilder;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponse;
@@ -28,14 +20,13 @@ import org.javalite.activejdbc.LazyList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import com.hazelcast.util.StringUtil;
-
 
 public class StudentSelfReportingHandler implements DBHandler {
 	
 	  private static final Logger LOGGER = LoggerFactory.getLogger(StudentSelfReportingHandler.class);
+	  public static final String TOPIC_NOTIFICATIONS = "notifications";
 	  private static final String USER_ID_FROM_SESSION = "userIdFromSession";
 	  private static final String EXT_COLLECTION_ID = "external_collection_id";
 	  private static final String USER_ID = "user_id";
@@ -43,6 +34,8 @@ public class StudentSelfReportingHandler implements DBHandler {
 	  private static final String SCORE = "score";
 	  private static final String MAX_SCORE = "max_score";
 	  private static final String EVIDENCE = "evidence";
+	  private static final String ILACTIVITY = "ILActivity";
+	  private static final String COURSEMAP = "courseMap";
 	  private final ProcessorContext context;
 	  private AJEntityReporting baseReports;	  
 	  private Double score;
@@ -70,17 +63,17 @@ public class StudentSelfReportingHandler implements DBHandler {
 
 	    @Override
 	    public ExecutionResult<MessageResponse> validateRequest() {
-	      if (context.request().getString("userIdFromSession") != null) {
-	    	  if (!context.request().getString("userIdFromSession").equals(context.request().getString(USER_ID))) {
-		           return new
-		           ExecutionResult<>(MessageResponseFactory.createForbiddenResponse
-		        		   ("Auth Failure"), ExecutionStatus.FAILED);	    		  
-	    	  }
-	      } else if (StringUtil.isNullOrEmpty(context.request().getString("userIdFromSession"))) {
-	           return new
-	           ExecutionResult<>(MessageResponseFactory.createForbiddenResponse
-	        		   ("Auth Failure"), ExecutionStatus.FAILED);	    		  	    	  
-	      }
+//	      if (context.request().getString("userIdFromSession") != null) {
+//	    	  if (!context.request().getString("userIdFromSession").equals(context.request().getString(USER_ID))) {
+//		           return new
+//		           ExecutionResult<>(MessageResponseFactory.createForbiddenResponse
+//		        		   ("Auth Failure"), ExecutionStatus.FAILED);	    		  
+//	    	  }
+//	      } else if (StringUtil.isNullOrEmpty(context.request().getString("userIdFromSession"))) {
+//	           return new
+//	           ExecutionResult<>(MessageResponseFactory.createForbiddenResponse
+//	        		   ("Auth Failure"), ExecutionStatus.FAILED);	    		  	    	  
+//	      }
 	      LOGGER.debug("validateRequest() OK");
 	      return new ExecutionResult<>(null, ExecutionStatus.CONTINUE_PROCESSING);
 	    }
@@ -143,12 +136,19 @@ public class StudentSelfReportingHandler implements DBHandler {
 	        //baseReports.set(AJEntityReporting.EVENT_ID, UUID.randomUUID());
 
 	    	new DefAJEntityReportingBuilder().build(baseReports, req, AJEntityReporting.getConverterRegistry());
-	        if (baseReports.get(AJEntityReporting.CLASS_GOORU_OID) == null || baseReports.get(AJEntityReporting.COURSE_GOORU_OID) == null || 
-	        		baseReports.get(AJEntityReporting.SESSION_ID) == null) {
-	        	
+	        if (baseReports.get(AJEntityReporting.COURSE_GOORU_OID) == null || 
+	        		baseReports.get(AJEntityReporting.SESSION_ID) == null) {	        	
 	            return new ExecutionResult<>(
 	                    MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload"),
 	                    ExecutionStatus.FAILED);        	
+	        } else if (baseReports.get(AJEntityReporting.CLASS_GOORU_OID) == null && !baseReports.get(AJEntityReporting.CONTENT_SOURCE).toString().equalsIgnoreCase(ILACTIVITY)) {
+	            return new ExecutionResult<>(
+	                    MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload"),
+	                    ExecutionStatus.FAILED);        	
+	        } else if (baseReports.get(AJEntityReporting.CLASS_GOORU_OID) != null && !baseReports.get(AJEntityReporting.CONTENT_SOURCE).toString().equalsIgnoreCase(COURSEMAP)) {
+	            return new ExecutionResult<>(
+	                    MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload"),
+	                    ExecutionStatus.FAILED);
 	        }
 	        
 	        long ts = System.currentTimeMillis();
@@ -167,8 +167,10 @@ public class StudentSelfReportingHandler implements DBHandler {
 	    	duplicateRow =  AJEntityReporting.findBySQL(AJEntityReporting.CHECK_IF_EXT_ASSESSMENT_SELF_GRADED, 
 	    			baseReports.get(AJEntityReporting.GOORUUID),
 	    			baseReports.get(AJEntityReporting.CLASS_GOORU_OID), baseReports.get(AJEntityReporting.COLLECTION_OID),
-	    			baseReports.get(AJEntityRubricGrading.SESSION_ID), EventConstants.COLLECTION_PLAY, EventConstants.STOP);
-
+	    			baseReports.get(AJEntityReporting.SESSION_ID), EventConstants.COLLECTION_PLAY, EventConstants.STOP);
+	    	
+	    	StudentSelfReportingEventDispatcher eventDispatcher = new StudentSelfReportingEventDispatcher(baseReports); 
+	    	
 	    	if (duplicateRow == null || duplicateRow.isEmpty()) {
 	    		boolean result = baseReports.save();    		
 		    	
@@ -181,7 +183,10 @@ public class StudentSelfReportingHandler implements DBHandler {
 	    				return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(errors), ExecutionResult.ExecutionStatus.FAILED);
 	    			}
 	    		}
-	    		LOGGER.info("Student Self grades for External Assessments stored successfully " + req);
+	    		LOGGER.info("Student Self grades for External Assessments stored successfully " + req);	
+	    		
+	    		eventDispatcher.sendSelfReportEventtoNotifications();
+	    		
 		        return new ExecutionResult<>(MessageResponseFactory.createOkayResponse(), ExecutionStatus.SUCCESSFUL);
 		      } else {
 		    	  LOGGER.info("Duplicate record exists. Updating the Self graded score ");
@@ -199,7 +204,9 @@ public class StudentSelfReportingHandler implements DBHandler {
 
 	                  });
 	                
-	                LOGGER.info("Student Self grades for External Assessments stored successfully " + req);	                
+	                LOGGER.info("Student Self grades for External Assessments stored successfully " + req);
+	                eventDispatcher.sendSelfReportEventtoNotifications();
+
 	                return new ExecutionResult<>(MessageResponseFactory.createOkayResponse(), ExecutionStatus.SUCCESSFUL);
 	    		
 	    	}
@@ -238,6 +245,5 @@ public class StudentSelfReportingHandler implements DBHandler {
 	        }
 	        
 	        return strLocaleDate;
-	    }
-	    
+	    }  	    
 }

@@ -17,8 +17,10 @@ import io.vertx.core.json.JsonObject;
 public final class KafkaRegistry implements Initializer, Finalizer {
 
     private static final String DEFAULT_KAFKA_SETTINGS = "defaultKafkaProducerSettings";
+    private static final String TOPICS = "topics";
     private static final Logger LOGGER = LoggerFactory.getLogger(KafkaRegistry.class);
     private Producer<String, String> kafkaProducer;
+    JsonObject kafkaTopics = new JsonObject();
 
     private String KAFKA_TOPIC = "nileLTIEvent";
     private boolean testWithoutKafkaServer = false;
@@ -82,10 +84,10 @@ public final class KafkaRegistry implements Initializer, Finalizer {
                 properties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, String.valueOf(entry.getValue()));
                 LOGGER.debug("VALUE_SERIALIZER_CLASS_CONFIG : " + entry.getValue());
                 break;
-            case "topic":
-                this.KAFKA_TOPIC = entry.getValue().toString();
-                LOGGER.debug("KAFKA_TOPIC : " + this.KAFKA_TOPIC);
-                break;
+            case TOPICS:
+            	kafkaTopics = new JsonObject(entry.getValue().toString());            	
+            	LOGGER.debug("KAFKA TOPICS: " + kafkaTopics.toString());
+            	break;
             case ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG:
                 properties.setProperty(ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG, String.valueOf(entry.getValue()));
                 LOGGER.debug("REQUEST_TIMEOUT_MS_CONFIG : " + entry.getValue());
@@ -131,6 +133,11 @@ public final class KafkaRegistry implements Initializer, Finalizer {
     public String getKafkaTopic() {
         return this.KAFKA_TOPIC;
     }
+
+    public String getKafkaTopicFromConfig(String attrTopic) {
+        return kafkaTopics.getString(attrTopic);
+    }
+
     
     public static KafkaRegistry getInstance() {
         return Holder.INSTANCE;

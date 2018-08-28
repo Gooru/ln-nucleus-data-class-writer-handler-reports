@@ -34,8 +34,7 @@ public class KafkaMessageConsumer implements Runnable {
           LOGGER.info("Test Kafka Consumer : {}", record.value());
           break;
         default:
-          // FIXME: Revisit this logic.
-          LOGGER.warn("Assume that message is coming from unknown topic. Send to handlers anyway");
+          // FIXME: Revisit this logic.          
           sendMessage(record.value());
         }
       }
@@ -56,8 +55,7 @@ public class KafkaMessageConsumer implements Runnable {
         if (eventObject.containsKey(ConfigConstants._EVENT_NAME)
                 && eventObject.getString(ConfigConstants._EVENT_NAME).equalsIgnoreCase(EventConstants.RESOURCE_RUBRIC_GRADE)) {
           ProcessorBuilder.buildRubrics(eventObject).process();
-        } else {
-          LOGGER.info("Do I get here", eventObject);
+        } else {          
           ProcessorBuilder.build(eventObject).process();
         }
 

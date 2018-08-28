@@ -127,11 +127,17 @@ public class AJEntityReporting extends Model {
     public static final String FIND_RESOURCE_EVENT = "SELECT id, views, time_spent, score, reaction, resource_attempt_status, answer_object FROM base_reports "
             + "WHERE actor_id = ? AND collection_id = ? AND session_id = ? AND resource_id = ? AND event_type = ?";
     
-    public static final String FIND_SESSION_ID = "SELECT session_id "
-            + "FROM base_reports WHERE actor_id = ? AND class_id = ? AND course_id = ? AND unit_id = ? "
-            + "AND lesson_id = ? AND collection_id = ? "
-            + "AND event_name = 'collection.play' AND event_type = 'stop' "
-            + "ORDER BY updated_at DESC LIMIT 1";
+//    public static final String FIND_SESSION_ID = "SELECT session_id "
+//            + "FROM base_reports WHERE actor_id = ? AND class_id = ? AND course_id = ? AND unit_id = ? "
+//            + "AND lesson_id = ? AND collection_id = ? "
+//            + "AND event_name = 'collection.play' AND event_type = 'stop' "
+//            + "ORDER BY updated_at DESC LIMIT 1";
+
+    public static final String FIND_SESSION_PATH_ID_TYPE = "SELECT session_id, path_id, path_type "
+    		+ "FROM base_reports WHERE actor_id = ? AND class_id = ? AND course_id = ? AND unit_id = ? "
+    		+ "AND lesson_id = ? AND collection_id = ? "
+    		+ "AND event_name = 'collection.play' AND event_type = 'stop' "
+    		+ "ORDER BY updated_at DESC LIMIT 1";
     
     public static final String FIND_COLLECTION_TYPE = "SELECT collection_type FROM base_reports WHERE class_id = ? AND course_id = ? "
     		+ "AND unit_id = ? AND lesson_id = ? AND collection_id = ? AND event_name = 'collection.play' LIMIT 1";
@@ -157,6 +163,10 @@ public class AJEntityReporting extends Model {
 
     public static final String IS_COLLECTION_GRADED = "SELECT is_graded FROM base_reports "
             + "WHERE actor_id = ? AND session_id = ? AND collection_id = ?  AND event_name = ? AND event_type = ? AND is_graded = ?";
+
+    public static final String GET_PATH_ID_TYPE = "SELECT path_id, path_type FROM base_reports "
+            + "WHERE actor_id = ? AND class_id = ? AND course_id = ? AND unit_id = ? and lesson_id = ?"
+            + "AND session_id = ? AND collection_id = ?  AND event_name = ? AND event_type = ? LIMIT 1";
 
     //Student Self Grading
     public static final String CHECK_IF_EXT_ASSESSMENT_SELF_GRADED = "SELECT id, time_spent, score, reaction FROM base_reports "

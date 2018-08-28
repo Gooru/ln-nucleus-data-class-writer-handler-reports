@@ -29,7 +29,13 @@ public final class MessageDispatcher {
     sendMessageToKafka(KafkaRegistry.getInstance().getKafkaTopic(), eventBody);
   }
 
-  public void sendGEPEvent2Kafka(String topic, JsonObject eventBody) {	    
+  public void sendGEPEvent2Kafka(String topic, JsonObject eventBody) {
+	    //String topic = KafkaRegistry.getInstance().getKafkaTopicFromConfig(attrTopic);
+	    sendMessageToKafka(topic, eventBody);
+	  }
+  
+  public void sendEvent2Kafka(String attrTopic, JsonObject eventBody) {
+	    String topic = KafkaRegistry.getInstance().getKafkaTopicFromConfig(attrTopic);
 	    sendMessageToKafka(topic, eventBody);
 	  }
   
