@@ -9,8 +9,10 @@ import java.util.stream.IntStream;
 
 import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.constants.GEPConstants;
+import org.gooru.nucleus.handlers.insights.events.constants.NotificationConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.MessageDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.TeacherScoreOverideEventDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityClassAuthorizedUsers;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityReporting;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityRubricGrading;
@@ -36,14 +38,16 @@ import io.vertx.core.json.JsonObject;
 public class ScoreUpdateHandler implements DBHandler {
 	
   private static final Logger LOGGER = LoggerFactory.getLogger(ScoreUpdateHandler.class);
+	//TODO: This Kafka Topic name needs to be picked up from config
   public static final String TOPIC_GEP_USAGE_EVENTS = "org.gooru.da.sink.logW.usage.events";
+  public static final String TOPIC_NOTIFICATIONS = "notifications";
   private static final String USER_ID_FROM_SESSION = "userIdFromSession";
   private static final String STUDENT_ID = "student_id";
   private static final String RESOURCES = "resources";
   private static final String CORRECT = "correct";
   private static final String INCORRECT = "incorrect";  
   private final ProcessorContext context;
-  private AJEntityReporting BaseReports;
+  private AJEntityReporting baseReports;
   private String studentId;
   private Double score;
   private Double max_score;
@@ -84,7 +88,7 @@ public class ScoreUpdateHandler implements DBHandler {
     @Override
       public ExecutionResult<MessageResponse> executeRequest() {
     
-        BaseReports = new AJEntityReporting();   
+        baseReports = new AJEntityReporting();   
         LazyList<AJEntityReporting> allGraded = null;
         JsonObject req = context.request(); 
         String teacherId = req.getString(USER_ID_FROM_SESSION);
@@ -98,31 +102,32 @@ public class ScoreUpdateHandler implements DBHandler {
                 .collect(Collectors.toList());
         req.remove(RESOURCES);        
         
-        new DefAJEntityReportingBuilder().build(BaseReports, req, AJEntityReporting.getConverterRegistry());
+        new DefAJEntityReportingBuilder().build(baseReports, req, AJEntityReporting.getConverterRegistry());
         
         //TODO: Create a Validator functions to add validations for attributes
-        if (BaseReports.get(AJEntityReporting.CLASS_GOORU_OID) == null || BaseReports.get(AJEntityReporting.SESSION_ID) == null 
-        		|| BaseReports.get(AJEntityReporting.COLLECTION_OID) == null) {
+        if (baseReports.get(AJEntityReporting.CLASS_GOORU_OID) == null || baseReports.get(AJEntityReporting.SESSION_ID) == null 
+        		|| baseReports.get(AJEntityReporting.COLLECTION_OID) == null) {
         	
             return new ExecutionResult<>(
                     MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload"),
                     ExecutionStatus.FAILED);        	
         }
           
+        baseReports.set(AJEntityReporting.GOORUUID, studentId);
           //Since this NOT a Free-Response Question, the Max_Score can be safely assumed to be 1.0. So no need to update the same.
           jObj.forEach(attr -> {          
           String ans_status = attr.getString(AJEntityReporting.RESOURCE_ATTEMPT_STATUS);          
           Base.exec(AJEntityReporting.UPDATE_QUESTION_SCORE_U, ans_status.equalsIgnoreCase(CORRECT) ? 1.0 : 0.0,
-                  true, attr.getString(AJEntityReporting.RESOURCE_ATTEMPT_STATUS), studentId, BaseReports.get(AJEntityReporting.CLASS_GOORU_OID),                   
-                  BaseReports.get(AJEntityReporting.SESSION_ID), 
-                  BaseReports.get(AJEntityReporting.COLLECTION_OID),
+                  true, attr.getString(AJEntityReporting.RESOURCE_ATTEMPT_STATUS), studentId, baseReports.get(AJEntityReporting.CLASS_GOORU_OID),                   
+                  baseReports.get(AJEntityReporting.SESSION_ID), 
+                  baseReports.get(AJEntityReporting.COLLECTION_OID),
                   attr.getString(AJEntityReporting.RESOURCE_ID));                 
           });
          
         	  LOGGER.debug("Computing total score...");
               LazyList<AJEntityReporting> scoreTS = AJEntityReporting.findBySQL(AJEntityReporting.COMPUTE_ASSESSMENT_SCORE_POST_GRADING_U, 
-            		  studentId, BaseReports.get(AJEntityReporting.CLASS_GOORU_OID), BaseReports.get(AJEntityReporting.COLLECTION_OID), 
-            		  BaseReports.get(AJEntityReporting.SESSION_ID));
+            		  studentId, baseReports.get(AJEntityReporting.CLASS_GOORU_OID), baseReports.get(AJEntityReporting.COLLECTION_OID), 
+            		  baseReports.get(AJEntityReporting.SESSION_ID));
               LOGGER.debug("scoreTS {} ", scoreTS);
 
               if (scoreTS != null && !scoreTS.isEmpty()) {	
@@ -138,20 +143,32 @@ public class ScoreUpdateHandler implements DBHandler {
                   LOGGER.debug("Re-Computed total Assessment score {} ", score);
                 }
               }
-              Base.exec(AJEntityReporting.UPDATE_ASSESSMENT_SCORE_U, score, max_score, studentId, BaseReports.get(AJEntityReporting.CLASS_GOORU_OID),
-            		  BaseReports.get(AJEntityReporting.SESSION_ID), BaseReports.get(AJEntityReporting.COLLECTION_OID));
+              Base.exec(AJEntityReporting.UPDATE_ASSESSMENT_SCORE_U, score, max_score, studentId, baseReports.get(AJEntityReporting.CLASS_GOORU_OID),
+            		  baseReports.get(AJEntityReporting.SESSION_ID), baseReports.get(AJEntityReporting.COLLECTION_OID));
               LOGGER.debug("Total score updated successfully...");
 
-      		
+              //Get pathId & pathType
+          	  allGraded =  AJEntityReporting.findBySQL(AJEntityReporting.GET_PATH_ID_TYPE, studentId, baseReports.get(AJEntityReporting.SESSION_ID), 
+                      baseReports.get(AJEntityReporting.COLLECTION_OID), EventConstants.COLLECTION_RESOURCE_PLAY, EventConstants.STOP, false);
+
+          	  AJEntityReporting pathIdTypeModel =  AJEntityReporting.findFirst("actor_id = ? AND class_id = ? AND course_id = ? AND unit_id = ? "
+          			  + "AND lesson_id = ? AND collection_id = ? AND event_name = 'collection.play' AND event_type = 'stop'", 
+          			baseReports.get(AJEntityReporting.GOORUUID), baseReports.get(AJEntityReporting.CLASS_GOORU_OID),
+          			baseReports.get(AJEntityReporting.COURSE_GOORU_OID), baseReports.get(AJEntityReporting.UNIT_GOORU_OID), 
+          			baseReports.get(AJEntityReporting.LESSON_GOORU_OID), baseReports.get(AJEntityReporting.COLLECTION_OID));
+          			
+          	
               //Send Score Update Events to GEP
               jObj.forEach(attr -> {          
                   String ans_status = attr.getString(AJEntityReporting.RESOURCE_ATTEMPT_STATUS);
                   sendResourceScoreUpdateEventtoGEP(ans_status, attr.getString(AJEntityReporting.RESOURCE_ID));                 
                   });
               
+              TeacherScoreOverideEventDispatcher eventDispatcher = new TeacherScoreOverideEventDispatcher(baseReports); 
+              eventDispatcher.sendTeacherScoreUpdateEventtoNotifications();
               //Send Assessment Score update Event if ALL Questions have been graded
-          	  allGraded =  AJEntityReporting.findBySQL(AJEntityReporting.IS_COLLECTION_GRADED, studentId, BaseReports.get(AJEntityReporting.SESSION_ID), 
-                      BaseReports.get(AJEntityReporting.COLLECTION_OID), EventConstants.COLLECTION_RESOURCE_PLAY, EventConstants.STOP, false);
+          	  allGraded =  AJEntityReporting.findBySQL(AJEntityReporting.IS_COLLECTION_GRADED, studentId, baseReports.get(AJEntityReporting.SESSION_ID), 
+                      baseReports.get(AJEntityReporting.COLLECTION_OID), EventConstants.COLLECTION_RESOURCE_PLAY, EventConstants.STOP, false);
               if (allGraded == null || allGraded.isEmpty()) {
             	  sendCollScoreUpdateEventtoGEP();  
               }
@@ -168,7 +185,13 @@ public class ScoreUpdateHandler implements DBHandler {
     public boolean handlerReadOnly() {
         return false;
     }
-      
+     
+    
+    
+    //********************************************************
+    //TODO: Move GEP Event Processing to the EventDispatcher 
+    //********************************************************
+
     
     private void sendResourceScoreUpdateEventtoGEP(String ansStatus, String resId) {    	
     	JsonObject result = new JsonObject();
@@ -200,13 +223,13 @@ public class ScoreUpdateHandler implements DBHandler {
     	resEvent.put(GEPConstants.RESOURCE_ID, rId);
     	resEvent.put(GEPConstants.RESOURCE_TYPE, GEPConstants.QUESTION);
 
-    	context.put(GEPConstants.CLASS_ID, BaseReports.get(AJEntityReporting.CLASS_GOORU_OID));
-    	context.put(GEPConstants.COURSE_ID, BaseReports.get(AJEntityReporting.COURSE_GOORU_OID));
-    	context.put(GEPConstants.UNIT_ID, BaseReports.get(AJEntityReporting.UNIT_GOORU_OID));
-    	context.put(GEPConstants.LESSON_ID, BaseReports.get(AJEntityReporting.LESSON_GOORU_OID));
-    	context.put(GEPConstants.COLLECTION_ID, BaseReports.get(AJEntityReporting.COLLECTION_OID));
-    	context.put(GEPConstants.COLLECTION_TYPE, BaseReports.get(AJEntityReporting.COLLECTION_TYPE));
-    	context.put(GEPConstants.SESSION_ID, BaseReports.get(AJEntityReporting.SESSION_ID));
+    	context.put(GEPConstants.CLASS_ID, baseReports.get(AJEntityReporting.CLASS_GOORU_OID));
+    	context.put(GEPConstants.COURSE_ID, baseReports.get(AJEntityReporting.COURSE_GOORU_OID));
+    	context.put(GEPConstants.UNIT_ID, baseReports.get(AJEntityReporting.UNIT_GOORU_OID));
+    	context.put(GEPConstants.LESSON_ID, baseReports.get(AJEntityReporting.LESSON_GOORU_OID));
+    	context.put(GEPConstants.COLLECTION_ID, baseReports.get(AJEntityReporting.COLLECTION_OID));
+    	context.put(GEPConstants.COLLECTION_TYPE, baseReports.get(AJEntityReporting.COLLECTION_TYPE));
+    	context.put(GEPConstants.SESSION_ID, baseReports.get(AJEntityReporting.SESSION_ID));
 
     	resEvent.put(GEPConstants.CONTEXT, context);
 
@@ -236,14 +259,14 @@ public class ScoreUpdateHandler implements DBHandler {
     	cpEvent.put(GEPConstants.ACTIVITY_TIME, System.currentTimeMillis());
     	cpEvent.put(GEPConstants.EVENT_ID, UUID.randomUUID().toString());
     	cpEvent.put(GEPConstants.EVENT_NAME, GEPConstants.COLL_SCORE_UPDATE_EVENT);
-    	cpEvent.put(GEPConstants.COLLECTION_ID, BaseReports.get(AJEntityReporting.COLLECTION_OID));
-    	cpEvent.put(GEPConstants.COLLECTION_TYPE, BaseReports.get(AJEntityReporting.COLLECTION_TYPE));
+    	cpEvent.put(GEPConstants.COLLECTION_ID, baseReports.get(AJEntityReporting.COLLECTION_OID));
+    	cpEvent.put(GEPConstants.COLLECTION_TYPE, baseReports.get(AJEntityReporting.COLLECTION_TYPE));
 
-    	context.put(GEPConstants.CLASS_ID, BaseReports.get(AJEntityReporting.CLASS_GOORU_OID));
-    	context.put(GEPConstants.COURSE_ID, BaseReports.get(AJEntityReporting.COURSE_GOORU_OID));
-    	context.put(GEPConstants.UNIT_ID, BaseReports.get(AJEntityReporting.UNIT_GOORU_OID));
-    	context.put(GEPConstants.LESSON_ID, BaseReports.get(AJEntityReporting.LESSON_GOORU_OID));
-    	context.put(GEPConstants.SESSION_ID, BaseReports.get(AJEntityReporting.SESSION_ID));
+    	context.put(GEPConstants.CLASS_ID, baseReports.get(AJEntityReporting.CLASS_GOORU_OID));
+    	context.put(GEPConstants.COURSE_ID, baseReports.get(AJEntityReporting.COURSE_GOORU_OID));
+    	context.put(GEPConstants.UNIT_ID, baseReports.get(AJEntityReporting.UNIT_GOORU_OID));
+    	context.put(GEPConstants.LESSON_ID, baseReports.get(AJEntityReporting.LESSON_GOORU_OID));
+    	context.put(GEPConstants.SESSION_ID, baseReports.get(AJEntityReporting.SESSION_ID));
 
     	cpEvent.put(GEPConstants.CONTEXT, context);
     	
@@ -261,4 +284,5 @@ public class ScoreUpdateHandler implements DBHandler {
     	return cpEvent;
     	
     }
+    
 }
