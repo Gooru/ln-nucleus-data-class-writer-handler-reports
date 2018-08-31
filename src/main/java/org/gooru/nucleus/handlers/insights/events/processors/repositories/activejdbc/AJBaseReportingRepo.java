@@ -49,7 +49,13 @@
       return TransactionExecutor.executeTransaction(DBHandlerBuilder.buildScoreUpdateHandler(context));
     }
     
+    @Override
     public MessageResponse updateStudentSelfReportedScore() {
         return TransactionExecutor.executeTransaction(DBHandlerBuilder.buildStudentSelfReportingHandler(context));
+      }
+    
+    @Override
+    public MessageResponse updateStudentSelfReportedScoreOnDCA() {
+        return TransactionExecutor.executeTransaction(DBHandlerBuilder.buildDCAStudentSelfReportingHandler(context));
       }
   }

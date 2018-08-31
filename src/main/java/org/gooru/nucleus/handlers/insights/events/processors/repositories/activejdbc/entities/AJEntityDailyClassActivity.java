@@ -1,7 +1,12 @@
 package org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities;
 
 import java.sql.SQLException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.converters.ConverterRegistry;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.converters.FieldConverter;
 import org.javalite.activejdbc.Model;
 import org.javalite.activejdbc.annotations.Table;
 import org.postgresql.util.PGobject;
@@ -26,7 +31,7 @@ public class AJEntityDailyClassActivity extends Model {
   	public static final String GOORUUID = "actor_id";    
   	public static final String TENANT_ID = "tenant_id";
       
-  	public static final Object CLASS_GOORU_OID = "class_id";
+  	public static final String CLASS_GOORU_OID = "class_id";
   	public static final String COURSE_GOORU_OID = "course_id";
   	public static final String UNIT_GOORU_OID = "unit_id";
   	public static final String LESSON_GOORU_OID = "lesson_id";
@@ -100,6 +105,13 @@ public class AJEntityDailyClassActivity extends Model {
     
     public static final String SELECT_DCA_REPORT_ID = "SELECT id FROM daily_class_activity WHERE collection_id = ? AND session_id = ? AND resource_id = ? AND event_type = ? ";
     
+    //Student Self Grading
+    public static final String CHECK_IF_EXT_ASSESSMENT_SELF_GRADED = "SELECT id, time_spent, score, reaction FROM daily_class_activity "
+            + "WHERE actor_id = ? AND class_id = ? AND collection_id = ? AND session_id = ? AND event_name = ? AND event_type = ? ";
+
+    public static final String UPDATE_SELF_GRADED_EXT_ASSESSMENT = "UPDATE daily_class_activity SET score = ?, max_score = ?, updated_at = ?, "
+            + "time_zone = ?, date_in_time_zone = ? WHERE id = ?";
+
     public static final String RESOURCE_ATTEMPT_STATUS_TYPE = "attempt_status";    
     public static final String PGTYPE_TEXT = "text";
     public static final String PGTYPE_NUMERIC = "numeric";
@@ -130,5 +142,32 @@ public class AJEntityDailyClassActivity extends Model {
       // activeJDBC.    	
       this.manageTime(false);
     }
+    
+    //*********************************************************************************************************************************************
+    
+    private static final Map<String, FieldConverter> converterRegistry;
+
+    static {
+        converterRegistry = initializeConverters();
+    }
+
+    private static Map<String, FieldConverter> initializeConverters() {
+        Map<String, FieldConverter> converterMap = new HashMap<>();
+        converterMap.put(ANSWER_OBJECT, (fieldValue -> FieldConverter.convertJsonToTextArray(fieldValue)));        
+        return Collections.unmodifiableMap(converterMap);
+    }
+    
+    public static ConverterRegistry getConverterRegistry() {
+        return new DCAConverterRegistry();
+    }
+    
+    private static class DCAConverterRegistry implements ConverterRegistry {
+        @Override
+        public FieldConverter lookupConverter(String fieldName) {
+            return converterRegistry.get(fieldName);
+        }
+    }
+    
+    //**********************************************************************************************************************************************
 
 }
