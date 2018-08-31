@@ -8,8 +8,7 @@ import java.util.TimeZone;
 
 import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
-import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.StudentSelfReportingEventDispatcher;
-import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityReporting;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityDailyClassActivity;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.EntityBuilder;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult.ExecutionStatus;
@@ -24,10 +23,9 @@ import com.hazelcast.util.StringUtil;
 
 import io.vertx.core.json.JsonObject;
 
-public class StudentSelfReportingHandler implements DBHandler {
+public class DCAStudentSelfReportingHandler implements DBHandler {
 	
-	  private static final Logger LOGGER = LoggerFactory.getLogger(StudentSelfReportingHandler.class);
-	  public static final String TOPIC_NOTIFICATIONS = "notifications";
+	  private static final Logger LOGGER = LoggerFactory.getLogger(DCAStudentSelfReportingHandler.class);
 	  private static final String USER_ID_FROM_SESSION = "userIdFromSession";
 	  private static final String EXT_COLLECTION_ID = "external_collection_id";
 	  private static final String USER_ID = "user_id";
@@ -35,17 +33,15 @@ public class StudentSelfReportingHandler implements DBHandler {
 	  private static final String SCORE = "score";
 	  private static final String MAX_SCORE = "max_score";
 	  private static final String EVIDENCE = "evidence";
-	  private static final String ILACTIVITY = "ILActivity";
-	  private static final String COURSEMAP = "courseMap";
 	  private final ProcessorContext context;
-	  private AJEntityReporting baseReports;	  
+	  private AJEntityDailyClassActivity dcaReport;	  
 	  private Double score;
 	  private Double percentScore;
 	  private Double rawScore;
 	  private Double maxScore;
 	  String localeDate;
 
-	    public StudentSelfReportingHandler(ProcessorContext context) {	    	
+	    public DCAStudentSelfReportingHandler(ProcessorContext context) {	    	
 	        this.context = context;
 	    }
 
@@ -83,11 +79,10 @@ public class StudentSelfReportingHandler implements DBHandler {
 	    @Override
 	      public ExecutionResult<MessageResponse> executeRequest() {
 	    
-	        baseReports = new AJEntityReporting();
-	        JsonObject req = context.request(); 
-	        LazyList<AJEntityReporting> duplicateRow = null;
+	        dcaReport = new AJEntityDailyClassActivity();      
+	        JsonObject req = context.request();
+	        LazyList<AJEntityDailyClassActivity> duplicateRow = null;
 	       	        
-	        String studentId = req.getString(USER_ID_FROM_SESSION);
 	        req.remove(USER_ID_FROM_SESSION);
 	        
 	        String extCollectionId = req.getString(EXT_COLLECTION_ID);
@@ -99,16 +94,16 @@ public class StudentSelfReportingHandler implements DBHandler {
 	                    ExecutionStatus.FAILED);        	
 	        }
 	        
-	        baseReports.set(AJEntityReporting.GOORUUID, userId);
-	        baseReports.set(AJEntityReporting.COLLECTION_OID, extCollectionId);	        
+	        dcaReport.set(AJEntityDailyClassActivity.GOORUUID, userId);
+	        dcaReport.set(AJEntityDailyClassActivity.COLLECTION_OID, extCollectionId);	        
 	        percentScore = (req.getValue(PERCENT_SCORE) != null) ? Double.valueOf(req.getValue(PERCENT_SCORE).toString()) : null;	        
 	        if(percentScore != null) {
 	        	int compVal = percentScore.compareTo(100.00);
 	        	if (compVal > 0) {
 	        		return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse("Numeric Field Overflow - Invalid Percent Score"), ExecutionResult.ExecutionStatus.FAILED);
 	        	} else {
-		        	baseReports.set(AJEntityReporting.SCORE, percentScore);
-		        	baseReports.set(AJEntityReporting.MAX_SCORE, 100);	        	}
+	        	    dcaReport.set(AJEntityDailyClassActivity.SCORE, percentScore);
+	        	    dcaReport.set(AJEntityDailyClassActivity.MAX_SCORE, 100);	        	}
 	        } else if (req.getValue(SCORE) == null || req.getValue(SCORE) == null ) {
 	        	return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload"), ExecutionResult.ExecutionStatus.FAILED);
 	        } else {
@@ -116,8 +111,8 @@ public class StudentSelfReportingHandler implements DBHandler {
 		        maxScore = Double.valueOf(req.getValue(MAX_SCORE).toString());
 		        if (maxScore > 0) {
 		        	score = (rawScore *100)/maxScore;		        	
-		        	baseReports.set(AJEntityReporting.SCORE, score);
-		        	baseReports.set(AJEntityReporting.MAX_SCORE, maxScore);
+		        	dcaReport.set(AJEntityDailyClassActivity.SCORE, score);
+		        	dcaReport.set(AJEntityDailyClassActivity.MAX_SCORE, maxScore);
 		        }
 	        }
 	        
@@ -128,66 +123,53 @@ public class StudentSelfReportingHandler implements DBHandler {
 	        req.remove(SCORE);
 	        req.remove(EXT_COLLECTION_ID);
 	        req.remove(USER_ID);
-	        req.remove(AJEntityReporting.COLLECTION_OID);
+	        req.remove(AJEntityDailyClassActivity.COLLECTION_OID);
 	        req.remove(EVIDENCE);
 
 	        //& set the fields required at base reports for future reporting
-	        baseReports.set(AJEntityReporting.EVENTNAME, EventConstants.COLLECTION_PLAY);
-	        baseReports.set(AJEntityReporting.EVENTTYPE, EventConstants.STOP);
+	        dcaReport.set(AJEntityDailyClassActivity.EVENTNAME, EventConstants.COLLECTION_PLAY);
+	        dcaReport.set(AJEntityDailyClassActivity.EVENTTYPE, EventConstants.STOP);
 	        //baseReports.set(AJEntityReporting.EVENT_ID, UUID.randomUUID());
 
-	    	new DefAJEntityReportingBuilder().build(baseReports, req, AJEntityReporting.getConverterRegistry());
-	        if (baseReports.get(AJEntityReporting.COURSE_GOORU_OID) == null || 
-	        		baseReports.get(AJEntityReporting.SESSION_ID) == null) {	        	
+	    	new DefAJEntityReportingBuilder().build(dcaReport, req, AJEntityDailyClassActivity.getConverterRegistry());
+	        if (dcaReport.get(AJEntityDailyClassActivity.CLASS_GOORU_OID) == null || 
+	            dcaReport.get(AJEntityDailyClassActivity.SESSION_ID) == null) {	        	
 	            return new ExecutionResult<>(
 	                    MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload"),
 	                    ExecutionStatus.FAILED);        	
-	        } else if (baseReports.get(AJEntityReporting.CLASS_GOORU_OID) == null && !baseReports.get(AJEntityReporting.CONTENT_SOURCE).toString().equalsIgnoreCase(ILACTIVITY)) {
-	            return new ExecutionResult<>(
-	                    MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload"),
-	                    ExecutionStatus.FAILED);        	
-	        } else if (baseReports.get(AJEntityReporting.CLASS_GOORU_OID) != null && !baseReports.get(AJEntityReporting.CONTENT_SOURCE).toString().equalsIgnoreCase(COURSEMAP)) {
-	            return new ExecutionResult<>(
-	                    MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload"),
-	                    ExecutionStatus.FAILED);
 	        }
 	        
 	        long ts = System.currentTimeMillis();
-	        baseReports.set(AJEntityReporting.CREATE_TIMESTAMP,new Timestamp(ts));
-	        baseReports.set(AJEntityReporting.UPDATE_TIMESTAMP,new Timestamp(ts));
+	        dcaReport.set(AJEntityDailyClassActivity.CREATE_TIMESTAMP,new Timestamp(ts));
+	        dcaReport.set(AJEntityDailyClassActivity.UPDATE_TIMESTAMP,new Timestamp(ts));
 	        
-	        if (baseReports.get(AJEntityReporting.TIME_ZONE) != null) {        	
-	          	String timeZone = baseReports.get(AJEntityReporting.TIME_ZONE).toString();	          	
+	        if (dcaReport.get(AJEntityDailyClassActivity.TIME_ZONE) != null) {        	
+	          	String timeZone = dcaReport.get(AJEntityDailyClassActivity.TIME_ZONE).toString();	          	
 	          	localeDate = UTCToLocale(ts, timeZone);
 	          	
 	          	if (localeDate != null) {
-	              	baseReports.setDateinTZ(localeDate);
+	          	  dcaReport.setDateinTZ(localeDate);
 	          	}
 	          }
 
-	    	duplicateRow =  AJEntityReporting.findBySQL(AJEntityReporting.CHECK_IF_EXT_ASSESSMENT_SELF_GRADED, 
-	    			baseReports.get(AJEntityReporting.GOORUUID),
-	    			baseReports.get(AJEntityReporting.CLASS_GOORU_OID), baseReports.get(AJEntityReporting.COLLECTION_OID),
-	    			baseReports.get(AJEntityReporting.SESSION_ID), EventConstants.COLLECTION_PLAY, EventConstants.STOP);
-	    	
-	    	StudentSelfReportingEventDispatcher eventDispatcher = new StudentSelfReportingEventDispatcher(baseReports); 
-	    	
+	    	duplicateRow =  AJEntityDailyClassActivity.findBySQL(AJEntityDailyClassActivity.CHECK_IF_EXT_ASSESSMENT_SELF_GRADED, 
+	    	    dcaReport.get(AJEntityDailyClassActivity.GOORUUID),
+	    	    dcaReport.get(AJEntityDailyClassActivity.CLASS_GOORU_OID), dcaReport.get(AJEntityDailyClassActivity.COLLECTION_OID),
+	    	    dcaReport.get(AJEntityDailyClassActivity.SESSION_ID), EventConstants.COLLECTION_PLAY, EventConstants.STOP);
+	    		    	
 	    	if (duplicateRow == null || duplicateRow.isEmpty()) {
-	    		boolean result = baseReports.save();    		
+	    		boolean result = dcaReport.save();    		
 		    	
 	    		if (!result) {
-	    			LOGGER.error("ERROR.Student self grades for ext assessments cannot be inserted into the DB: " + req);
-	    			if (baseReports.hasErrors()) {
-	    				Map<String, String> map = baseReports.errors();
+	    			LOGGER.error("ERROR.Student DCA self grades for ext assessments cannot be inserted into the DB: " + req);
+	    			if (dcaReport.hasErrors()) {
+	    				Map<String, String> map = dcaReport.errors();
 	    				JsonObject errors = new JsonObject();
 	    				map.forEach(errors::put);
 	    				return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(errors), ExecutionResult.ExecutionStatus.FAILED);
 	    			}
 	    		}
-	    		LOGGER.info("Student Self grades for External Assessments stored successfully " + req);	
-	    		
-	    		eventDispatcher.sendSelfReportEventtoNotifications();
-	    		
+	    		LOGGER.info("Student DCA Self grades for External Assessments stored successfully " + req);	    		
 		        return new ExecutionResult<>(MessageResponseFactory.createOkayResponse(), ExecutionStatus.SUCCESSFUL);
 		      } else {
 		    	  LOGGER.info("Duplicate record exists. Updating the Self graded score ");
@@ -196,28 +178,23 @@ public class StudentSelfReportingHandler implements DBHandler {
 	                    //TODO: Update Timespent, when it is available - The existing TS should be ADDED to the TS available 
 	                    //in the current payload
 	        	        if(percentScore != null) {
-	        	        	Base.exec(AJEntityReporting.UPDATE_SELF_GRADED_EXT_ASSESSMENT, percentScore, 100, new Timestamp(ts), 
-	        	        			baseReports.get(AJEntityReporting.TIME_ZONE), baseReports.get(AJEntityReporting.DATE_IN_TIME_ZONE), id);
+	        	        	Base.exec(AJEntityDailyClassActivity.UPDATE_SELF_GRADED_EXT_ASSESSMENT, percentScore, 100, new Timestamp(ts), 
+	        	        	    dcaReport.get(AJEntityDailyClassActivity.TIME_ZONE), dcaReport.get(AJEntityDailyClassActivity.DATE_IN_TIME_ZONE), id);
 	        	        } else {
-	        	        	Base.exec(AJEntityReporting.UPDATE_SELF_GRADED_EXT_ASSESSMENT, score, maxScore, new Timestamp(ts), 
-	        	        			baseReports.get(AJEntityReporting.TIME_ZONE), baseReports.get(AJEntityReporting.DATE_IN_TIME_ZONE), id);	        	        	
+	        	        	Base.exec(AJEntityDailyClassActivity.UPDATE_SELF_GRADED_EXT_ASSESSMENT, score, maxScore, new Timestamp(ts), 
+	        	        	    dcaReport.get(AJEntityDailyClassActivity.TIME_ZONE), dcaReport.get(AJEntityDailyClassActivity.DATE_IN_TIME_ZONE), id);	        	        	
 	        	        }                                        	  
 
 	                  });
 	                
-	                LOGGER.info("Student Self grades for External Assessments stored successfully " + req);
-	                eventDispatcher.sendSelfReportEventtoNotifications();
-
+	                LOGGER.info("Student DCA Self grades for External Assessments stored successfully " + req);
 	                return new ExecutionResult<>(MessageResponseFactory.createOkayResponse(), ExecutionStatus.SUCCESSFUL);
 	    		
 	    	}
-	    }
-	        
-	    	   
+	    }	    	   
 	    
-	    private static class DefAJEntityReportingBuilder implements EntityBuilder<AJEntityReporting> {
+	    private static class DefAJEntityReportingBuilder implements EntityBuilder<AJEntityDailyClassActivity> {
 	    }
-	    
 
 	    @Override
 	    public boolean handlerReadOnly() {

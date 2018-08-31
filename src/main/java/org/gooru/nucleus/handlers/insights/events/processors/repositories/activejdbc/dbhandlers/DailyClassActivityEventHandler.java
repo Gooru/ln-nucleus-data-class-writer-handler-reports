@@ -1,30 +1,24 @@
 package org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers;
 
-//import java.sql.Date;
-import java.sql.PreparedStatement;
-
-import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.TimeZone;
 
 import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
-import org.gooru.nucleus.handlers.insights.events.constants.MessageConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.insights.events.processors.events.EventParser;
-import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityDCATaxonomyReport;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityDailyClassActivity;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult;
+import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult.ExecutionStatus;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponse;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponseFactory;
-import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult.ExecutionStatus;
 import org.javalite.activejdbc.Base;
 import org.javalite.activejdbc.LazyList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.hazelcast.util.StringUtil;
 
 /**
  * created by mukul@gooru
@@ -99,7 +93,11 @@ public class DailyClassActivityEventHandler implements DBHandler {
         dcaReport.set("partner_id",event.getPartnerId());
         //pathId = 0L indicates the main Path. We store pathId only for the altPaths
         if (event.getPathId() != 0L){
-      	  dcaReport.set("path_id",event.getPathId());  
+            dcaReport.set("path_id",event.getPathId());
+            if (!StringUtil.isNullOrEmpty(event.getPathType())) {
+                if (EventConstants.PATH_TYPES.matcher(event.getPathType()).matches()) dcaReport.set("path_type", event.getPathType());
+                else LOGGER.warn("Invalid Path Type passed in event : {}", event.getPathType());            
+            }
         }
         dcaReport.set("collection_sub_type",event.getCollectionSubType());
         

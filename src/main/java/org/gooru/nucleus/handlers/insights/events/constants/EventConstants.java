@@ -883,7 +883,13 @@ public class EventConstants {
 	public static final String PATH_TYPE = "pathType";
 	
 	public static final Pattern PATH_TYPES = Pattern.compile("system|teacher|route0");
-
+	
+	public static final String ILACTIVITY = "ilactivity";
+	
+	public static final String COURSEMAP = "coursemap";
+    
+	public static final String DCA = "dailyclassactivity";
+	
 	private EventConstants() {
 		throw new AssertionError();
 	}

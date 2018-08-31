@@ -21,7 +21,7 @@ public class ProcessorContext {
     public ProcessorContext(String userId, JsonObject request) {
       this.request = request != null ? request.copy() : null;
       this.userId = userId;
-  }
+    }
 
     public JsonObject request() {
         return this.request;
@@ -29,7 +29,7 @@ public class ProcessorContext {
     
     public EventParser getEvent (){
     	return this.event;
-   }
+    }
    
     public String userId() {
       return this.userId;
