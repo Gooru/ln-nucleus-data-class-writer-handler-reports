@@ -2,13 +2,17 @@ package org.gooru.nucleus.handlers.insights.events.processors;
 
 import java.util.ResourceBundle;
 
+import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.constants.MessageConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.RepoBuilder;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityReporting;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponse;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponseFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.hazelcast.util.StringUtil;
 
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.json.JsonObject;
@@ -39,8 +43,29 @@ public class SelfReportingProcessor implements Processor {
 	      if (validateResult.isCompleted()) {
 	        return validateResult.result();
 	      }
-	      context = createContext();	      
-	      result = updateStudentSelfReportedScore();
+	      context = createContext();	
+	      
+	      String contentSource = request.getString(AJEntityReporting.CONTENT_SOURCE);
+	      if (!StringUtil.isNullOrEmpty(contentSource)) {
+	          contentSource = contentSource.toLowerCase();
+	          switch (contentSource) {
+	          case EventConstants.COURSEMAP:
+	          case EventConstants.ILACTIVITY:
+	              result = updateStudentSelfReportedScore();
+	              break;
+	          case EventConstants.DCA:
+	              result = updateDCASelfReportedScore();
+	              break;
+	          default:
+	              LOGGER.error("Invalid content source passed in, not able to handle");
+	              return MessageResponseFactory
+                        .createInvalidRequestResponse(RESOURCE_BUNDLE.getString("invalid.operation"));
+	          }
+	      } else {
+	          LOGGER.error("Content source is either null or empty, not able to handle");
+	          return MessageResponseFactory
+                    .createInvalidRequestResponse(RESOURCE_BUNDLE.getString("invalid.operation"));
+	      }
 
 	      return result;
 	      
@@ -58,6 +83,15 @@ public class SelfReportingProcessor implements Processor {
 	      return MessageResponseFactory.createInternalErrorResponse(t.getMessage());
 	    }
 	  }
+	  
+	  private MessageResponse updateDCASelfReportedScore() {
+	      try {
+	          return RepoBuilder.buildBaseReportingRepo(context).updateStudentSelfReportedScoreOnDCA();
+	        } catch (Throwable t) {
+	          LOGGER.error("Exception while processing Student Self Reporting Score Data on DCA ", t.getMessage());
+	          return MessageResponseFactory.createInternalErrorResponse(t.getMessage());
+	        }
+	      }
 
 	  private ProcessorContext createContext() {	    
 	    LOGGER.info("context.request at SelfReportingProcessor" + request);

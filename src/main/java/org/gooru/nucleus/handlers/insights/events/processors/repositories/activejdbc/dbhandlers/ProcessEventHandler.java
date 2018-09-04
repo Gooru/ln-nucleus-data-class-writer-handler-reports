@@ -10,6 +10,7 @@ import org.gooru.nucleus.handlers.insights.events.constants.GEPConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.MessageDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.insights.events.processors.events.EventParser;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.GradingPendingEventDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityReporting;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult.ExecutionStatus;
@@ -31,7 +32,9 @@ import io.vertx.core.json.JsonObject;
 class ProcessEventHandler implements DBHandler {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ProcessEventHandler.class);
+	//TODO: This Kafka Topic name needs to be picked up from config
 	public static final String TOPIC_GEP_USAGE_EVENTS = "org.gooru.da.sink.logW.usage.events";
+	public static final String TOPIC_NOTIFICATIONS = "notifications";
     private final ProcessorContext context;
     private AJEntityReporting baseReport;
     private EventParser event;    
@@ -286,7 +289,10 @@ class ProcessEventHandler implements DBHandler {
     			  event.getContentGooruId(), EventConstants.COLLECTION_RESOURCE_PLAY, EventConstants.STOP, false);
           if (allGraded == null || allGraded.isEmpty()) {
         	  sendCPEventtoGEP();  
-          }          
+          } else {
+        	  GradingPendingEventDispatcher eventDispatcher = new GradingPendingEventDispatcher(baseReport);
+        	  eventDispatcher.sendGradingPendingEventtoNotifications();
+          }
         }
 
         if ((event.getEventName().equals(EventConstants.COLLECTION_RESOURCE_PLAY)) && event.getEventType().equalsIgnoreCase(EventConstants.STOP) && 
@@ -330,8 +336,10 @@ class ProcessEventHandler implements DBHandler {
       return strLocaleDate;
   }
   
-  //********************************************************************************************************
-
+  //********************************************************
+  //TODO: Move GEP Event Processing to the EventDispatcher 
+  //********************************************************
+  
   private void sendCPEventtoGEP() {
 	    JsonObject gepEvent = createCPEvent();
 	    JsonObject result = new JsonObject();	   
@@ -557,4 +565,5 @@ class ProcessEventHandler implements DBHandler {
     assessmentOutComeEvent.put("questionsCount", event.getQuestionCount());
     return assessmentOutComeEvent;
 }  
+    
 }
