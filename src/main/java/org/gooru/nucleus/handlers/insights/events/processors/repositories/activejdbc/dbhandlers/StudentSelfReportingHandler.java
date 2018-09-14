@@ -103,22 +103,29 @@ public class StudentSelfReportingHandler implements DBHandler {
 	        baseReports.set(AJEntityReporting.COLLECTION_OID, extCollectionId);	        
 	        percentScore = (req.getValue(PERCENT_SCORE) != null) ? Double.valueOf(req.getValue(PERCENT_SCORE).toString()) : null;	        
 	        if(percentScore != null) {
-	        	int compVal = percentScore.compareTo(100.00);
-	        	if (compVal > 0) {
-	        		return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse("Numeric Field Overflow - Invalid Percent Score"), ExecutionResult.ExecutionStatus.FAILED);
+	        	if ((percentScore.compareTo(100.00) > 0) || (percentScore.compareTo(0.00) < 0)) {
+	        		return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse("Numeric Field Overflow - Invalid Percent Score"), 
+	        				ExecutionResult.ExecutionStatus.FAILED);
 	        	} else {
 		        	baseReports.set(AJEntityReporting.SCORE, percentScore);
 		        	baseReports.set(AJEntityReporting.MAX_SCORE, 100);	        	}
-	        } else if (req.getValue(SCORE) == null || req.getValue(SCORE) == null ) {
+	        } else if (req.getValue(SCORE) == null || req.getValue(MAX_SCORE) == null ) {
 	        	return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload"), ExecutionResult.ExecutionStatus.FAILED);
 	        } else {
 		        rawScore = Double.valueOf(req.getValue(SCORE).toString());
 		        maxScore = Double.valueOf(req.getValue(MAX_SCORE).toString());
-		        if (maxScore > 0) {
-		        	score = (rawScore *100)/maxScore;		        	
+		        //the value 0 if anotherDouble is numerically equal to this Double; 
+		        //a value less than 0 if this Double is numerically less than anotherDouble; 
+		        //and a value greater than 0 if this Double is numerically greater than anotherDouble.
+	        	if ((rawScore.compareTo(100.00) > 0) || (maxScore.compareTo(100.00) > 0) 
+	        			|| (rawScore.compareTo(0.00) < 0) || (maxScore.compareTo(0.00) < 0) 
+	        			|| (maxScore.compareTo(0.00) == 0)) {
+	        		return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse("Numeric Field Overflow - Invalid Fraction Score"), 
+	        				ExecutionResult.ExecutionStatus.FAILED);
+	        	}		        
+		        	score = (rawScore *100)/maxScore;
 		        	baseReports.set(AJEntityReporting.SCORE, score);
-		        	baseReports.set(AJEntityReporting.MAX_SCORE, maxScore);
-		        }
+		        	baseReports.set(AJEntityReporting.MAX_SCORE, maxScore);		        
 	        }
 	        
 	        //Remove ALL the values from the Request that needed processing, so that the rest of the values from 
