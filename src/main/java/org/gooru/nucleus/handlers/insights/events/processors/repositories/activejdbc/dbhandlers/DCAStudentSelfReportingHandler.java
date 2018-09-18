@@ -99,22 +99,27 @@ public class DCAStudentSelfReportingHandler implements DBHandler {
 	        dcaReport.set(AJEntityDailyClassActivity.VIEWS, view);
 	        percentScore = (req.getValue(PERCENT_SCORE) != null) ? Double.valueOf(req.getValue(PERCENT_SCORE).toString()) : null;	        
 	        if(percentScore != null) {
-	        	int compVal = percentScore.compareTo(100.00);
-	        	if (compVal > 0) {
-	        		return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse("Numeric Field Overflow - Invalid Percent Score"), ExecutionResult.ExecutionStatus.FAILED);
+	        	if ((percentScore.compareTo(100.00) > 0) || (percentScore.compareTo(0.00) < 0)) {
+	        		return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse("Numeric Field Overflow - Invalid Percent Score"), 
+	        				ExecutionResult.ExecutionStatus.FAILED);
 	        	} else {
 	        	    dcaReport.set(AJEntityDailyClassActivity.SCORE, percentScore);
-	        	    dcaReport.set(AJEntityDailyClassActivity.MAX_SCORE, 100);	        	}
+	        	    dcaReport.set(AJEntityDailyClassActivity.MAX_SCORE, 100);	        	
+	        	}
 	        } else if (req.getValue(SCORE) == null || req.getValue(SCORE) == null ) {
 	        	return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload"), ExecutionResult.ExecutionStatus.FAILED);
 	        } else {
 		        rawScore = Double.valueOf(req.getValue(SCORE).toString());
 		        maxScore = Double.valueOf(req.getValue(MAX_SCORE).toString());
-		        if (maxScore > 0) {
+	        	if ((rawScore.compareTo(100.00) > 0) || (maxScore.compareTo(100.00) > 0) 
+	        			|| (rawScore.compareTo(0.00) < 0) || (maxScore.compareTo(0.00) < 0) 
+	        			|| (maxScore.compareTo(0.00) == 0)) {
+	        		return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse("Numeric Field Overflow - Invalid Fraction Score"), 
+	        				ExecutionResult.ExecutionStatus.FAILED);
+	        	}		        
 		        	score = (rawScore *100)/maxScore;		        	
 		        	dcaReport.set(AJEntityDailyClassActivity.SCORE, score);
-		        	dcaReport.set(AJEntityDailyClassActivity.MAX_SCORE, maxScore);
-		        }
+		        	dcaReport.set(AJEntityDailyClassActivity.MAX_SCORE, maxScore);		        
 	        }
 	        
 	        //Remove ALL the values from the Request that needed processing, so that the rest of the values from 
