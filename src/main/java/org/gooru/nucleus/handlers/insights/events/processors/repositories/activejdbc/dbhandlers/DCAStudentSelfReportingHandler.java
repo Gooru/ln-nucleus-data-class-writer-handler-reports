@@ -93,9 +93,10 @@ public class DCAStudentSelfReportingHandler implements DBHandler {
 	                    MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload"),
 	                    ExecutionStatus.FAILED);        	
 	        }
-	        
+	        long view = 1;
 	        dcaReport.set(AJEntityDailyClassActivity.GOORUUID, userId);
-	        dcaReport.set(AJEntityDailyClassActivity.COLLECTION_OID, extCollectionId);	        
+	        dcaReport.set(AJEntityDailyClassActivity.COLLECTION_OID, extCollectionId);	
+	        dcaReport.set(AJEntityDailyClassActivity.VIEWS, view);
 	        percentScore = (req.getValue(PERCENT_SCORE) != null) ? Double.valueOf(req.getValue(PERCENT_SCORE).toString()) : null;	        
 	        if(percentScore != null) {
 	        	int compVal = percentScore.compareTo(100.00);
@@ -174,14 +175,15 @@ public class DCAStudentSelfReportingHandler implements DBHandler {
 		      } else {
 		    	  LOGGER.info("Duplicate record exists. Updating the Self graded score ");
 	                duplicateRow.forEach(dup -> {
-	                    int id = Integer.valueOf(dup.get("id").toString());
+	                    int id = Integer.valueOf(dup.get(AJEntityDailyClassActivity.ID).toString());
+	                    long views = ((dup.get(AJEntityDailyClassActivity.VIEWS) != null ? Long.valueOf(dup.get(AJEntityDailyClassActivity.VIEWS).toString()) : 1) + view);
 	                    //TODO: Update Timespent, when it is available - The existing TS should be ADDED to the TS available 
 	                    //in the current payload
 	        	        if(percentScore != null) {
-	        	        	Base.exec(AJEntityDailyClassActivity.UPDATE_SELF_GRADED_EXT_ASSESSMENT, percentScore, 100, new Timestamp(ts), 
+	        	        	Base.exec(AJEntityDailyClassActivity.UPDATE_SELF_GRADED_EXT_ASSESSMENT, views, percentScore, 100, new Timestamp(ts), 
 	        	        	    dcaReport.get(AJEntityDailyClassActivity.TIME_ZONE), dcaReport.get(AJEntityDailyClassActivity.DATE_IN_TIME_ZONE), id);
 	        	        } else {
-	        	        	Base.exec(AJEntityDailyClassActivity.UPDATE_SELF_GRADED_EXT_ASSESSMENT, score, maxScore, new Timestamp(ts), 
+	        	        	Base.exec(AJEntityDailyClassActivity.UPDATE_SELF_GRADED_EXT_ASSESSMENT, views, score, maxScore, new Timestamp(ts), 
 	        	        	    dcaReport.get(AJEntityDailyClassActivity.TIME_ZONE), dcaReport.get(AJEntityDailyClassActivity.DATE_IN_TIME_ZONE), id);	        	        	
 	        	        }                                        	  
 
