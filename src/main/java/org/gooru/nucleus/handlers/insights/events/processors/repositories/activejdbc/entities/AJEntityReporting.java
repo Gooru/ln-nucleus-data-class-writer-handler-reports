@@ -169,10 +169,10 @@ public class AJEntityReporting extends Model {
             + "AND session_id = ? AND collection_id = ?  AND event_name = ? AND event_type = ? LIMIT 1";
 
     //Student Self Grading
-    public static final String CHECK_IF_EXT_ASSESSMENT_SELF_GRADED = "SELECT id, time_spent, score, reaction FROM base_reports "
+    public static final String CHECK_IF_EXT_ASSESSMENT_SELF_GRADED = "SELECT id, views, time_spent, score, reaction FROM base_reports "
     		+ "WHERE actor_id = ? AND class_id = ? AND collection_id = ? AND session_id = ? AND event_name = ? AND event_type = ? ";
 
-    public static final String UPDATE_SELF_GRADED_EXT_ASSESSMENT = "UPDATE base_reports SET score = ?, max_score = ?, updated_at = ?, "
+    public static final String UPDATE_SELF_GRADED_EXT_ASSESSMENT = "UPDATE base_reports SET views = ?, score = ?, max_score = ?, updated_at = ?, "
     		+ "time_zone = ?, date_in_time_zone = ? WHERE id = ?";
 
     

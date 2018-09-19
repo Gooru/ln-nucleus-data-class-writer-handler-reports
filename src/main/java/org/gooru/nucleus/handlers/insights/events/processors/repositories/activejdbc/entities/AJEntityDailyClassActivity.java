@@ -106,10 +106,10 @@ public class AJEntityDailyClassActivity extends Model {
     public static final String SELECT_DCA_REPORT_ID = "SELECT id FROM daily_class_activity WHERE collection_id = ? AND session_id = ? AND resource_id = ? AND event_type = ? ";
     
     //Student Self Grading
-    public static final String CHECK_IF_EXT_ASSESSMENT_SELF_GRADED = "SELECT id, time_spent, score, reaction FROM daily_class_activity "
+    public static final String CHECK_IF_EXT_ASSESSMENT_SELF_GRADED = "SELECT id, views, time_spent, score, reaction FROM daily_class_activity "
             + "WHERE actor_id = ? AND class_id = ? AND collection_id = ? AND session_id = ? AND event_name = ? AND event_type = ? ";
 
-    public static final String UPDATE_SELF_GRADED_EXT_ASSESSMENT = "UPDATE daily_class_activity SET score = ?, max_score = ?, updated_at = ?, "
+    public static final String UPDATE_SELF_GRADED_EXT_ASSESSMENT = "UPDATE daily_class_activity SET views = ?, score = ?, max_score = ?, updated_at = ?, "
             + "time_zone = ?, date_in_time_zone = ? WHERE id = ?";
 
     public static final String RESOURCE_ATTEMPT_STATUS_TYPE = "attempt_status";    
