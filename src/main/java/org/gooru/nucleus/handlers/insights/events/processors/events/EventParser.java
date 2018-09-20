@@ -121,6 +121,11 @@ public final class EventParser {
 	private String accessToken;
 	
 	private String pathType;
+	
+	private String contextCollectionId;
+	
+	private String contextCollectionType;
+
 
 	public String getSourceId() {
 		return sourceId;
@@ -547,7 +552,24 @@ public final class EventParser {
 	public void setPathType(String pathType) {
 	    this.pathType = pathType;
 	}
+	
+	public String getContextCollectionId() {
+		return contextCollectionId;
+	}
 
+	public void setContextCollectionId(String contextCollectionId) {
+		this.contextCollectionId = contextCollectionId;
+	}
+	
+
+	public String getContextCollectionType() {
+		return contextCollectionType;
+	}
+
+	public void setContextCollectionType(String contextCollectionType) {
+		this.contextCollectionType = contextCollectionType;
+	}
+	
 	private EventParser parse() {
 		try {			
 
@@ -637,6 +659,10 @@ public final class EventParser {
 			this.contentSource = context.containsKey(EventConstants.CONTENT_SOURCE) ? context.getString(EventConstants.CONTENT_SOURCE) : null;
 
 			this.timezone = this.event.containsKey(EventConstants.TIMEZONE) ? event.getString(EventConstants.TIMEZONE) : null;
+			
+			this.contextCollectionId = this.event.containsKey(EventConstants.CONTEXT_COLLECTION_ID) ? event.getString(EventConstants.CONTEXT_COLLECTION_ID) : null;
+			
+			this.contextCollectionType = this.event.containsKey(EventConstants.CONTEXT_COLLECTION_TYPE) ? event.getString(EventConstants.CONTEXT_COLLECTION_TYPE) : null;
 
 			//this.sourceId = (context.containsKey("source") ? context.getString("source") : null);
 			this.accessToken = (this.session.containsKey("sessionToken") ? this.session.getString("sessionToken") : null);

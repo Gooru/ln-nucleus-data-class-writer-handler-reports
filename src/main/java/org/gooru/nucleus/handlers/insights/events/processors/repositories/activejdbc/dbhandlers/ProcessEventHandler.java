@@ -123,6 +123,14 @@ class ProcessEventHandler implements DBHandler {
       	}
       }
       
+      if (event.getContextCollectionId() != null) {
+    	  baseReport.set("context_collection_id", event.getContextCollectionId());    	  
+      }
+
+      if (event.getContextCollectionType() != null) {
+    	  baseReport.set("context_collection_type", event.getContextCollectionType());    	  
+      }
+
     	if ((event.getEventName().equals(EventConstants.COLLECTION_PLAY))){
     	  duplicateRow =  AJEntityReporting.findBySQL(AJEntityReporting.CHECK_DUPLICATE_COLLECTION_EVENT, event.getGooruUUID(), event.getSessionId(),
     			  event.getContentGooruId(),event.getEventType(), event.getEventName());
@@ -458,6 +466,8 @@ class ProcessEventHandler implements DBHandler {
         cpEvent.put(GEPConstants.EVENT_NAME, GEPConstants.COLLECTION_START_EVENT);
         cpEvent.put(GEPConstants.COLLECTION_ID, event.getContentGooruId());
         cpEvent.put(GEPConstants.COLLECTION_TYPE, event.getCollectionType());
+        context.put(GEPConstants.CONTEXT_COLLECTION_ID,event.getContextCollectionId());
+        context.put(GEPConstants.CONTEXT_COLLECTION_TYPE, event.getContextCollectionType());
                 	
         context.put(GEPConstants.CLASS_ID, event.getClassGooruId());
         context.put(GEPConstants.COURSE_ID, event.getCourseGooruId() );
@@ -466,8 +476,10 @@ class ProcessEventHandler implements DBHandler {
         context.put(GEPConstants.PATH_ID, event.getPathId());
         context.put(GEPConstants.SESSION_ID, event.getSessionId());
         context.put(GEPConstants.QUESTION_COUNT, event.getQuestionCount());
-        context.put(GEPConstants.PARTNER_ID, event.getPartnerId());
-        context.put(GEPConstants.TENANT_ID, event.getTenantId());            
+        context.put(GEPConstants.PARTNER_ID, event.getPartnerId());        
+        context.put(GEPConstants.TENANT_ID, event.getTenantId());  
+        
+        context.put(GEPConstants.PATH_TYPE, event.getPathType());
         
         cpEvent.put(GEPConstants.CONTEXT, context);
 
@@ -483,7 +495,9 @@ class ProcessEventHandler implements DBHandler {
 	  cpEvent.put(GEPConstants.EVENT_ID, event.getEventId());
 	  cpEvent.put(GEPConstants.EVENT_NAME, GEPConstants.COLLECTION_PERF_EVENT);
 	  cpEvent.put(GEPConstants.COLLECTION_ID, event.getContentGooruId());
-	  cpEvent.put(GEPConstants.COLLECTION_TYPE, event.getCollectionType());
+	  cpEvent.put(GEPConstants.COLLECTION_TYPE, event.getCollectionType());	  
+      context.put(GEPConstants.CONTEXT_COLLECTION_ID,event.getContextCollectionId());
+      context.put(GEPConstants.CONTEXT_COLLECTION_TYPE, event.getContextCollectionType());
 
 	  context.put(GEPConstants.CLASS_ID, event.getClassGooruId());
 	  context.put(GEPConstants.COURSE_ID, event.getCourseGooruId() );
@@ -495,6 +509,7 @@ class ProcessEventHandler implements DBHandler {
 	  context.put(GEPConstants.PARTNER_ID, event.getPartnerId());
 	  context.put(GEPConstants.TENANT_ID, event.getTenantId());            
 
+      context.put(GEPConstants.PATH_TYPE, event.getPathType());
 	  cpEvent.put(GEPConstants.CONTEXT, context);
 
 	  return cpEvent;
@@ -517,11 +532,14 @@ class ProcessEventHandler implements DBHandler {
       context.put(GEPConstants.LESSON_ID, event.getLessonGooruId());
       context.put(GEPConstants.COLLECTION_ID,event.getParentGooruId());
       context.put(GEPConstants.COLLECTION_TYPE, event.getCollectionType());
+      context.put(GEPConstants.CONTEXT_COLLECTION_ID,event.getContextCollectionId());
+      context.put(GEPConstants.CONTEXT_COLLECTION_TYPE, event.getContextCollectionType());
       context.put(GEPConstants.PATH_ID, event.getPathId());
       context.put(GEPConstants.SESSION_ID, event.getSessionId());
       context.put(GEPConstants.PARTNER_ID, event.getPartnerId());
       context.put(GEPConstants.TENANT_ID, event.getTenantId());            
       
+      context.put(GEPConstants.PATH_TYPE, event.getPathType());
       resEvent.put(GEPConstants.CONTEXT, context);
 
 	    return resEvent;

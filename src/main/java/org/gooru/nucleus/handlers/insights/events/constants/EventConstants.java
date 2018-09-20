@@ -890,6 +890,10 @@ public class EventConstants {
     
 	public static final String DCA = "dailyclassactivity";
 	
+	public static final String CONTEXT_COLLECTION_ID = "contextCollectionId";
+	
+	public static final String CONTEXT_COLLECTION_TYPE = "contextCollectionType";
+	
 	private EventConstants() {
 		throw new AssertionError();
 	}

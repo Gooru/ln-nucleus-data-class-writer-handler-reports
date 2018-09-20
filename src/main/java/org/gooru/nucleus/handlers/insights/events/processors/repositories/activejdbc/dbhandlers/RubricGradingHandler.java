@@ -45,6 +45,8 @@ public class RubricGradingHandler implements DBHandler {
 	private Long pathId;
 	private String latestSessionId;
 	private String pathType;
+	private String contextCollectionId;
+	private String contextCollectionType;
 
     public RubricGradingHandler(ProcessorContext context) {
         this.context = context;
@@ -189,6 +191,8 @@ public class RubricGradingHandler implements DBHandler {
     		latestSessionId = sessionPathIdTypeModel.get(AJEntityReporting.SESSION_ID) != null ? sessionPathIdTypeModel.get(AJEntityReporting.SESSION_ID).toString() : null;
     		pathType = sessionPathIdTypeModel.get(AJEntityReporting.PATH_TYPE) != null ? sessionPathIdTypeModel.get(AJEntityReporting.PATH_TYPE).toString() : null;
     		pathId = sessionPathIdTypeModel.get(AJEntityReporting.PATH_ID) != null ? Long.valueOf(sessionPathIdTypeModel.get(AJEntityReporting.PATH_ID).toString()) : 0L;
+    		contextCollectionId = sessionPathIdTypeModel.get(AJEntityReporting.CONTEXT_COLLECTION_ID) != null ? sessionPathIdTypeModel.get(AJEntityReporting.CONTEXT_COLLECTION_ID).toString() : null;
+    		contextCollectionType = sessionPathIdTypeModel.get(AJEntityReporting.CONTEXT_COLLECTION_TYPE) != null ? sessionPathIdTypeModel.get(AJEntityReporting.CONTEXT_COLLECTION_TYPE).toString() : null;    		
     	}
     	
     	if ((!StringUtil.isNullOrEmpty(latestSessionId) && latestSessionId.equals(sessionId.toString())) && (rubricGrading.get(AJEntityRubricGrading.STUDENT_SCORE) != null)) {
@@ -206,7 +210,7 @@ public class RubricGradingHandler implements DBHandler {
         			  latestSessionId, rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID), EventConstants.COLLECTION_RESOURCE_PLAY, EventConstants.STOP, false);
               if (allGraded == null || allGraded.isEmpty()) {
             	  sendCollScoreUpdateEventtoGEP(collType.toString());
-            	  RubricGradingEventDispatcher eventDispatcher = new RubricGradingEventDispatcher(rubricGrading, pathType, pathId); 
+            	  RubricGradingEventDispatcher eventDispatcher = new RubricGradingEventDispatcher(rubricGrading, pathType, pathId, contextCollectionId, contextCollectionType); 
             	  eventDispatcher.sendGradingCompleteTeacherEventtoNotifications();
             	  eventDispatcher.sendGradingCompleteStudentEventtoNotifications();
               }    		
@@ -261,6 +265,12 @@ public class RubricGradingHandler implements DBHandler {
     	context.put(GEPConstants.LESSON_ID, rubricGrading.get(AJEntityRubricGrading.LESSON_ID));
     	context.put(GEPConstants.COLLECTION_ID, rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID));
     	context.put(GEPConstants.COLLECTION_TYPE, collectionType);
+    	
+    	context.put(GEPConstants.CONTEXT_COLLECTION_ID, contextCollectionId);
+    	context.put(GEPConstants.CONTEXT_COLLECTION_TYPE, contextCollectionType);
+    	context.put(GEPConstants.PATH_ID, pathId);
+    	context.put(GEPConstants.PATH_TYPE, pathType);
+    	    	
     	context.put(GEPConstants.SESSION_ID, rubricGrading.get(AJEntityRubricGrading.SESSION_ID));
 
     	resEvent.put(GEPConstants.CONTEXT, context);
@@ -298,7 +308,12 @@ public class RubricGradingHandler implements DBHandler {
     	cpEvent.put(GEPConstants.EVENT_NAME, GEPConstants.COLL_SCORE_UPDATE_EVENT);
     	cpEvent.put(GEPConstants.COLLECTION_ID, rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID));
     	cpEvent.put(GEPConstants.COLLECTION_TYPE, collectionType);
-
+    	
+    	context.put(GEPConstants.CONTEXT_COLLECTION_ID, contextCollectionId);
+    	context.put(GEPConstants.CONTEXT_COLLECTION_TYPE, contextCollectionType);
+    	context.put(GEPConstants.PATH_ID, pathId);
+    	context.put(GEPConstants.PATH_TYPE, pathType);
+    	
     	context.put(GEPConstants.CLASS_ID, rubricGrading.get(AJEntityRubricGrading.CLASS_ID));
     	context.put(GEPConstants.COURSE_ID, rubricGrading.get(AJEntityRubricGrading.COURSE_ID));
     	context.put(GEPConstants.UNIT_ID, rubricGrading.get(AJEntityRubricGrading.UNIT_ID));
