@@ -9,6 +9,7 @@ import java.util.TimeZone;
 import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.StudentSelfReportingEventDispatcher;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityDailyClassActivity;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityReporting;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.EntityBuilder;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult;
@@ -98,27 +99,35 @@ public class StudentSelfReportingHandler implements DBHandler {
 	                    MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload"),
 	                    ExecutionStatus.FAILED);        	
 	        }
-	        
+	        long view = 1;
 	        baseReports.set(AJEntityReporting.GOORUUID, userId);
-	        baseReports.set(AJEntityReporting.COLLECTION_OID, extCollectionId);	        
+	        baseReports.set(AJEntityReporting.COLLECTION_OID, extCollectionId);	 
+	        baseReports.set(AJEntityDailyClassActivity.VIEWS, view);
 	        percentScore = (req.getValue(PERCENT_SCORE) != null) ? Double.valueOf(req.getValue(PERCENT_SCORE).toString()) : null;	        
 	        if(percentScore != null) {
-	        	int compVal = percentScore.compareTo(100.00);
-	        	if (compVal > 0) {
-	        		return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse("Numeric Field Overflow - Invalid Percent Score"), ExecutionResult.ExecutionStatus.FAILED);
+	        	if ((percentScore.compareTo(100.00) > 0) || (percentScore.compareTo(0.00) < 0)) {
+	        		return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse("Numeric Field Overflow - Invalid Percent Score"), 
+	        				ExecutionResult.ExecutionStatus.FAILED);
 	        	} else {
 		        	baseReports.set(AJEntityReporting.SCORE, percentScore);
 		        	baseReports.set(AJEntityReporting.MAX_SCORE, 100);	        	}
-	        } else if (req.getValue(SCORE) == null || req.getValue(SCORE) == null ) {
+	        } else if (req.getValue(SCORE) == null || req.getValue(MAX_SCORE) == null ) {
 	        	return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload"), ExecutionResult.ExecutionStatus.FAILED);
 	        } else {
 		        rawScore = Double.valueOf(req.getValue(SCORE).toString());
 		        maxScore = Double.valueOf(req.getValue(MAX_SCORE).toString());
-		        if (maxScore > 0) {
-		        	score = (rawScore *100)/maxScore;		        	
+		        //the value 0 if anotherDouble is numerically equal to this Double; 
+		        //a value less than 0 if this Double is numerically less than anotherDouble; 
+		        //and a value greater than 0 if this Double is numerically greater than anotherDouble.
+	        	if ((rawScore.compareTo(100.00) > 0) || (maxScore.compareTo(100.00) > 0) 
+	        			|| (rawScore.compareTo(0.00) < 0) || (maxScore.compareTo(0.00) < 0) 
+	        			|| (maxScore.compareTo(0.00) == 0)) {
+	        		return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse("Numeric Field Overflow - Invalid Fraction Score"), 
+	        				ExecutionResult.ExecutionStatus.FAILED);
+	        	}		        
+		        	score = (rawScore *100)/maxScore;
 		        	baseReports.set(AJEntityReporting.SCORE, score);
-		        	baseReports.set(AJEntityReporting.MAX_SCORE, maxScore);
-		        }
+		        	baseReports.set(AJEntityReporting.MAX_SCORE, maxScore);		        
 	        }
 	        
 	        //Remove ALL the values from the Request that needed processing, so that the rest of the values from 
@@ -192,14 +201,15 @@ public class StudentSelfReportingHandler implements DBHandler {
 		      } else {
 		    	  LOGGER.info("Duplicate record exists. Updating the Self graded score ");
 	                duplicateRow.forEach(dup -> {
-	                    int id = Integer.valueOf(dup.get("id").toString());
+	                    int id = Integer.valueOf(dup.get(AJEntityDailyClassActivity.ID).toString());
+	                    long views = ((dup.get(AJEntityDailyClassActivity.VIEWS) != null ? Long.valueOf(dup.get(AJEntityDailyClassActivity.VIEWS).toString()) : 1) + view);
 	                    //TODO: Update Timespent, when it is available - The existing TS should be ADDED to the TS available 
 	                    //in the current payload
 	        	        if(percentScore != null) {
-	        	        	Base.exec(AJEntityReporting.UPDATE_SELF_GRADED_EXT_ASSESSMENT, percentScore, 100, new Timestamp(ts), 
+	        	        	Base.exec(AJEntityReporting.UPDATE_SELF_GRADED_EXT_ASSESSMENT, views, percentScore, 100, new Timestamp(ts), 
 	        	        			baseReports.get(AJEntityReporting.TIME_ZONE), baseReports.get(AJEntityReporting.DATE_IN_TIME_ZONE), id);
 	        	        } else {
-	        	        	Base.exec(AJEntityReporting.UPDATE_SELF_GRADED_EXT_ASSESSMENT, score, maxScore, new Timestamp(ts), 
+	        	        	Base.exec(AJEntityReporting.UPDATE_SELF_GRADED_EXT_ASSESSMENT, views, score, maxScore, new Timestamp(ts), 
 	        	        			baseReports.get(AJEntityReporting.TIME_ZONE), baseReports.get(AJEntityReporting.DATE_IN_TIME_ZONE), id);	        	        	
 	        	        }                                        	  
 
