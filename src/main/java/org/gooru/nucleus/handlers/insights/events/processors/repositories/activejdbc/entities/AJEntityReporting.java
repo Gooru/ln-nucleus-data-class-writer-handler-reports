@@ -203,6 +203,8 @@ public class AJEntityReporting extends Model {
     public static final String SELECT_BASE_REPORT_ID = "SELECT id FROM base_reports WHERE collection_id = ? AND session_id = ? AND resource_id = ? AND event_type = ? ";
     
     //*********************************************************************************************************************************************
+
+    public static final String FETCH_AVG_REACTION_OF_COLL_BY_SESSION = "SELECT COALESCE(ROUND(AVG(reaction)),0) AS reaction FROM base_reports  WHERE event_name = 'reaction.create' and session_id = ? and collection_id = ?";
     
     private static final Map<String, FieldValidator> validatorRegistry;
     private static final Map<String, FieldConverter> converterRegistry;

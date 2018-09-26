@@ -29,6 +29,16 @@
 			"message.bus.send.timeout.seconds": 10
 		}
 	},
+	"org.gooru.nucleus.handlers.insights.events.bootstrap.RDAMessageConsumerVerticle": {
+		"thead.pool.size": 10,
+		"defaultKafkaConsumerSettings": {
+			"bootstrap.servers": "127.0.0.1:9092",
+			"consumer.topics": "RDAEVENTLOGS",
+			"group.id": "test",
+			"session.timeout.ms": "6000",
+			"message.bus.send.timeout.seconds": 10
+		}
+	},
 	"defaultKafkaProducerSettings": {
 		"bootstrap.servers": "127.0.0.1:9092",
 		"key.serializer": "org.apache.kafka.common.serialization.StringSerializer",

@@ -1,26 +1,25 @@
 package org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers;
 
-import java.sql.Timestamp;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import org.gooru.nucleus.handlers.insights.events.constants.ConfigConstants;
 import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.constants.GEPConstants;
-import org.gooru.nucleus.handlers.insights.events.constants.NotificationConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.MessageDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.TeacherScoreOverideEventDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityClassAuthorizedUsers;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityReporting;
-import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityRubricGrading;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.EntityBuilder;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult;
+import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult.ExecutionStatus;
+import org.gooru.nucleus.handlers.insights.events.rda.processor.collection.CollectionEventConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponse;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponseFactory;
-import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult.ExecutionStatus;
 import org.javalite.activejdbc.Base;
 import org.javalite.activejdbc.LazyList;
 import org.slf4j.Logger;
@@ -55,7 +54,7 @@ public class ScoreUpdateHandler implements DBHandler {
 	private String pathType;
 	private String contextCollectionId;
 	private String contextCollectionType;
-
+    private Boolean isGraded;
 
     public ScoreUpdateHandler(ProcessorContext context) {
         this.context = context;
@@ -191,8 +190,12 @@ public class ScoreUpdateHandler implements DBHandler {
           	  allGraded =  AJEntityReporting.findBySQL(AJEntityReporting.IS_COLLECTION_GRADED, studentId, baseReports.get(AJEntityReporting.SESSION_ID), 
                       baseReports.get(AJEntityReporting.COLLECTION_OID), EventConstants.COLLECTION_RESOURCE_PLAY, EventConstants.STOP, false);
               if (allGraded == null || allGraded.isEmpty()) {
-            	  sendCollScoreUpdateEventtoGEP();  
+            	  sendCollScoreUpdateEventtoGEP(); 
+            	  isGraded = true;
+              } else {
+                  isGraded = false;
               }
+              sendCollScoreUpdateEventtoRDA();
               
         LOGGER.debug("DONE");
         return new ExecutionResult<>(MessageResponseFactory.createOkayResponse(), ExecutionStatus.SUCCESSFUL);
@@ -315,5 +318,22 @@ public class ScoreUpdateHandler implements DBHandler {
     	return cpEvent;
     	
     }
+    
+    private void sendCollScoreUpdateEventtoRDA() {
+        JsonObject rdaEvent = createCollScoreUpdateEvent();
+        rdaEvent.put(CollectionEventConstants.EventAttributes.EVENT_NAME, CollectionEventConstants.EventAttributes.COLLECTION_SCORE_UPDATE_EVENT);
+        JsonObject result = rdaEvent.getJsonObject(CollectionEventConstants.EventAttributes.RESULT);
+        if (this.isGraded != null) result.put("isGraded", this.isGraded);
+        rdaEvent.put(GEPConstants.RESULT, result);
+        
+        try {
+            LOGGER.debug("SUH::The Collection RDA Event is : {} ", rdaEvent);
+            MessageDispatcher.getInstance().sendGEPEvent2Kafka(ConfigConstants.KAFKA_RDA_EVENTLOGS_TOPIC, rdaEvent);
+            LOGGER.info("SUH::Successfully dispatched Collection Perf RDA Event..");
+        } catch (Exception e) {
+            LOGGER.error("SUH::Error while dispatching Collection Perf RDA Event ", e);
+        }
+    }
+    
     
 }
