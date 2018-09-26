@@ -20,11 +20,16 @@ public class RubricGradingEventDispatcher {
 	private AJEntityRubricGrading rubricGrading;
 	private Long pathId;
 	private String pathType;
+	private String contextCollectionId;
+	private String contextCollectionType;
 	
-	public RubricGradingEventDispatcher (AJEntityRubricGrading rubricGrading, String pathType, Long pathId) {
+	public RubricGradingEventDispatcher (AJEntityRubricGrading rubricGrading, String pathType, Long pathId, 
+			String contextCollectionId, String contextCollectionType) {
 		this.pathType = pathType;
 		this.pathId = pathId;
 		this.rubricGrading = rubricGrading;
+		this.contextCollectionId = contextCollectionId;
+		this.contextCollectionType = contextCollectionType;
 	}
     public void sendGradingCompleteTeacherEventtoNotifications() {
 	    JsonObject notificationEvent = createGradingCompleteTeacherNotificationEvent();
@@ -59,10 +64,15 @@ public class RubricGradingEventDispatcher {
 	    selfReportEvent.put(NotificationConstants.UNIT_ID, rubricGrading.get(AJEntityRubricGrading.UNIT_ID));
 	    selfReportEvent.put(NotificationConstants.LESSON_ID, rubricGrading.get(AJEntityRubricGrading.LESSON_ID));		    
 	    selfReportEvent.put(NotificationConstants.COLLECTION_ID, rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID));
+	    
+	    //TODO: update the CURRENT_ITEM_ID and CURRENT_ITEM_TYPE with contextCollectionId and contextCollectionType
+	    //Once these attributes are available (currently they are not)
 	    selfReportEvent.put(NotificationConstants.CURRENT_ITEM_ID, rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID));
 	    selfReportEvent.put(NotificationConstants.CURRENT_ITEM_TYPE, rubricGrading.get(AJEntityRubricGrading.COLLECTION_TYPE));		    
+	    
 	    selfReportEvent.put(NotificationConstants.PATH_ID, pathId);
 	    selfReportEvent.put(NotificationConstants.PATH_TYPE, pathType);
+
 	    selfReportEvent.put(NotificationConstants.ACTION, NotificationConstants.INITIATE);
 	    
 	    return selfReportEvent;
@@ -76,9 +86,13 @@ public class RubricGradingEventDispatcher {
 	    selfReportEvent.put(NotificationConstants.COURSE_ID, rubricGrading.get(AJEntityRubricGrading.COURSE_ID));
 	    selfReportEvent.put(NotificationConstants.UNIT_ID, rubricGrading.get(AJEntityRubricGrading.UNIT_ID));
 	    selfReportEvent.put(NotificationConstants.LESSON_ID, rubricGrading.get(AJEntityRubricGrading.LESSON_ID));		    
-	    selfReportEvent.put(NotificationConstants.COLLECTION_ID, rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID));
+	    selfReportEvent.put(NotificationConstants.COLLECTION_ID, rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID));	    
+
+	    //TODO: update the CURRENT_ITEM_ID and CURRENT_ITEM_TYPE with contextCollectionId and contextCollectionType
+	    //Once these attributes are available (currently they are not)
 	    selfReportEvent.put(NotificationConstants.CURRENT_ITEM_ID, rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID));
-	    selfReportEvent.put(NotificationConstants.CURRENT_ITEM_TYPE, rubricGrading.get(AJEntityRubricGrading.COLLECTION_TYPE));		    
+	    selfReportEvent.put(NotificationConstants.CURRENT_ITEM_TYPE, rubricGrading.get(AJEntityRubricGrading.COLLECTION_TYPE));	    
+	    
 	    selfReportEvent.put(NotificationConstants.PATH_ID, pathId);
 	    selfReportEvent.put(NotificationConstants.PATH_TYPE, pathType);
 	    selfReportEvent.put(NotificationConstants.ACTION, NotificationConstants.COMPLETE);

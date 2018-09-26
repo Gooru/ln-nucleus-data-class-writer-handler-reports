@@ -39,10 +39,14 @@ public class GradingPendingEventDispatcher {
 		    pendingGradingEvent.put(NotificationConstants.UNIT_ID, baseReports.get(AJEntityReporting.UNIT_GOORU_OID));
 		    pendingGradingEvent.put(NotificationConstants.LESSON_ID, baseReports.get(AJEntityReporting.LESSON_GOORU_OID));		    
 		    pendingGradingEvent.put(NotificationConstants.COLLECTION_ID, baseReports.get(AJEntityReporting.COLLECTION_OID));
+		    
+		    //TODO: update the CURRENT_ITEM_ID and CURRENT_ITEM_TYPE with contextCollectionId and contextCollectionType
+		    //Once these attributes are available (currently they are not)
 		    pendingGradingEvent.put(NotificationConstants.CURRENT_ITEM_ID, baseReports.get(AJEntityReporting.COLLECTION_OID));
 		    pendingGradingEvent.put(NotificationConstants.CURRENT_ITEM_TYPE, baseReports.get(AJEntityReporting.COLLECTION_TYPE));		    
 		    pendingGradingEvent.put(NotificationConstants.PATH_ID, baseReports.get(AJEntityReporting.PATH_ID));
 		    pendingGradingEvent.put(NotificationConstants.PATH_TYPE, baseReports.get(AJEntityReporting.PATH_TYPE));
+		    
 		    pendingGradingEvent.put(NotificationConstants.ACTION, NotificationConstants.INITIATE);
 		    
 		    return pendingGradingEvent;

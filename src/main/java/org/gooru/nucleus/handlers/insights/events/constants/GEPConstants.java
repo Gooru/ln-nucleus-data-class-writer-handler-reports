@@ -35,6 +35,10 @@ public class GEPConstants {
 	public static final String EXT_COLLECTION = "collection-external";
 	public static final String ASSESSMENT = "assessment";
 	public static final String EXT_ASSESSMENT = "assessment-external";
+
+	public static final String CONTEXT_COLLECTION_ID = "contextCollectionId";
+	public static final String CONTEXT_COLLECTION_TYPE = "contextCollectionType";
+	public static final String PATH_TYPE = "pathType";
 	
 	public static final String COLLECTION_PERF_EVENT = "collection.performance";
 	public static final String COLLECTION_START_EVENT = "collection.start";
