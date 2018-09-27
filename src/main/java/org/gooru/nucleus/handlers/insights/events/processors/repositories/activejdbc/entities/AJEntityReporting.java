@@ -171,10 +171,10 @@ public class AJEntityReporting extends Model {
             + "AND session_id = ? AND collection_id = ?  AND event_name = ? AND event_type = ? LIMIT 1";
 
     //Student Self Grading
-    public static final String CHECK_IF_EXT_ASSESSMENT_SELF_GRADED = "SELECT id, time_spent, score, reaction FROM base_reports "
+    public static final String CHECK_IF_EXT_ASSESSMENT_SELF_GRADED = "SELECT id, views, time_spent, score, reaction FROM base_reports "
     		+ "WHERE actor_id = ? AND class_id = ? AND collection_id = ? AND session_id = ? AND event_name = ? AND event_type = ? ";
 
-    public static final String UPDATE_SELF_GRADED_EXT_ASSESSMENT = "UPDATE base_reports SET score = ?, max_score = ?, updated_at = ?, "
+    public static final String UPDATE_SELF_GRADED_EXT_ASSESSMENT = "UPDATE base_reports SET views = ?, score = ?, max_score = ?, updated_at = ?, "
     		+ "time_zone = ?, date_in_time_zone = ? WHERE id = ?";
 
     
@@ -203,6 +203,8 @@ public class AJEntityReporting extends Model {
     public static final String SELECT_BASE_REPORT_ID = "SELECT id FROM base_reports WHERE collection_id = ? AND session_id = ? AND resource_id = ? AND event_type = ? ";
     
     //*********************************************************************************************************************************************
+
+    public static final String FETCH_AVG_REACTION_OF_COLL_BY_SESSION = "SELECT COALESCE(ROUND(AVG(reaction)),0) AS reaction FROM base_reports  WHERE event_name = 'reaction.create' and session_id = ? and collection_id = ?";
     
     private static final Map<String, FieldValidator> validatorRegistry;
     private static final Map<String, FieldConverter> converterRegistry;

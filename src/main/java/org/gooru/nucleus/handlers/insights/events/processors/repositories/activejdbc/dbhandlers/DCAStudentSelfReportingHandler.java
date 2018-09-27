@@ -93,27 +93,33 @@ public class DCAStudentSelfReportingHandler implements DBHandler {
 	                    MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload"),
 	                    ExecutionStatus.FAILED);        	
 	        }
-	        
+	        long view = 1;
 	        dcaReport.set(AJEntityDailyClassActivity.GOORUUID, userId);
-	        dcaReport.set(AJEntityDailyClassActivity.COLLECTION_OID, extCollectionId);	        
+	        dcaReport.set(AJEntityDailyClassActivity.COLLECTION_OID, extCollectionId);	
+	        dcaReport.set(AJEntityDailyClassActivity.VIEWS, view);
 	        percentScore = (req.getValue(PERCENT_SCORE) != null) ? Double.valueOf(req.getValue(PERCENT_SCORE).toString()) : null;	        
 	        if(percentScore != null) {
-	        	int compVal = percentScore.compareTo(100.00);
-	        	if (compVal > 0) {
-	        		return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse("Numeric Field Overflow - Invalid Percent Score"), ExecutionResult.ExecutionStatus.FAILED);
+	        	if ((percentScore.compareTo(100.00) > 0) || (percentScore.compareTo(0.00) < 0)) {
+	        		return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse("Numeric Field Overflow - Invalid Percent Score"), 
+	        				ExecutionResult.ExecutionStatus.FAILED);
 	        	} else {
 	        	    dcaReport.set(AJEntityDailyClassActivity.SCORE, percentScore);
-	        	    dcaReport.set(AJEntityDailyClassActivity.MAX_SCORE, 100);	        	}
+	        	    dcaReport.set(AJEntityDailyClassActivity.MAX_SCORE, 100);	        	
+	        	}
 	        } else if (req.getValue(SCORE) == null || req.getValue(SCORE) == null ) {
 	        	return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload"), ExecutionResult.ExecutionStatus.FAILED);
 	        } else {
 		        rawScore = Double.valueOf(req.getValue(SCORE).toString());
 		        maxScore = Double.valueOf(req.getValue(MAX_SCORE).toString());
-		        if (maxScore > 0) {
+	        	if ((rawScore.compareTo(100.00) > 0) || (maxScore.compareTo(100.00) > 0) 
+	        			|| (rawScore.compareTo(0.00) < 0) || (maxScore.compareTo(0.00) < 0) 
+	        			|| (maxScore.compareTo(0.00) == 0)) {
+	        		return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse("Numeric Field Overflow - Invalid Fraction Score"), 
+	        				ExecutionResult.ExecutionStatus.FAILED);
+	        	}		        
 		        	score = (rawScore *100)/maxScore;		        	
 		        	dcaReport.set(AJEntityDailyClassActivity.SCORE, score);
-		        	dcaReport.set(AJEntityDailyClassActivity.MAX_SCORE, maxScore);
-		        }
+		        	dcaReport.set(AJEntityDailyClassActivity.MAX_SCORE, maxScore);		        
 	        }
 	        
 	        //Remove ALL the values from the Request that needed processing, so that the rest of the values from 
@@ -174,14 +180,15 @@ public class DCAStudentSelfReportingHandler implements DBHandler {
 		      } else {
 		    	  LOGGER.info("Duplicate record exists. Updating the Self graded score ");
 	                duplicateRow.forEach(dup -> {
-	                    int id = Integer.valueOf(dup.get("id").toString());
+	                    int id = Integer.valueOf(dup.get(AJEntityDailyClassActivity.ID).toString());
+	                    long views = ((dup.get(AJEntityDailyClassActivity.VIEWS) != null ? Long.valueOf(dup.get(AJEntityDailyClassActivity.VIEWS).toString()) : 1) + view);
 	                    //TODO: Update Timespent, when it is available - The existing TS should be ADDED to the TS available 
 	                    //in the current payload
 	        	        if(percentScore != null) {
-	        	        	Base.exec(AJEntityDailyClassActivity.UPDATE_SELF_GRADED_EXT_ASSESSMENT, percentScore, 100, new Timestamp(ts), 
+	        	        	Base.exec(AJEntityDailyClassActivity.UPDATE_SELF_GRADED_EXT_ASSESSMENT, views, percentScore, 100, new Timestamp(ts), 
 	        	        	    dcaReport.get(AJEntityDailyClassActivity.TIME_ZONE), dcaReport.get(AJEntityDailyClassActivity.DATE_IN_TIME_ZONE), id);
 	        	        } else {
-	        	        	Base.exec(AJEntityDailyClassActivity.UPDATE_SELF_GRADED_EXT_ASSESSMENT, score, maxScore, new Timestamp(ts), 
+	        	        	Base.exec(AJEntityDailyClassActivity.UPDATE_SELF_GRADED_EXT_ASSESSMENT, views, score, maxScore, new Timestamp(ts), 
 	        	        	    dcaReport.get(AJEntityDailyClassActivity.TIME_ZONE), dcaReport.get(AJEntityDailyClassActivity.DATE_IN_TIME_ZONE), id);	        	        	
 	        	        }                                        	  
 
