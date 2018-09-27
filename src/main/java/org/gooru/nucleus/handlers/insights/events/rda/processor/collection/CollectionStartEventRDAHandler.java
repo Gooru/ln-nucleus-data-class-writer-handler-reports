@@ -8,7 +8,7 @@ import java.util.TimeZone;
 import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.RDAProcessorContext;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.DBHandler;
-import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AjEntityCollectionPerformance;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityCollectionPerformance;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult.ExecutionStatus;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponse;
@@ -28,7 +28,7 @@ public class CollectionStartEventRDAHandler implements DBHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CollectionStartEventRDAHandler.class);
     private final RDAProcessorContext context;
-    private AjEntityCollectionPerformance collectionReport;
+    private AJEntityCollectionPerformance collectionReport;
     private CollectionEventParser collectionEvent;
     Double scoreObj;
     Double maxScoreObj;
@@ -58,9 +58,9 @@ public class CollectionStartEventRDAHandler implements DBHandler {
     @Override
     public ExecutionResult<MessageResponse> executeRequest() {
         try {
-            collectionReport = new AjEntityCollectionPerformance();
+            collectionReport = new AJEntityCollectionPerformance();
             collectionEvent = context.getCollectionEvent();
-            LazyList<AjEntityCollectionPerformance> duplicateRow = null;
+            LazyList<AJEntityCollectionPerformance> duplicateRow = null;
 
             collectionReport.set("actor_id", collectionEvent.getUser());
             collectionReport.set("class_id", collectionEvent.getClassId());
@@ -104,8 +104,9 @@ public class CollectionStartEventRDAHandler implements DBHandler {
             collectionReport.set("timespent", collectionEvent.getTimespent());
             collectionReport.set("max_score", collectionEvent.getMaxScore());
             collectionReport.set("is_graded", collectionEvent.getIsGraded());
-
-            duplicateRow = AjEntityCollectionPerformance.findBySQL(AjEntityCollectionPerformance.CHECK_DUPLICATE_COLLECTION_EVENT, collectionEvent.getUser(), collectionEvent.getSessionId(),
+            collectionReport.set("status", false);
+            
+            duplicateRow = AJEntityCollectionPerformance.findBySQL(AJEntityCollectionPerformance.CHECK_DUPLICATE_COLLECTION_EVENT, collectionEvent.getUser(), collectionEvent.getSessionId(),
                 collectionEvent.getCollectionId());
 
             if (collectionReport.hasErrors()) {
@@ -127,7 +128,7 @@ public class CollectionStartEventRDAHandler implements DBHandler {
                         long view = (Long.valueOf(dup.get("views").toString()) + collectionEvent.getViews());
                         long ts = (Long.valueOf(dup.get("timespent").toString()) + collectionEvent.getTimespent());
                         long react = collectionEvent.getReaction() != 0 ? collectionEvent.getReaction() : 0;
-                        Base.exec(AjEntityCollectionPerformance.UPDATE_COLLECTION_METRICS, view, ts, collectionEvent.getScore(), collectionEvent.getMaxScore(), react, collectionEvent.getIsGraded(),
+                        Base.exec(AJEntityCollectionPerformance.UPDATE_COLLECTION_METRICS, view, ts, collectionEvent.getScore(), collectionEvent.getMaxScore(), react, collectionEvent.getIsGraded(), false,
                             new Timestamp(collectionEvent.getActivityTime()), id);
                     });
                 }

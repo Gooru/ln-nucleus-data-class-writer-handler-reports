@@ -4,7 +4,7 @@ import java.sql.Timestamp;
 
 import org.gooru.nucleus.handlers.insights.events.processors.RDAProcessorContext;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.DBHandler;
-import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AjEntityCollectionPerformance;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityCollectionPerformance;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult.ExecutionStatus;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponse;
@@ -51,14 +51,14 @@ public class ResourceStopEventRDAHandler implements DBHandler {
         try {
             resourceEvent = context.getResourceEvent();
             if (resourceEvent.getCollectionId() != null) {
-                LazyList<AjEntityCollectionPerformance> duplicateRow = AjEntityCollectionPerformance.findBySQL(AjEntityCollectionPerformance.CHECK_DUPLICATE_COLLECTION_EVENT, resourceEvent.getUser(),
+                LazyList<AJEntityCollectionPerformance> duplicateRow = AJEntityCollectionPerformance.findBySQL(AJEntityCollectionPerformance.CHECK_DUPLICATE_COLLECTION_EVENT, resourceEvent.getUser(),
                     resourceEvent.getSessionId(), resourceEvent.getCollectionId());
                 if (duplicateRow != null && !duplicateRow.isEmpty()) {
                     LOGGER.debug("Found duplicate row in the DB, so updating duplicate row.....");
                     duplicateRow.forEach(dup -> {
                         int id = Integer.valueOf(dup.get("id").toString());
                         long ts = (Long.valueOf(dup.get("timespent").toString()) + resourceEvent.getTimeSpent());
-                        Base.exec(AjEntityCollectionPerformance.UPDATE_COLLECTION_TIMESPENT, ts, new Timestamp(resourceEvent.getActivityTime()), id);
+                        Base.exec(AJEntityCollectionPerformance.UPDATE_COLLECTION_TIMESPENT, ts, new Timestamp(resourceEvent.getActivityTime()), id);
                     });
                 }
             }

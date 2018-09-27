@@ -294,7 +294,7 @@ public class CollectionEventParser {
             this.maxScore = this.result.containsKey(CollectionEventConstants.EventAttributes.MAX_SCORE) ? this.result.getDouble(CollectionEventConstants.EventAttributes.MAX_SCORE, null) : 0.0;
             this.timeSpent = this.result.containsKey(CollectionEventConstants.EventAttributes.TIMESPENT) ? this.result.getLong(CollectionEventConstants.EventAttributes.TIMESPENT, null) : 0L;
             this.views = this.result.containsKey(CollectionEventConstants.EventAttributes.VIEWS) ? this.result.getLong(CollectionEventConstants.EventAttributes.VIEWS, null) : 0L;
-            this.setIsGraded(this.result.containsKey(CollectionEventConstants.EventAttributes.IS_GRADED) ? this.result.getBoolean(CollectionEventConstants.EventAttributes.IS_GRADED, null) : null);
+            this.isGraded = this.result.containsKey(CollectionEventConstants.EventAttributes.IS_GRADED) ? this.result.getBoolean(CollectionEventConstants.EventAttributes.IS_GRADED, null) : null;
 
             this.context = this.event.getJsonObject(CollectionEventConstants.EventAttributes.CONTEXT);
             if (this.context == null) {

@@ -14,7 +14,7 @@ public class ConfigConstants {
   public static final String KAFKA_EVENTLOGS_TOPIC = "EVENTLOGS";
   public static final String KAFKA_TEST_TOPIC = "test";
   public static final String KAFKA_XAPITRANSFORMER_TOPIC = "XAPITRANSFORMER";
-  public static final String KAFKA_RDA_EVENTLOGS_TOPIC = "RDAEVENTLOGS";
+  public static final String KAFKA_RDA_EVENTLOGS_TOPIC = "report.data.aggregate.events";
   
   public static final String THREAD_POOL_SIZE ="thead.pool.size";
 
