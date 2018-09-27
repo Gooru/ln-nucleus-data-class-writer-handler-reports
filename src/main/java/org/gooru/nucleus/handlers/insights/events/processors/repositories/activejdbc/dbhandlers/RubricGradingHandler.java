@@ -5,9 +5,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.gooru.nucleus.handlers.insights.events.constants.ConfigConstants;
 import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.constants.GEPConstants;
-import org.gooru.nucleus.handlers.insights.events.constants.NotificationConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.MessageDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.RubricGradingEventDispatcher;
@@ -17,6 +17,7 @@ import org.gooru.nucleus.handlers.insights.events.processors.repositories.active
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.EntityBuilder;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult.ExecutionStatus;
+import org.gooru.nucleus.handlers.insights.events.rda.processor.collection.CollectionEventConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponse;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponseFactory;
 import org.javalite.activejdbc.Base;
@@ -25,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.hazelcast.util.StringUtil;
+
 import io.vertx.core.json.JsonObject;
 
 
@@ -45,6 +47,9 @@ public class RubricGradingHandler implements DBHandler {
 	private Long pathId;
 	private String latestSessionId;
 	private String pathType;
+	private String contextCollectionId;
+	private String contextCollectionType;
+	private Boolean isGraded;
 
     public RubricGradingHandler(ProcessorContext context) {
         this.context = context;
@@ -189,6 +194,8 @@ public class RubricGradingHandler implements DBHandler {
     		latestSessionId = sessionPathIdTypeModel.get(AJEntityReporting.SESSION_ID) != null ? sessionPathIdTypeModel.get(AJEntityReporting.SESSION_ID).toString() : null;
     		pathType = sessionPathIdTypeModel.get(AJEntityReporting.PATH_TYPE) != null ? sessionPathIdTypeModel.get(AJEntityReporting.PATH_TYPE).toString() : null;
     		pathId = sessionPathIdTypeModel.get(AJEntityReporting.PATH_ID) != null ? Long.valueOf(sessionPathIdTypeModel.get(AJEntityReporting.PATH_ID).toString()) : 0L;
+    		contextCollectionId = sessionPathIdTypeModel.get(AJEntityReporting.CONTEXT_COLLECTION_ID) != null ? sessionPathIdTypeModel.get(AJEntityReporting.CONTEXT_COLLECTION_ID).toString() : null;
+    		contextCollectionType = sessionPathIdTypeModel.get(AJEntityReporting.CONTEXT_COLLECTION_TYPE) != null ? sessionPathIdTypeModel.get(AJEntityReporting.CONTEXT_COLLECTION_TYPE).toString() : null;    		
     	}
     	
     	if ((!StringUtil.isNullOrEmpty(latestSessionId) && latestSessionId.equals(sessionId.toString())) && (rubricGrading.get(AJEntityRubricGrading.STUDENT_SCORE) != null)) {
@@ -204,12 +211,15 @@ public class RubricGradingHandler implements DBHandler {
     		LOGGER.info("Sending Collection Update Score Event to GEP");
         	  allGraded =  AJEntityReporting.findBySQL(AJEntityReporting.IS_COLLECTION_GRADED, rubricGrading.get(AJEntityRubricGrading.STUDENT_ID), 
         			  latestSessionId, rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID), EventConstants.COLLECTION_RESOURCE_PLAY, EventConstants.STOP, false);
+        	  isGraded = false;
               if (allGraded == null || allGraded.isEmpty()) {
             	  sendCollScoreUpdateEventtoGEP(collType.toString());
-            	  RubricGradingEventDispatcher eventDispatcher = new RubricGradingEventDispatcher(rubricGrading, pathType, pathId); 
+            	  RubricGradingEventDispatcher eventDispatcher = new RubricGradingEventDispatcher(rubricGrading, pathType, pathId, contextCollectionId, contextCollectionType); 
             	  eventDispatcher.sendGradingCompleteTeacherEventtoNotifications();
             	  eventDispatcher.sendGradingCompleteStudentEventtoNotifications();
-              }    		
+            	  isGraded = true;
+              }   
+              sendCollScoreUpdateEventtoRDA(collType.toString());
     	}
     	
     	LOGGER.debug("DONE");
@@ -261,6 +271,12 @@ public class RubricGradingHandler implements DBHandler {
     	context.put(GEPConstants.LESSON_ID, rubricGrading.get(AJEntityRubricGrading.LESSON_ID));
     	context.put(GEPConstants.COLLECTION_ID, rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID));
     	context.put(GEPConstants.COLLECTION_TYPE, collectionType);
+    	
+    	context.put(GEPConstants.CONTEXT_COLLECTION_ID, contextCollectionId);
+    	context.put(GEPConstants.CONTEXT_COLLECTION_TYPE, contextCollectionType);
+    	context.put(GEPConstants.PATH_ID, pathId);
+    	context.put(GEPConstants.PATH_TYPE, pathType);
+    	    	
     	context.put(GEPConstants.SESSION_ID, rubricGrading.get(AJEntityRubricGrading.SESSION_ID));
 
     	resEvent.put(GEPConstants.CONTEXT, context);
@@ -298,7 +314,12 @@ public class RubricGradingHandler implements DBHandler {
     	cpEvent.put(GEPConstants.EVENT_NAME, GEPConstants.COLL_SCORE_UPDATE_EVENT);
     	cpEvent.put(GEPConstants.COLLECTION_ID, rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID));
     	cpEvent.put(GEPConstants.COLLECTION_TYPE, collectionType);
-
+    	
+    	context.put(GEPConstants.CONTEXT_COLLECTION_ID, contextCollectionId);
+    	context.put(GEPConstants.CONTEXT_COLLECTION_TYPE, contextCollectionType);
+    	context.put(GEPConstants.PATH_ID, pathId);
+    	context.put(GEPConstants.PATH_TYPE, pathType);
+    	
     	context.put(GEPConstants.CLASS_ID, rubricGrading.get(AJEntityRubricGrading.CLASS_ID));
     	context.put(GEPConstants.COURSE_ID, rubricGrading.get(AJEntityRubricGrading.COURSE_ID));
     	context.put(GEPConstants.UNIT_ID, rubricGrading.get(AJEntityRubricGrading.UNIT_ID));
@@ -320,6 +341,22 @@ public class RubricGradingHandler implements DBHandler {
         
     	return cpEvent;
     	
+    }
+    
+    private void sendCollScoreUpdateEventtoRDA(String cType) {
+        JsonObject rdaEvent = createCollScoreUpdateEvent(cType);
+        rdaEvent.put(CollectionEventConstants.EventAttributes.EVENT_NAME, CollectionEventConstants.EventAttributes.COLLECTION_SCORE_UPDATE_EVENT);
+        JsonObject result = rdaEvent.getJsonObject(GEPConstants.RESULT);
+        if (this.isGraded != null) result.put("isGraded", this.isGraded);
+        rdaEvent.put(GEPConstants.RESULT, result);
+        
+        try {
+            LOGGER.debug("RGH::The Collection RDA Event is : {} ", rdaEvent);
+            MessageDispatcher.getInstance().sendGEPEvent2Kafka(ConfigConstants.KAFKA_RDA_EVENTLOGS_TOPIC, rdaEvent);
+            LOGGER.info("RGH::Successfully dispatched Collection Perf RDA Event..");
+        } catch (Exception e) {
+            LOGGER.error("RGH::Error while dispatching Collection Perf RDA Event ", e);
+        }
     }
      
 }

@@ -115,6 +115,15 @@ public class DailyClassActivityEventHandler implements DBHandler {
         	}
         }
         
+        if (event.getContextCollectionId() != null) {
+      	  dcaReport.set("context_collection_id", event.getContextCollectionId());    	  
+        }
+
+        if (event.getContextCollectionType() != null) {
+      	  dcaReport.set("context_collection_type", event.getContextCollectionType());    	  
+        }
+
+        
     	if ((event.getEventName().equals(EventConstants.COLLECTION_PLAY))){
     	  duplicateRow =  AJEntityDailyClassActivity.findBySQL(AJEntityDailyClassActivity.FIND_COLLECTION_EVENT,event.getSessionId(),
     			  event.getContentGooruId(),event.getEventType(), event.getEventName());

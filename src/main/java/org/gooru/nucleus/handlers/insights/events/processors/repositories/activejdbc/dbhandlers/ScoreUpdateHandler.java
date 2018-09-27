@@ -1,26 +1,25 @@
 package org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers;
 
-import java.sql.Timestamp;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import org.gooru.nucleus.handlers.insights.events.constants.ConfigConstants;
 import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.constants.GEPConstants;
-import org.gooru.nucleus.handlers.insights.events.constants.NotificationConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.MessageDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.TeacherScoreOverideEventDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityClassAuthorizedUsers;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityReporting;
-import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityRubricGrading;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.EntityBuilder;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult;
+import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult.ExecutionStatus;
+import org.gooru.nucleus.handlers.insights.events.rda.processor.collection.CollectionEventConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponse;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponseFactory;
-import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult.ExecutionStatus;
 import org.javalite.activejdbc.Base;
 import org.javalite.activejdbc.LazyList;
 import org.slf4j.Logger;
@@ -37,20 +36,25 @@ import io.vertx.core.json.JsonObject;
 
 public class ScoreUpdateHandler implements DBHandler {
 	
-  private static final Logger LOGGER = LoggerFactory.getLogger(ScoreUpdateHandler.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ScoreUpdateHandler.class);
 	//TODO: This Kafka Topic name needs to be picked up from config
-  public static final String TOPIC_GEP_USAGE_EVENTS = "org.gooru.da.sink.logW.usage.events";
-  public static final String TOPIC_NOTIFICATIONS = "notifications";
-  private static final String USER_ID_FROM_SESSION = "userIdFromSession";
-  private static final String STUDENT_ID = "student_id";
-  private static final String RESOURCES = "resources";
-  private static final String CORRECT = "correct";
-  private static final String INCORRECT = "incorrect";  
-  private final ProcessorContext context;
-  private AJEntityReporting baseReports;
-  private String studentId;
-  private Double score;
-  private Double max_score;
+	public static final String TOPIC_GEP_USAGE_EVENTS = "org.gooru.da.sink.logW.usage.events";
+	public static final String TOPIC_NOTIFICATIONS = "notifications";
+	private static final String USER_ID_FROM_SESSION = "userIdFromSession";
+	private static final String STUDENT_ID = "student_id";
+	private static final String RESOURCES = "resources";
+	private static final String CORRECT = "correct";
+	private static final String INCORRECT = "incorrect";  
+	private final ProcessorContext context;
+	private AJEntityReporting baseReports;
+	private String studentId;
+	private Double score;
+	private Double max_score;
+	private Long pathId;
+	private String pathType;
+	private String contextCollectionId;
+	private String contextCollectionType;
+    private Boolean isGraded;
 
     public ScoreUpdateHandler(ProcessorContext context) {
         this.context = context;
@@ -148,8 +152,8 @@ public class ScoreUpdateHandler implements DBHandler {
               LOGGER.debug("Total score updated successfully...");
 
               //Get pathId & pathType
-          	  allGraded =  AJEntityReporting.findBySQL(AJEntityReporting.GET_PATH_ID_TYPE, studentId, baseReports.get(AJEntityReporting.SESSION_ID), 
-                      baseReports.get(AJEntityReporting.COLLECTION_OID), EventConstants.COLLECTION_RESOURCE_PLAY, EventConstants.STOP, false);
+//          	  allGraded =  AJEntityReporting.findBySQL(AJEntityReporting.GET_PATH_ID_TYPE, studentId, baseReports.get(AJEntityReporting.SESSION_ID), 
+//                      baseReports.get(AJEntityReporting.COLLECTION_OID), EventConstants.COLLECTION_RESOURCE_PLAY, EventConstants.STOP, false);
 
           	  AJEntityReporting pathIdTypeModel =  AJEntityReporting.findFirst("actor_id = ? AND class_id = ? AND course_id = ? AND unit_id = ? "
           			  + "AND lesson_id = ? AND collection_id = ? AND event_name = 'collection.play' AND event_type = 'stop'", 
@@ -157,6 +161,22 @@ public class ScoreUpdateHandler implements DBHandler {
           			baseReports.get(AJEntityReporting.COURSE_GOORU_OID), baseReports.get(AJEntityReporting.UNIT_GOORU_OID), 
           			baseReports.get(AJEntityReporting.LESSON_GOORU_OID), baseReports.get(AJEntityReporting.COLLECTION_OID));
           			
+          	if (pathIdTypeModel != null) {
+        		pathType = pathIdTypeModel.get(AJEntityReporting.PATH_TYPE) != null ? pathIdTypeModel.get(AJEntityReporting.PATH_TYPE).toString() : null;
+        		pathId = pathIdTypeModel.get(AJEntityReporting.PATH_ID) != null ? Long.valueOf(pathIdTypeModel.get(AJEntityReporting.PATH_ID).toString()) : 0L;
+        		contextCollectionId = pathIdTypeModel.get(AJEntityReporting.CONTEXT_COLLECTION_ID) != null ? pathIdTypeModel.get(AJEntityReporting.CONTEXT_COLLECTION_ID).toString() : null;
+        		contextCollectionType = pathIdTypeModel.get(AJEntityReporting.CONTEXT_COLLECTION_TYPE) != null ? pathIdTypeModel.get(AJEntityReporting.CONTEXT_COLLECTION_TYPE).toString() : null;
+              	//Set these values into the baseReports Model for data injection into GEP/Notification Events
+              	baseReports.set(AJEntityReporting.PATH_TYPE, pathType);
+              	baseReports.set(AJEntityReporting.PATH_ID, pathId);
+              	baseReports.set(AJEntityReporting.CONTEXT_COLLECTION_ID, contextCollectionId);
+              	baseReports.set(AJEntityReporting.CONTEXT_COLLECTION_TYPE, contextCollectionType);
+        	} else { //This Case should NEVER Arise
+              	baseReports.set(AJEntityReporting.PATH_TYPE, null);
+              	baseReports.set(AJEntityReporting.PATH_ID, 0L);
+              	baseReports.set(AJEntityReporting.CONTEXT_COLLECTION_ID, null);
+              	baseReports.set(AJEntityReporting.CONTEXT_COLLECTION_TYPE, null);        		
+        	}
           	
               //Send Score Update Events to GEP
               jObj.forEach(attr -> {          
@@ -170,8 +190,12 @@ public class ScoreUpdateHandler implements DBHandler {
           	  allGraded =  AJEntityReporting.findBySQL(AJEntityReporting.IS_COLLECTION_GRADED, studentId, baseReports.get(AJEntityReporting.SESSION_ID), 
                       baseReports.get(AJEntityReporting.COLLECTION_OID), EventConstants.COLLECTION_RESOURCE_PLAY, EventConstants.STOP, false);
               if (allGraded == null || allGraded.isEmpty()) {
-            	  sendCollScoreUpdateEventtoGEP();  
+            	  sendCollScoreUpdateEventtoGEP(); 
+            	  isGraded = true;
+              } else {
+                  isGraded = false;
               }
+              sendCollScoreUpdateEventtoRDA();
               
         LOGGER.debug("DONE");
         return new ExecutionResult<>(MessageResponseFactory.createOkayResponse(), ExecutionStatus.SUCCESSFUL);
@@ -185,13 +209,10 @@ public class ScoreUpdateHandler implements DBHandler {
     public boolean handlerReadOnly() {
         return false;
     }
-     
-    
     
     //********************************************************
     //TODO: Move GEP Event Processing to the EventDispatcher 
     //********************************************************
-
     
     private void sendResourceScoreUpdateEventtoGEP(String ansStatus, String resId) {    	
     	JsonObject result = new JsonObject();
@@ -229,6 +250,13 @@ public class ScoreUpdateHandler implements DBHandler {
     	context.put(GEPConstants.LESSON_ID, baseReports.get(AJEntityReporting.LESSON_GOORU_OID));
     	context.put(GEPConstants.COLLECTION_ID, baseReports.get(AJEntityReporting.COLLECTION_OID));
     	context.put(GEPConstants.COLLECTION_TYPE, baseReports.get(AJEntityReporting.COLLECTION_TYPE));
+
+    	context.put(GEPConstants.PATH_TYPE, baseReports.get(AJEntityReporting.PATH_TYPE));
+    	context.put(GEPConstants.PATH_ID, baseReports.get(AJEntityReporting.PATH_ID));
+    	
+    	context.put(GEPConstants.CONTEXT_COLLECTION_ID, baseReports.get(AJEntityReporting.CONTEXT_COLLECTION_ID));
+    	context.put(GEPConstants.CONTEXT_COLLECTION_TYPE, baseReports.get(AJEntityReporting.CONTEXT_COLLECTION_TYPE));
+
     	context.put(GEPConstants.SESSION_ID, baseReports.get(AJEntityReporting.SESSION_ID));
 
     	resEvent.put(GEPConstants.CONTEXT, context);
@@ -267,6 +295,12 @@ public class ScoreUpdateHandler implements DBHandler {
     	context.put(GEPConstants.UNIT_ID, baseReports.get(AJEntityReporting.UNIT_GOORU_OID));
     	context.put(GEPConstants.LESSON_ID, baseReports.get(AJEntityReporting.LESSON_GOORU_OID));
     	context.put(GEPConstants.SESSION_ID, baseReports.get(AJEntityReporting.SESSION_ID));
+    	
+    	context.put(GEPConstants.PATH_TYPE, baseReports.get(AJEntityReporting.PATH_TYPE));
+    	context.put(GEPConstants.PATH_ID, baseReports.get(AJEntityReporting.PATH_ID));
+    	
+    	context.put(GEPConstants.CONTEXT_COLLECTION_ID, baseReports.get(AJEntityReporting.CONTEXT_COLLECTION_ID));
+    	context.put(GEPConstants.CONTEXT_COLLECTION_TYPE, baseReports.get(AJEntityReporting.CONTEXT_COLLECTION_TYPE));
 
     	cpEvent.put(GEPConstants.CONTEXT, context);
     	
@@ -284,5 +318,22 @@ public class ScoreUpdateHandler implements DBHandler {
     	return cpEvent;
     	
     }
+    
+    private void sendCollScoreUpdateEventtoRDA() {
+        JsonObject rdaEvent = createCollScoreUpdateEvent();
+        rdaEvent.put(CollectionEventConstants.EventAttributes.EVENT_NAME, CollectionEventConstants.EventAttributes.COLLECTION_SCORE_UPDATE_EVENT);
+        JsonObject result = rdaEvent.getJsonObject(CollectionEventConstants.EventAttributes.RESULT);
+        if (this.isGraded != null) result.put("isGraded", this.isGraded);
+        rdaEvent.put(GEPConstants.RESULT, result);
+        
+        try {
+            LOGGER.debug("SUH::The Collection RDA Event is : {} ", rdaEvent);
+            MessageDispatcher.getInstance().sendGEPEvent2Kafka(ConfigConstants.KAFKA_RDA_EVENTLOGS_TOPIC, rdaEvent);
+            LOGGER.info("SUH::Successfully dispatched Collection Perf RDA Event..");
+        } catch (Exception e) {
+            LOGGER.error("SUH::Error while dispatching Collection Perf RDA Event ", e);
+        }
+    }
+    
     
 }
