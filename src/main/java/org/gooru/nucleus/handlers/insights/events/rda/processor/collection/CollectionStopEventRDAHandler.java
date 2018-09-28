@@ -57,7 +57,7 @@ public class CollectionStopEventRDAHandler implements DBHandler {
                     LOGGER.debug("Found duplicate row in the DB, so updating duplicate row.....");
                     duplicateRow.forEach(dup -> {
                         int id = Integer.valueOf(dup.get(AJEntityReporting.ID).toString());
-                        long view = event.getViews();
+                        long view = event.getViews() > 0 ? event.getViews() : 1;
                         long ts = event.getTimespent();
                         long react = event.getReaction() != 0 ? event.getReaction() : 0;
                         LazyList<AJEntityCollectionPerformance> avgReactionOfItem =

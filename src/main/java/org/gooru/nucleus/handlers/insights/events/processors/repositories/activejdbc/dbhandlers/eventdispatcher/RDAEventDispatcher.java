@@ -188,6 +188,7 @@ public class RDAEventDispatcher {
         cpEvent.put(CollectionEventConstants.EventAttributes.COLLECTION_TYPE, event.getCollectionType());
         context.put(CollectionEventConstants.EventAttributes.CONTEXT_COLLECTION_ID, event.getContextCollectionId());
         context.put(CollectionEventConstants.EventAttributes.CONTEXT_COLLECTION_TYPE, event.getContextCollectionType());
+        context.put(CollectionEventConstants.EventAttributes.CONTENT_SOURCE, event.getContentSource());
 
         context.put(CollectionEventConstants.EventAttributes.CLASS_ID, event.getClassGooruId());
         context.put(CollectionEventConstants.EventAttributes.COURSE_ID, event.getCourseGooruId());

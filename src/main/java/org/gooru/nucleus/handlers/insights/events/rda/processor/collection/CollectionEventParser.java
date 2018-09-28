@@ -46,6 +46,7 @@ public class CollectionEventParser {
     private long timeSpent;
     private int pathId;
     private String pathType;
+    private String contentSource;
     private Boolean isGraded;
 
     public String getUser() {
@@ -272,6 +273,14 @@ public class CollectionEventParser {
         this.isGraded = isGraded;
     }
 
+    public String getContentSource() {
+        return contentSource;
+    }
+
+    public void setContentSource(String contentSource) {
+        this.contentSource = contentSource;
+    }
+    
     private CollectionEventParser parse() {
         try {
             this.user = this.event.getString(CollectionEventConstants.EventAttributes.USER_ID);
@@ -290,11 +299,11 @@ public class CollectionEventParser {
             if (this.result == null) {
                 this.result = new JsonObject();
             }
-            this.score = this.result.containsKey(CollectionEventConstants.EventAttributes.SCORE) ? this.result.getDouble(CollectionEventConstants.EventAttributes.SCORE, null) : 0;
-            this.maxScore = this.result.containsKey(CollectionEventConstants.EventAttributes.MAX_SCORE) ? this.result.getDouble(CollectionEventConstants.EventAttributes.MAX_SCORE, null) : 0.0;
-            this.timeSpent = this.result.containsKey(CollectionEventConstants.EventAttributes.TIMESPENT) ? this.result.getLong(CollectionEventConstants.EventAttributes.TIMESPENT, null) : 0L;
-            this.views = this.result.containsKey(CollectionEventConstants.EventAttributes.VIEWS) ? this.result.getLong(CollectionEventConstants.EventAttributes.VIEWS, null) : 0L;
-            this.isGraded = this.result.containsKey(CollectionEventConstants.EventAttributes.IS_GRADED) ? this.result.getBoolean(CollectionEventConstants.EventAttributes.IS_GRADED, null) : null;
+            this.score = this.result.containsKey(CollectionEventConstants.EventAttributes.SCORE) ? this.result.getDouble(CollectionEventConstants.EventAttributes.SCORE) : 0;
+            this.maxScore = this.result.containsKey(CollectionEventConstants.EventAttributes.MAX_SCORE) ? this.result.getDouble(CollectionEventConstants.EventAttributes.MAX_SCORE) : 0.0;
+            this.timeSpent = this.result.containsKey(CollectionEventConstants.EventAttributes.TIMESPENT) ? this.result.getLong(CollectionEventConstants.EventAttributes.TIMESPENT) : 0L;
+            this.views = this.result.containsKey(CollectionEventConstants.EventAttributes.VIEWS) ? this.result.getLong(CollectionEventConstants.EventAttributes.VIEWS) : 0L;
+            this.isGraded = this.result.containsKey(CollectionEventConstants.EventAttributes.IS_GRADED) ? this.result.getBoolean(CollectionEventConstants.EventAttributes.IS_GRADED) : null;
 
             this.context = this.event.getJsonObject(CollectionEventConstants.EventAttributes.CONTEXT);
             if (this.context == null) {
@@ -312,6 +321,7 @@ public class CollectionEventParser {
             this.tenantId = this.context.containsKey(CollectionEventConstants.EventAttributes.TENANT_ID) ? this.context.getString(CollectionEventConstants.EventAttributes.TENANT_ID) : null;
             this.pathType = this.context.containsKey(CollectionEventConstants.EventAttributes.PATH_TYPE) ? this.context.getString(CollectionEventConstants.EventAttributes.PATH_TYPE) : null;
             this.pathId = this.context.containsKey(CollectionEventConstants.EventAttributes.PATH_ID) ? this.context.getInteger(CollectionEventConstants.EventAttributes.PATH_ID) : 0;
+            this.contentSource = this.context.containsKey(CollectionEventConstants.EventAttributes.CONTENT_SOURCE) ? this.context.getString(CollectionEventConstants.EventAttributes.CONTENT_SOURCE) : null;
             this.questionCount =
                 this.context.containsKey(CollectionEventConstants.EventAttributes.QUESTION_COUNT) ? this.context.getInteger(CollectionEventConstants.EventAttributes.QUESTION_COUNT) : 0;
 

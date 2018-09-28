@@ -76,6 +76,8 @@ public class CollectionStartEventRDAHandler implements DBHandler {
             collectionReport.set("tenant_id", collectionEvent.getTenantId());
             collectionReport.set("question_count", collectionEvent.getQuestionCount());
             collectionReport.set("partner_id", collectionEvent.getPartnerId());
+            collectionReport.set("content_source", collectionEvent.getContentSource());
+
             // pathId = 0L indicates the main Path. We store pathId only for the
             // altPaths
             if (collectionEvent.getPathId() != 0L) {
