@@ -5,18 +5,16 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
 
-import org.gooru.nucleus.handlers.insights.events.constants.ConfigConstants;
 import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.constants.GEPConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.MessageDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.insights.events.processors.events.EventParser;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.GradingPendingEventDispatcher;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.RDAEventDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityReporting;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult.ExecutionStatus;
-import org.gooru.nucleus.handlers.insights.events.rda.processor.collection.CollectionEventConstants;
-import org.gooru.nucleus.handlers.insights.events.rda.processor.resource.ResourceEventConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponse;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponseFactory;
 import org.javalite.activejdbc.Base;
@@ -319,8 +317,9 @@ class ProcessEventHandler implements DBHandler {
 
           if ((event.getEventName().equals(EventConstants.COLLECTION_PLAY)) && event.getEventType().equalsIgnoreCase(EventConstants.START)) {              
         	  sendCollStartEventtoGEP();
-        	  sendCollStartEventToRDA();
-            }
+        	  RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(this.event, this.views, this.reaction, this.timespent, this.maxScore, this.score, this.isGraded);
+        	  rdaEventDispatcher.sendCollectionStartEventToRDA();
+          }
          
 
         if ((event.getEventName().equals(EventConstants.COLLECTION_PLAY)) && event.getEventType().equalsIgnoreCase(EventConstants.STOP)) {
@@ -336,13 +335,15 @@ class ProcessEventHandler implements DBHandler {
         	  GradingPendingEventDispatcher eventDispatcher = new GradingPendingEventDispatcher(baseReport);
         	  eventDispatcher.sendGradingPendingEventtoNotifications();
           }
-          sendCPEventToRDA();
+          RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(this.event, this.views, this.reaction, this.timespent, this.maxScore, this.score, this.isGraded);
+          rdaEventDispatcher.sendCollectionStopEventToRDA();
         }
 
         if ((event.getEventName().equals(EventConstants.COLLECTION_RESOURCE_PLAY)) && event.getEventType().equalsIgnoreCase(EventConstants.STOP) && 
         		(isGraded == true)) {
             sendCRPEventtoGEP();
-            sendCRPEventToRDA();
+            RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(this.event, this.views, this.reaction, this.timespent, this.maxScore, this.score, this.isGraded);
+            rdaEventDispatcher.sendCollectionResourcePlayEventToRDA();
           }
 
         return new ExecutionResult<>(MessageResponseFactory.createCreatedResponse(), ExecutionStatus.SUCCESSFUL);
@@ -581,69 +582,6 @@ class ProcessEventHandler implements DBHandler {
 
 	    return resEvent;
 	}  
-  
-    private void sendCollStartEventToRDA() {
-        try {
-            JsonObject gepEvent = createCollStartEvent();
-            gepEvent.put(CollectionEventConstants.EventAttributes.TIMEZONE, event.getTimeZone());
-            gepEvent.put(CollectionEventConstants.EventAttributes.EVENT_NAME, CollectionEventConstants.EventAttributes.COLLECTION_START_EVENT);
-            JsonObject result = new JsonObject();
-
-            result.put(GEPConstants.TIMESPENT, 0);
-            if (this.views != null) {
-                result.put(EventConstants.VIEWS, event.getViews());
-            }
-            gepEvent.put(GEPConstants.RESULT, result);
-
-            LOGGER.debug("PEH::Collection Start RDA Event : {} ", gepEvent);
-            MessageDispatcher.getInstance().sendGEPEvent2Kafka(ConfigConstants.KAFKA_RDA_EVENTLOGS_TOPIC, gepEvent);
-            LOGGER.info("PEH::Successfully dispatched Collection Start RDA Event..");
-        } catch (Exception e) {
-            LOGGER.error("PEH::Error while dispatching Collection Start RDA Event ", e);
-        }
-    }
-
-  
-    private void sendCRPEventToRDA() {
-        try {
-            JsonObject gepEvent = createCRPEvent();
-            gepEvent.put(CollectionEventConstants.EventAttributes.EVENT_NAME, ResourceEventConstants.EventAttributes.RESOURCE_PERF_EVENT);
-            JsonObject result = new JsonObject();
-            if (this.timespent != null) {
-                result.put(ResourceEventConstants.EventAttributes.TIMESPENT, this.timespent);
-            }
-            gepEvent.put(ResourceEventConstants.EventAttributes.RESULT, result);
-
-            LOGGER.debug("PEH::Collection Resource RDA Event : {} ", gepEvent);
-            MessageDispatcher.getInstance().sendGEPEvent2Kafka(ConfigConstants.KAFKA_RDA_EVENTLOGS_TOPIC, gepEvent);
-            LOGGER.info("PEH::Successfully dispatched Collection Resource RDA Event..");
-        } catch (Exception e) {
-            LOGGER.error("PEH::Error while dispatching Collection Resource RDA Event ", e);
-        }
-    }
-  
-    private void sendCPEventToRDA() {
-        try {
-            JsonObject gepEvent = createCPEvent();
-            gepEvent.put(CollectionEventConstants.EventAttributes.EVENT_NAME, CollectionEventConstants.EventAttributes.COLLECTION_PERF_EVENT);
-            gepEvent.put(CollectionEventConstants.EventAttributes.TIMEZONE, event.getTimeZone());
-            JsonObject result = new JsonObject();
-
-            if (this.views != null) result.put(CollectionEventConstants.EventAttributes.VIEWS, this.views);
-            if (this.score != null) result.put(CollectionEventConstants.EventAttributes.SCORE, this.score);
-            if (this.timespent != null) result.put(CollectionEventConstants.EventAttributes.TIMESPENT, this.timespent);
-            if (this.maxScore != null) result.put(CollectionEventConstants.EventAttributes.MAX_SCORE, this.maxScore);
-            if (this.reaction != null) result.put(CollectionEventConstants.EventAttributes.REACTION, this.reaction);
-            if (this.isGraded != null) result.put(CollectionEventConstants.EventAttributes.IS_GRADED, this.isGraded);
-            gepEvent.put(GEPConstants.RESULT, result);
-
-            LOGGER.debug("PEH::Collection RDA Event : {} ", gepEvent);
-            MessageDispatcher.getInstance().sendGEPEvent2Kafka(ConfigConstants.KAFKA_RDA_EVENTLOGS_TOPIC, gepEvent);
-            LOGGER.info("PEH::Successfully dispatched Collection Perf RDA Event..");
-        } catch (Exception e) {
-            LOGGER.error("PEH::Error while dispatching Collection Perf RDA Event ", e);
-        }
-    }
 
   private void sendLTIEvent() {
     //Getting LTI event and publishing into Kafka topic.

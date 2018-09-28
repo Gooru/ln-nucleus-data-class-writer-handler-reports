@@ -5,11 +5,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import org.gooru.nucleus.handlers.insights.events.constants.ConfigConstants;
 import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.constants.GEPConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.MessageDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.RDAEventDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.RubricGradingEventDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityClassAuthorizedUsers;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityReporting;
@@ -17,7 +17,6 @@ import org.gooru.nucleus.handlers.insights.events.processors.repositories.active
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.EntityBuilder;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult.ExecutionStatus;
-import org.gooru.nucleus.handlers.insights.events.rda.processor.collection.CollectionEventConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponse;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponseFactory;
 import org.javalite.activejdbc.Base;
@@ -219,7 +218,8 @@ public class RubricGradingHandler implements DBHandler {
             	  eventDispatcher.sendGradingCompleteStudentEventtoNotifications();
             	  isGraded = true;
               }   
-              sendCollScoreUpdateEventtoRDA(collType.toString());
+              RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(this.rubricGrading, collType.toString(), pathId, pathType, contextCollectionId, contextCollectionType, isGraded);
+              rdaEventDispatcher.sendCollScoreUpdateEventFromRGHToRDA();
     	}
     	
     	LOGGER.debug("DONE");
@@ -341,22 +341,6 @@ public class RubricGradingHandler implements DBHandler {
         
     	return cpEvent;
     	
-    }
-    
-    private void sendCollScoreUpdateEventtoRDA(String cType) {
-        JsonObject rdaEvent = createCollScoreUpdateEvent(cType);
-        rdaEvent.put(CollectionEventConstants.EventAttributes.EVENT_NAME, CollectionEventConstants.EventAttributes.COLLECTION_SCORE_UPDATE_EVENT);
-        JsonObject result = rdaEvent.getJsonObject(GEPConstants.RESULT);
-        if (this.isGraded != null) result.put("isGraded", this.isGraded);
-        rdaEvent.put(GEPConstants.RESULT, result);
-        
-        try {
-            LOGGER.debug("RGH::The Collection RDA Event is : {} ", rdaEvent);
-            MessageDispatcher.getInstance().sendGEPEvent2Kafka(ConfigConstants.KAFKA_RDA_EVENTLOGS_TOPIC, rdaEvent);
-            LOGGER.info("RGH::Successfully dispatched Collection Perf RDA Event..");
-        } catch (Exception e) {
-            LOGGER.error("RGH::Error while dispatching Collection Perf RDA Event ", e);
-        }
     }
      
 }

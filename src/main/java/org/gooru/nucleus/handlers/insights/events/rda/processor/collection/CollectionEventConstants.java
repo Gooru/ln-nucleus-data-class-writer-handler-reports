@@ -43,6 +43,7 @@ public class CollectionEventConstants {
         public static final String COLLECTION_PERF_EVENT = "rda.collection.performance";
         public static final String COLLECTION_START_EVENT = "rda.collection.start";
         public static final String COLLECTION_SCORE_UPDATE_EVENT = "rda.collection.score.update";
+        public static final String CONTENT_SOURCE = "contentSource";
 
         private EventAttributes() {
             throw new AssertionError();

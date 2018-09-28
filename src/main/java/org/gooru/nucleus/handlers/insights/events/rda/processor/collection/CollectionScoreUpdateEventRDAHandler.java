@@ -4,7 +4,7 @@ import java.sql.Timestamp;
 
 import org.gooru.nucleus.handlers.insights.events.processors.RDAProcessorContext;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.DBHandler;
-import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AjEntityCollectionPerformance;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityCollectionPerformance;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult.ExecutionStatus;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponse;
@@ -50,19 +50,13 @@ public class CollectionScoreUpdateEventRDAHandler implements DBHandler {
         try {
             event = context.getCollectionEvent();
             if (event.getUser() != null && event.getSessionId() != null && event.getCollectionId() != null) {
-                LazyList<AjEntityCollectionPerformance> duplicateRow =
-                    AjEntityCollectionPerformance.findBySQL(AjEntityCollectionPerformance.CHECK_DUPLICATE_COLLECTION_EVENT, event.getUser(), event.getSessionId(), event.getCollectionId());
+                LazyList<AJEntityCollectionPerformance> duplicateRow =
+                    AJEntityCollectionPerformance.findBySQL(AJEntityCollectionPerformance.CHECK_DUPLICATE_COLLECTION_EVENT, event.getUser(), event.getSessionId(), event.getCollectionId());
                 if (duplicateRow != null && !duplicateRow.isEmpty()) {
                     LOGGER.debug("Found duplicate row in the DB, so updating duplicate row.....");
                     duplicateRow.forEach(dup -> {
                         int id = Integer.valueOf(dup.get("id").toString());
-                        int updated =
-                            Base.exec(AjEntityCollectionPerformance.UPDATE_ASSESSMENT_SCORE, event.getScore(), event.getMaxScore(), event.getIsGraded(), new Timestamp(event.getActivityTime()), id);
-                        if (updated > 0) {
-                            LOGGER.info("Record updated successfully in Coll Perf table");
-                        } else {
-                            LOGGER.error("Error while updating event into Coll Perf table: " + context.request().toString());
-                        }
+                        Base.exec(AJEntityCollectionPerformance.UPDATE_ASSESSMENT_SCORE, event.getScore(), event.getMaxScore(), event.getIsGraded(), id);
                     });
                 }
             }
