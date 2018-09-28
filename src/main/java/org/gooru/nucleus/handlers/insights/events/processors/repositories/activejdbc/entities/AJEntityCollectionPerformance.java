@@ -31,7 +31,7 @@ public class AJEntityCollectionPerformance extends Model {
 
     public static final String UPDATE_COLLECTION_TIMESPENT = "UPDATE collection_performance SET timespent = ?, updated_at = ? WHERE id = ?";
 
-    public static final String UPDATE_ASSESSMENT_SCORE = "UPDATE collection_performance SET score = ?, max_score = ?, is_graded = ?, updated_at = ? WHERE id = ?";
+    public static final String UPDATE_ASSESSMENT_SCORE = "UPDATE collection_performance SET score = ?, max_score = ?, is_graded = ? WHERE id = ?";
 
     private void setPGObject(String field, String type, String value) {
         PGobject pgObject = new PGobject();

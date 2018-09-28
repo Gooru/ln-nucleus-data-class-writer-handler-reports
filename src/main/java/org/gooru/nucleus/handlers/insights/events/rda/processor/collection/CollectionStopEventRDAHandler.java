@@ -67,14 +67,11 @@ public class CollectionStopEventRDAHandler implements DBHandler {
                             react = reaction != null ? reaction.getLong(AJEntityReporting.REACTION) : 0;
                         }
                         
-                        int updated = Base.exec(AJEntityCollectionPerformance.UPDATE_COLLECTION_METRICS, view, ts, event.getScore(), event.getMaxScore(), react, event.getIsGraded(), true,
+                        Base.exec(AJEntityCollectionPerformance.UPDATE_COLLECTION_METRICS, view, ts, event.getScore(), event.getMaxScore(), react, event.getIsGraded(), true,
                             new Timestamp(event.getActivityTime()), id);
-                        if (updated > 0) {
-                            LOGGER.info("Record updated successfully in Coll Perf table");
-                        } else {
-                            LOGGER.error("Error while updating event into Coll Perf table: " + context.request().toString());
-                        }
                     });
+                } else {
+                    LOGGER.warn("RDA-CSTPE:: Update Skipped! coll start event either missing or some issue. RDA-EVENT: {}", context.request());
                 }
             }
         } catch (Exception e) {

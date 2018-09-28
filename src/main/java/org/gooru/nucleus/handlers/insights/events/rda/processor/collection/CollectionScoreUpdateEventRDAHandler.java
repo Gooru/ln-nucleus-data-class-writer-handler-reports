@@ -56,13 +56,7 @@ public class CollectionScoreUpdateEventRDAHandler implements DBHandler {
                     LOGGER.debug("Found duplicate row in the DB, so updating duplicate row.....");
                     duplicateRow.forEach(dup -> {
                         int id = Integer.valueOf(dup.get("id").toString());
-                        int updated =
-                            Base.exec(AJEntityCollectionPerformance.UPDATE_ASSESSMENT_SCORE, event.getScore(), event.getMaxScore(), event.getIsGraded(), new Timestamp(event.getActivityTime()), id);
-                        if (updated > 0) {
-                            LOGGER.info("Record updated successfully in Coll Perf table");
-                        } else {
-                            LOGGER.error("Error while updating event into Coll Perf table: " + context.request().toString());
-                        }
+                        Base.exec(AJEntityCollectionPerformance.UPDATE_ASSESSMENT_SCORE, event.getScore(), event.getMaxScore(), event.getIsGraded(), id);
                     });
                 }
             }

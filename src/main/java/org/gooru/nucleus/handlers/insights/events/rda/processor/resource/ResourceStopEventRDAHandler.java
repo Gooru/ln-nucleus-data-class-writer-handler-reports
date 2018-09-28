@@ -60,6 +60,8 @@ public class ResourceStopEventRDAHandler implements DBHandler {
                         long ts = (Long.valueOf(dup.get("timespent").toString()) + resourceEvent.getTimeSpent());
                         Base.exec(AJEntityCollectionPerformance.UPDATE_COLLECTION_TIMESPENT, ts, new Timestamp(resourceEvent.getActivityTime()), id);
                     });
+                } else {
+                    LOGGER.warn("RDA-RSE:: Update Skipped! coll start event either missing or some issue. RDA-EVENT: {}", context.request());
                 }
             }
         } catch (Exception e) {
