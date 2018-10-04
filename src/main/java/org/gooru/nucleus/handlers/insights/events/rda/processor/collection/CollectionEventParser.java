@@ -48,6 +48,7 @@ public class CollectionEventParser {
     private String pathType;
     private String contentSource;
     private Boolean isGraded;
+    private Boolean status;
 
     public String getUser() {
         return user;
@@ -281,6 +282,14 @@ public class CollectionEventParser {
         this.contentSource = contentSource;
     }
     
+    public Boolean getStatus() {
+        return status;
+    }
+
+    public void setStatus(Boolean status) {
+        this.status = status;
+    }
+
     private CollectionEventParser parse() {
         try {
             this.user = this.event.getString(CollectionEventConstants.EventAttributes.USER_ID);
@@ -304,6 +313,7 @@ public class CollectionEventParser {
             this.timeSpent = this.result.containsKey(CollectionEventConstants.EventAttributes.TIMESPENT) ? this.result.getLong(CollectionEventConstants.EventAttributes.TIMESPENT) : 0L;
             this.views = this.result.containsKey(CollectionEventConstants.EventAttributes.VIEWS) ? this.result.getLong(CollectionEventConstants.EventAttributes.VIEWS) : 0L;
             this.isGraded = this.result.containsKey(CollectionEventConstants.EventAttributes.IS_GRADED) ? this.result.getBoolean(CollectionEventConstants.EventAttributes.IS_GRADED) : null;
+            this.status = this.result.containsKey(CollectionEventConstants.EventAttributes.STATUS) ? this.result.getBoolean(CollectionEventConstants.EventAttributes.STATUS) : false;
 
             this.context = this.event.getJsonObject(CollectionEventConstants.EventAttributes.CONTEXT);
             if (this.context == null) {

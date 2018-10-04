@@ -1,7 +1,5 @@
 package org.gooru.nucleus.handlers.insights.events.rda.processor.collection;
 
-import java.sql.Timestamp;
-
 import org.gooru.nucleus.handlers.insights.events.processors.RDAProcessorContext;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.DBHandler;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityCollectionPerformance;

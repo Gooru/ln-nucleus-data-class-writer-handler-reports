@@ -39,10 +39,12 @@ public class CollectionEventConstants {
         public static final String REACTION = "reaction";
         public static final String TIMEZONE = "timezone";
         public static final String IS_GRADED = "isGraded";
+        public static final String STATUS = "status";
 
         public static final String COLLECTION_PERF_EVENT = "rda.collection.performance";
         public static final String COLLECTION_START_EVENT = "rda.collection.start";
         public static final String COLLECTION_SCORE_UPDATE_EVENT = "rda.collection.score.update";
+        public static final String COLLECTION_SELF_GRADE_EVENT = "rda.collection.self.grade";
         public static final String CONTENT_SOURCE = "contentSource";
 
         private EventAttributes() {

@@ -35,6 +35,7 @@ public class RDAEventDispatcher {
     private String contextCollectionId;
     private String contextCollectionType;
     private String collectionType;
+    private long activityTime;
     
     public RDAEventDispatcher(EventParser event, Long views, Long reaction, Long timespent, Double maxScore, Double score, Boolean isGraded) {
         this.event = event;
@@ -62,6 +63,16 @@ public class RDAEventDispatcher {
         this.contextCollectionType = contextCollectionType;
     }
 
+    public RDAEventDispatcher(AJEntityReporting baseReports, Long views, Long timespent, Double maxScore, Double score, boolean isGraded, long activityTime) {
+        this.baseReports = baseReports;
+        this.views = views;
+        this.timespent = timespent;
+        this.maxScore = maxScore;
+        this.score = score;
+        this.isGraded = isGraded;
+        this.activityTime = activityTime;
+    }
+
     public void sendCollectionStartEventToRDA() {
         try {
             JsonObject rdaEvent = createCollectionStartEvent();
@@ -76,7 +87,7 @@ public class RDAEventDispatcher {
     public void sendCollectionStopEventToRDA() {
         try {
             JsonObject rdaEvent = createCollectionStopEvent();
-            LOGGER.debug("PEH::Collection RDA Event : {} ", rdaEvent);
+            LOGGER.debug("PEH::Collection Stop RDA Event : {} ", rdaEvent);
             MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_RDA, rdaEvent);
             LOGGER.info("PEH::Successfully dispatched Collection Perf RDA Event..");
         } catch (Exception e) {
@@ -98,7 +109,7 @@ public class RDAEventDispatcher {
     public void sendCollScoreUpdateEventFromSUHToRDA() {
         JsonObject rdaEvent = createCollScoreUpdateEventFromBaseReports();
         try {
-            LOGGER.debug("SUH::The Collection RDA Event is : {} ", rdaEvent);
+            LOGGER.debug("SUH::The Collection Score Update RDA Event is : {} ", rdaEvent);
             MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_RDA, rdaEvent);
             LOGGER.info("SUH::Successfully dispatched Collection score update RDA Event..");
         } catch (Exception e) {
@@ -109,13 +120,25 @@ public class RDAEventDispatcher {
     public void sendCollScoreUpdateEventFromRGHToRDA() {
         JsonObject rdaEvent = createCollScoreUpdateEventFromRubricGrading();        
         try {
-            LOGGER.debug("RGH::The Collection RDA Event is : {} ", rdaEvent);
+            LOGGER.debug("RGH::The Collection Rubric Grade RDA Event is : {} ", rdaEvent);
             MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_RDA, rdaEvent);
             LOGGER.info("RGH::Successfully dispatched Collection score update RDA Event..");
         } catch (Exception e) {
             LOGGER.error("RGH::Error while dispatching Collection score update RDA Event ", e);
         }
     }
+    
+    public void sendSelfGradeEventToRDA() {
+        try {
+            JsonObject rdaEvent = createStudentSelfGradeEventFromBaseReports();
+            LOGGER.debug("PEH::Collection Student Self Grade RDA Event : {} ", rdaEvent);
+            MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_RDA, rdaEvent);
+            LOGGER.info("PEH::Successfully dispatched Student self grade RDA Event..");
+        } catch (Exception e) {
+            LOGGER.error("PEH::Error while dispatching Student self grade RDA Event ", e);
+        }
+    }
+    
     private JsonObject createCollectionStartEvent() {
         JsonObject cpEvent = new JsonObject();
         JsonObject context = new JsonObject();
@@ -271,6 +294,46 @@ public class RDAEventDispatcher {
         
         return cpEvent;
         
+    }
+    
+    private JsonObject createStudentSelfGradeEventFromBaseReports() {
+        
+        JsonObject cpEvent = new JsonObject();
+        JsonObject context = new JsonObject();
+        JsonObject result = new JsonObject();
+
+        cpEvent.put(CollectionEventConstants.EventAttributes.USER_ID, baseReports.get(AJEntityReporting.GOORUUID));
+        cpEvent.put(CollectionEventConstants.EventAttributes.ACTIVITY_TIME, this.activityTime);
+        cpEvent.put(CollectionEventConstants.EventAttributes.COLLECTION_ID, baseReports.get(AJEntityReporting.COLLECTION_OID));
+        cpEvent.put(CollectionEventConstants.EventAttributes.COLLECTION_TYPE, baseReports.get(AJEntityReporting.COLLECTION_TYPE));
+        context.put(CollectionEventConstants.EventAttributes.CONTEXT_COLLECTION_ID, baseReports.get(AJEntityReporting.CONTEXT_COLLECTION_ID));
+        context.put(CollectionEventConstants.EventAttributes.CONTEXT_COLLECTION_TYPE, baseReports.get(AJEntityReporting.CONTEXT_COLLECTION_TYPE));
+        context.put(CollectionEventConstants.EventAttributes.CONTENT_SOURCE, baseReports.get(AJEntityReporting.CONTENT_SOURCE));
+
+        context.put(CollectionEventConstants.EventAttributes.CLASS_ID, baseReports.get(AJEntityReporting.CLASS_GOORU_OID));
+        context.put(CollectionEventConstants.EventAttributes.COURSE_ID, baseReports.get(AJEntityReporting.COURSE_GOORU_OID));
+        context.put(CollectionEventConstants.EventAttributes.UNIT_ID, baseReports.get(AJEntityReporting.UNIT_GOORU_OID));
+        context.put(CollectionEventConstants.EventAttributes.LESSON_ID, baseReports.get(AJEntityReporting.LESSON_GOORU_OID));
+        context.put(CollectionEventConstants.EventAttributes.SESSION_ID, baseReports.get(AJEntityReporting.SESSION_ID));
+        context.put(CollectionEventConstants.EventAttributes.PARTNER_ID, baseReports.get(AJEntityReporting.PARTNER_ID));
+        context.put(CollectionEventConstants.EventAttributes.TENANT_ID, baseReports.get(AJEntityReporting.TENANT_ID));
+
+        context.put(CollectionEventConstants.EventAttributes.PATH_TYPE, baseReports.get(AJEntityReporting.PATH_TYPE));
+        context.put(CollectionEventConstants.EventAttributes.PATH_ID, baseReports.get(AJEntityReporting.PATH_ID));
+       
+        cpEvent.put(CollectionEventConstants.EventAttributes.CONTEXT, context);
+        cpEvent.put(CollectionEventConstants.EventAttributes.EVENT_NAME, CollectionEventConstants.EventAttributes.COLLECTION_SELF_GRADE_EVENT);
+        cpEvent.put(CollectionEventConstants.EventAttributes.TIMEZONE, baseReports.get(AJEntityReporting.TIME_ZONE));        
+        
+        if (views != null) result.put(CollectionEventConstants.EventAttributes.VIEWS, views);
+        if (score != null) result.put(CollectionEventConstants.EventAttributes.SCORE, score);
+        if (maxScore != null) result.put(CollectionEventConstants.EventAttributes.MAX_SCORE, maxScore);
+        if (timespent != null) result.put(CollectionEventConstants.EventAttributes.TIMESPENT, timespent);
+        if (isGraded != null) result.put(CollectionEventConstants.EventAttributes.IS_GRADED, isGraded);
+        result.put(CollectionEventConstants.EventAttributes.STATUS, true);
+        cpEvent.put(CollectionEventConstants.EventAttributes.RESULT, result);
+        return cpEvent;
+    
     }
 
 }
