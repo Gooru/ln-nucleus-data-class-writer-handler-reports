@@ -10,6 +10,7 @@ import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.constants.GEPConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.MessageDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.LTIEventDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.RDAEventDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.TeacherScoreOverideEventDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityClassAuthorizedUsers;
@@ -49,11 +50,13 @@ public class ScoreUpdateHandler implements DBHandler {
 	private String studentId;
 	private Double score;
 	private Double max_score;
+	private Double rawScore;
 	private Long pathId;
 	private String pathType;
 	private String contextCollectionId;
 	private String contextCollectionType;
     private Boolean isGraded;
+    private Long timeSpent = 0L;
 
     public ScoreUpdateHandler(ProcessorContext context) {
         this.context = context;
@@ -135,24 +138,20 @@ public class ScoreUpdateHandler implements DBHandler {
 
               if (scoreTS != null && !scoreTS.isEmpty()) {	
                 scoreTS.forEach(m -> {
-                  score = (m.get(AJEntityReporting.SCORE) != null ? Double.valueOf(m.get(AJEntityReporting.SCORE).toString()) : null);
-                  LOGGER.debug("score {} ", score);
+                  rawScore = (m.get(AJEntityReporting.SCORE) != null ? Double.valueOf(m.get(AJEntityReporting.SCORE).toString()) : null);
+                  LOGGER.debug("rawScore {} ", rawScore);
                   max_score = (m.get(AJEntityReporting.MAX_SCORE) != null ? Double.valueOf(m.get(AJEntityReporting.MAX_SCORE).toString()) : null);
                   LOGGER.debug("max_score {} ", max_score);        
                 });
                             
-                if (score != null && max_score != null && max_score > 0.0) {
-                  score = ((score * 100) / max_score);
+                if (rawScore != null && max_score != null && max_score > 0.0) {
+                  score = ((rawScore * 100) / max_score);
                   LOGGER.debug("Re-Computed total Assessment score {} ", score);
                 }
               }
               Base.exec(AJEntityReporting.UPDATE_ASSESSMENT_SCORE_U, score, max_score, studentId, baseReports.get(AJEntityReporting.CLASS_GOORU_OID),
             		  baseReports.get(AJEntityReporting.SESSION_ID), baseReports.get(AJEntityReporting.COLLECTION_OID));
               LOGGER.debug("Total score updated successfully...");
-
-              //Get pathId & pathType
-//          	  allGraded =  AJEntityReporting.findBySQL(AJEntityReporting.GET_PATH_ID_TYPE, studentId, baseReports.get(AJEntityReporting.SESSION_ID), 
-//                      baseReports.get(AJEntityReporting.COLLECTION_OID), EventConstants.COLLECTION_RESOURCE_PLAY, EventConstants.STOP, false);
 
           	  AJEntityReporting pathIdTypeModel =  AJEntityReporting.findFirst("actor_id = ? AND class_id = ? AND course_id = ? AND unit_id = ? "
           			  + "AND lesson_id = ? AND collection_id = ? AND event_name = 'collection.play' AND event_type = 'stop'", 
@@ -189,11 +188,19 @@ public class ScoreUpdateHandler implements DBHandler {
           	  allGraded =  AJEntityReporting.findBySQL(AJEntityReporting.IS_COLLECTION_GRADED, studentId, baseReports.get(AJEntityReporting.SESSION_ID), 
                       baseReports.get(AJEntityReporting.COLLECTION_OID), EventConstants.COLLECTION_RESOURCE_PLAY, EventConstants.STOP, false);
               if (allGraded == null || allGraded.isEmpty()) {
-            	  sendCollScoreUpdateEventtoGEP(); 
             	  isGraded = true;
+            	  sendCollScoreUpdateEventtoGEP(); 
               } else {
                   isGraded = false;
-              }
+              }  
+
+        	  //We need to fetch the C/A Timespent, since the LTI-SBL event structure needs to be the same irrespective of the eventType
+        	  //& the assumption is that duplicate events will be overlayed onto each other and so should include ALL the KPIs
+              Object tsObject =  Base.firstCell(AJEntityReporting.COMPUTE_TIMESPENT, baseReports.get(AJEntityReporting.COLLECTION_OID), 
+            		  baseReports.get(AJEntityReporting.SESSION_ID));
+              timeSpent = tsObject != null ? Long.valueOf(tsObject.toString()) : 0L;
+        	  LTIEventDispatcher ltiEventDispatcher = new LTIEventDispatcher(baseReports, timeSpent, rawScore, max_score, score, isGraded);
+        	  ltiEventDispatcher.sendTeacherGradingEventtoLTI();
               RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(this.baseReports, this.studentId, this.isGraded);
               rdaEventDispatcher.sendCollScoreUpdateEventFromSUHToRDA();
               
