@@ -52,6 +52,7 @@ public class RubricGradingHandler implements DBHandler {
 	private String contextCollectionId;
 	private String contextCollectionType;
 	private Boolean isGraded;
+	private String updated_at;
 
     public RubricGradingHandler(ProcessorContext context) {
         this.context = context;
@@ -198,6 +199,7 @@ public class RubricGradingHandler implements DBHandler {
     		pathId = sessionPathIdTypeModel.get(AJEntityReporting.PATH_ID) != null ? Long.valueOf(sessionPathIdTypeModel.get(AJEntityReporting.PATH_ID).toString()) : 0L;
     		contextCollectionId = sessionPathIdTypeModel.get(AJEntityReporting.CONTEXT_COLLECTION_ID) != null ? sessionPathIdTypeModel.get(AJEntityReporting.CONTEXT_COLLECTION_ID).toString() : null;
     		contextCollectionType = sessionPathIdTypeModel.get(AJEntityReporting.CONTEXT_COLLECTION_TYPE) != null ? sessionPathIdTypeModel.get(AJEntityReporting.CONTEXT_COLLECTION_TYPE).toString() : null;
+    		updated_at = sessionPathIdTypeModel.get(AJEntityReporting.UPDATE_TIMESTAMP).toString();
     	}
     	
     	if ((!StringUtil.isNullOrEmpty(latestSessionId) && latestSessionId.equals(sessionId.toString())) && (rubricGrading.get(AJEntityRubricGrading.STUDENT_SCORE) != null)) {
@@ -225,7 +227,7 @@ public class RubricGradingHandler implements DBHandler {
                   Object tsObject =  Base.firstCell(AJEntityReporting.COMPUTE_TIMESPENT, rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID), 
                 		  latestSessionId);
                   timeSpent = tsObject != null ? Long.valueOf(tsObject.toString()) : 0L;
-            	  LTIEventDispatcher ltiEventDispatcher = new LTIEventDispatcher(rubricGrading, timeSpent, rawScore, max_score, score, isGraded);
+            	  LTIEventDispatcher ltiEventDispatcher = new LTIEventDispatcher(rubricGrading, timeSpent, updated_at, rawScore, max_score, score, isGraded);
             	  ltiEventDispatcher.sendTeacherGradingEventtoLTI();            	  
               }   
               RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(this.rubricGrading, collType.toString(), pathId, pathType, contextCollectionId, contextCollectionType, isGraded);

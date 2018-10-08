@@ -1,5 +1,11 @@
 package org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.time.format.ResolverStyle;
+
 import org.gooru.nucleus.handlers.insights.events.constants.LTIConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.MessageDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.events.EventParser;
@@ -26,8 +32,9 @@ public class LTIEventDispatcher {
 	private Double score;
 	private Boolean isGraded;
 	private Long timeSpent;
+	private String updated_at;
 
-	public LTIEventDispatcher (AJEntityReporting baseReports, EventParser event, 
+	public LTIEventDispatcher (AJEntityReporting baseReports, String updated_at, EventParser event, 
 			Double rawScore, Double maxScore, Double score, Boolean isGraded) {
 		this.baseReports = baseReports;
 		this.event = event;
@@ -35,40 +42,34 @@ public class LTIEventDispatcher {
 		this.maxScore = maxScore;
 		this.score = score;
 		this.isGraded = isGraded;
+		this.updated_at = updated_at;
 	}
 	
 	public LTIEventDispatcher (AJEntityRubricGrading rubricGrading,  
-			Long timeSpent, Double rawScore, Double maxScore, Double score, Boolean isGraded) {
+			Long timeSpent, String updated_at, Double rawScore, Double maxScore, Double score, Boolean isGraded) {
 		this.rubricGrading = rubricGrading;
 		this.timeSpent = timeSpent;
 		this.rawScore = rawScore;
 		this.maxScore = maxScore;
 		this.score = score;
 		this.isGraded = isGraded;
+		this.updated_at = updated_at;
 	}
 	
 	public LTIEventDispatcher (AJEntityReporting baseReports,  
-			Long timeSpent, Double rawScore, Double maxScore, Double score, Boolean isGraded) {
+			Long timeSpent, String updated_at, Double rawScore, Double maxScore, Double score, Boolean isGraded) {
 		this.baseReports = baseReports;
 		this.timeSpent = timeSpent;
 		this.rawScore = rawScore;
 		this.maxScore = maxScore;
 		this.score = score;
 		this.isGraded = isGraded;
+		this.updated_at = updated_at;
 	}
 	
 	  public void sendCollPerfEventtoLTI() {
 		    JsonObject ltiEvent = createCollPerfEventtoLTI();
-
-//		    if (maxScore != null && maxScore > 0.0 && score != null) {
-//		      ltiEvent.put("rawScore", score);
-//		      ltiEvent.put("maxScore", maxScore);
-//		      ltiEvent.put("scoreInPercentage", (score * 100) / maxScore);
-//		    } else {
-//		    	ltiEvent.putNull("rawscore");
-//		    	ltiEvent.putNull("scoreInPercentage");
-//		    }
-
+		    
 		    try {
 		      LOGGER.debug("LTI Event : {} ", ltiEvent);
 		      MessageDispatcher.getInstance().sendMessage2Kafka(ltiEvent);
@@ -94,7 +95,7 @@ public class LTIEventDispatcher {
 		  collPerfEvent.put("rawScore", rawScore);
 		  collPerfEvent.put("maxScore", maxScore);
 		  collPerfEvent.put("reaction", 0);
-		  collPerfEvent.put("completedTime", event.getEndTime());
+//		  collPerfEvent.put("completedTime", event.getEndTime());
 //		  collPerfEvent.put("isStudent",event.isStudent());
 		  collPerfEvent.put("accessToken", event.getAccessToken());
 		  collPerfEvent.put("sourceId", event.getSourceId());
@@ -137,7 +138,13 @@ public class LTIEventDispatcher {
 		  teacherGradingEvent.put("rawScore", rawScore);
 		  teacherGradingEvent.put("maxScore", maxScore);
 		  teacherGradingEvent.put("reaction", 0);
-		  teacherGradingEvent.putNull("completedTime");
+		  
+		  DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")
+				  .withResolverStyle(ResolverStyle.LENIENT);
+		  LocalDateTime dt = LocalDateTime.parse(updated_at, dtf);
+		  Instant instant = dt.toInstant(ZoneOffset.UTC);
+		  		  
+		  teacherGradingEvent.put("completedTime", instant.toEpochMilli());
 		  teacherGradingEvent.putNull("accessToken");
 		  teacherGradingEvent.putNull("sourceId");
 		  teacherGradingEvent.put("partnerId", baseReports.get(AJEntityReporting.PARTNER_ID));
@@ -178,7 +185,13 @@ public class LTIEventDispatcher {
 		  teacherOverrideEvent.put("rawScore", rawScore);
 		  teacherOverrideEvent.put("maxScore", maxScore);		  
 		  teacherOverrideEvent.put("reaction", 0);
-		  teacherOverrideEvent.putNull("completedTime");
+		  
+		  DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")
+				  .withResolverStyle(ResolverStyle.LENIENT);
+		  LocalDateTime dt = LocalDateTime.parse(updated_at, dtf);
+		  Instant instant = dt.toInstant(ZoneOffset.UTC);
+		  
+		  teacherOverrideEvent.put("completedTime", instant.toEpochMilli());
 		  teacherOverrideEvent.putNull("accessToken");
 		  teacherOverrideEvent.putNull("sourceId");
 		  teacherOverrideEvent.put("partnerId", baseReports.get(AJEntityReporting.PARTNER_ID));
