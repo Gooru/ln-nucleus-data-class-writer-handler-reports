@@ -32,21 +32,20 @@ public class RubricGradingEventDispatcher {
 		this.contextCollectionType = contextCollectionType;
 	}
     public void sendGradingCompleteTeacherEventtoNotifications() {
-	    JsonObject notificationEvent = createGradingCompleteTeacherNotificationEvent();
-    	
-	    try {
-	      LOGGER.debug("Teacher Grading Notification Event for Teacher : {} ", notificationEvent);
-	      MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_NOTIFICATIONS, notificationEvent);
-	      LOGGER.info("Successfully dispatched Teacher Grading Notification Event..");
-	    } catch (Exception e) {
-	      LOGGER.error("Error while dispatching Teacher Grading Notification Event ", e);
-	    }
+    	try {
+    		JsonObject notificationEvent = createGradingCompleteTeacherNotificationEvent();
+    		LOGGER.debug("Teacher Grading Notification Event for Teacher : {} ", notificationEvent);
+    		MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_NOTIFICATIONS, notificationEvent);
+    		LOGGER.info("Successfully dispatched Teacher Grading Notification Event..");
+    	} catch (Exception e) {
+    		LOGGER.error("Error while dispatching Teacher Grading Notification Event ", e);
+    	}
 	  }
     
     public void sendGradingCompleteStudentEventtoNotifications() {
-	    JsonObject notificationEvent = createGradingCompleteStudentNotificationEvent();
     	
 	    try {
+		    JsonObject notificationEvent = createGradingCompleteStudentNotificationEvent();
 	      LOGGER.debug("Teacher Grading Notification Event for Student : {} ", notificationEvent);
 	      MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_NOTIFICATIONS, notificationEvent);
 	      LOGGER.info("Successfully dispatched Teacher Grading Notification Event..");

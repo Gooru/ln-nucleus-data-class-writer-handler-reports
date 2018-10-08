@@ -33,6 +33,8 @@ public class LTIEventDispatcher {
 	private Boolean isGraded;
 	private Long timeSpent;
 	private String updated_at;
+	private String tenantId;
+	private String partnerId;
 
 	public LTIEventDispatcher (AJEntityReporting baseReports, EventParser event, 
 			Double rawScore, Double maxScore, Double score, Boolean isGraded) {
@@ -44,9 +46,11 @@ public class LTIEventDispatcher {
 		this.isGraded = isGraded;
 	}
 	
-	public LTIEventDispatcher (AJEntityRubricGrading rubricGrading,  
+	public LTIEventDispatcher (AJEntityRubricGrading rubricGrading, String partnerId, String tenantId,   
 			Long timeSpent, String updated_at, Double rawScore, Double maxScore, Double score, Boolean isGraded) {
 		this.rubricGrading = rubricGrading;
+		this.partnerId = partnerId;
+		this.tenantId = tenantId;
 		this.timeSpent = timeSpent;
 		this.rawScore = rawScore;
 		this.maxScore = maxScore;
@@ -67,15 +71,15 @@ public class LTIEventDispatcher {
 	}
 	
 	  public void sendCollPerfEventtoLTI() {
-		    JsonObject ltiEvent = createCollPerfEventtoLTI();
-		    
-		    try {
-		      LOGGER.debug("LTI Event : {} ", ltiEvent);
-		      MessageDispatcher.getInstance().sendMessage2Kafka(ltiEvent);
-		      LOGGER.info("Successfully dispatched LTI message..");
-		    } catch (Exception e) {
-		      LOGGER.error("Error while dispatching LTI message ", e);
-		    }
+		  
+		  try {
+			  JsonObject ltiEvent = createCollPerfEventtoLTI();
+			  LOGGER.debug("LTI Event : {} ", ltiEvent);
+			  MessageDispatcher.getInstance().sendMessage2Kafka(ltiEvent);
+			  LOGGER.info("Successfully dispatched LTI message..");
+		  } catch (Exception e) {
+			  LOGGER.error("Error while dispatching LTI message ", e);
+		  }
 		  }
 	  
 	  private JsonObject createCollPerfEventtoLTI() {    
@@ -110,15 +114,16 @@ public class LTIEventDispatcher {
 		}  
 
 	  public void sendTeacherGradingEventtoLTI() {
-		    JsonObject ltiEvent = createTeacherGradingEventtoLTI();
 
-		    try {
-		      LOGGER.debug("Teacher Grading LTI Event : {} ", ltiEvent);
-		      MessageDispatcher.getInstance().sendMessage2Kafka(ltiEvent);
-		      LOGGER.info("Successfully dispatched Teacher Grading LTI message..");
-		    } catch (Exception e) {
-		      LOGGER.error("Error while dispatching Teacher Grading LTI message ", e);
-		    }
+		  try {
+
+			  JsonObject ltiEvent = createTeacherGradingEventtoLTI();
+			  LOGGER.debug("Teacher Grading LTI Event : {} ", ltiEvent);
+			  MessageDispatcher.getInstance().sendMessage2Kafka(ltiEvent);
+			  LOGGER.info("Successfully dispatched Teacher Grading LTI message..");
+		  } catch (Exception e) {
+			  LOGGER.error("Error while dispatching Teacher Grading LTI message ", e);
+		  }
 		  }
 	  
 	  private JsonObject createTeacherGradingEventtoLTI() {    
@@ -146,8 +151,8 @@ public class LTIEventDispatcher {
 		  teacherGradingEvent.put("completedTime", instant.toEpochMilli());
 		  teacherGradingEvent.putNull("accessToken");
 		  teacherGradingEvent.putNull("sourceId");
-		  teacherGradingEvent.put("partnerId", baseReports.get(AJEntityReporting.PARTNER_ID));
-		  teacherGradingEvent.put("tenantId", baseReports.get(AJEntityReporting.TENANT_ID));
+		  teacherGradingEvent.put("partnerId", partnerId);
+		  teacherGradingEvent.put("tenantId", tenantId);
 		  if (isGraded){
 			  teacherGradingEvent.put("gradingStatus", "complete");
 		  } else {
@@ -157,15 +162,15 @@ public class LTIEventDispatcher {
 		}  
 	  
 	  public void sendTeacherOverrideEventtoLTI() {
-		    JsonObject ltiEvent = createTeacherOverrideEventtoLTI();
-
-		    try {
-		      LOGGER.debug("Teacher Grading LTI Event : {} ", ltiEvent);
-		      MessageDispatcher.getInstance().sendMessage2Kafka(ltiEvent);
-		      LOGGER.info("Successfully dispatched Teacher Grading LTI message..");
-		    } catch (Exception e) {
-		      LOGGER.error("Error while dispatching Teacher Grading LTI message ", e);
-		    }
+		    
+		  try {
+			  JsonObject ltiEvent = createTeacherOverrideEventtoLTI();
+			  LOGGER.debug("Teacher Grading LTI Event : {} ", ltiEvent);
+			  MessageDispatcher.getInstance().sendMessage2Kafka(ltiEvent);
+			  LOGGER.info("Successfully dispatched Teacher Grading LTI message..");
+		  } catch (Exception e) {
+			  LOGGER.error("Error while dispatching Teacher Grading LTI message ", e);
+		  }
 		  }
 	  
 	  private JsonObject createTeacherOverrideEventtoLTI() {    
