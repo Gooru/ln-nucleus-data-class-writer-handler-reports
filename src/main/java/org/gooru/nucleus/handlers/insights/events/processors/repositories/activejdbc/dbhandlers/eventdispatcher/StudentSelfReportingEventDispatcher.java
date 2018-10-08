@@ -24,15 +24,15 @@ public class StudentSelfReportingEventDispatcher {
 
 
     public void sendSelfReportEventtoNotifications() {
-	    JsonObject notificationEvent = createSelfReportNotificationEvent();
-    	
-	    try {
-	      LOGGER.debug("Student Self Reporting Notification Event : {} ", notificationEvent);
-	      MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_NOTIFICATIONS, notificationEvent);
-	      LOGGER.info("Successfully dispatched Student Self Reporting Notification Event..");
-	    } catch (Exception e) {
-	      LOGGER.error("Error while dispatching Student Self Reporting Notification Event ", e);
-	    }
+
+    	try {
+    		JsonObject notificationEvent = createSelfReportNotificationEvent();
+    		LOGGER.debug("Student Self Reporting Notification Event : {} ", notificationEvent);
+    		MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_NOTIFICATIONS, notificationEvent);
+    		LOGGER.info("Successfully dispatched Student Self Reporting Notification Event..");
+    	} catch (Exception e) {
+    		LOGGER.error("Error while dispatching Student Self Reporting Notification Event ", e);
+    	}
 	  }
     
     private JsonObject createSelfReportNotificationEvent() {

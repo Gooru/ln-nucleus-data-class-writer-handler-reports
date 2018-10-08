@@ -58,6 +58,8 @@ public class ScoreUpdateHandler implements DBHandler {
     private Boolean isGraded;
     private Long timeSpent = 0L;
     private String updated_at;
+    private String tenantId;
+    private String partnerId;
 
     public ScoreUpdateHandler(ProcessorContext context) {
         this.context = context;
@@ -171,6 +173,10 @@ public class ScoreUpdateHandler implements DBHandler {
               	baseReports.set(AJEntityReporting.CONTEXT_COLLECTION_ID, contextCollectionId);
               	baseReports.set(AJEntityReporting.CONTEXT_COLLECTION_TYPE, contextCollectionType);
               	updated_at = pathIdTypeModel.get(AJEntityReporting.UPDATE_TIMESTAMP).toString();
+              	partnerId = pathIdTypeModel.get(AJEntityReporting.PARTNER_ID) != null ? pathIdTypeModel.get(AJEntityReporting.PARTNER_ID).toString() : null;
+              	tenantId = pathIdTypeModel.get(AJEntityReporting.TENANT_ID) != null ? pathIdTypeModel.get(AJEntityReporting.TENANT_ID).toString() : null;
+              	baseReports.set(AJEntityReporting.PARTNER_ID, partnerId);
+              	baseReports.set(AJEntityReporting.TENANT_ID, tenantId);
         	} else { //This Case should NEVER Arise
               	baseReports.set(AJEntityReporting.PATH_TYPE, null);
               	baseReports.set(AJEntityReporting.PATH_ID, 0L);
