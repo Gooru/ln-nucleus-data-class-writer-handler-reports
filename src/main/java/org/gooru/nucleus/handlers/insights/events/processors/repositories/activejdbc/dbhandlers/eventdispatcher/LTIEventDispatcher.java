@@ -34,7 +34,7 @@ public class LTIEventDispatcher {
 	private Long timeSpent;
 	private String updated_at;
 
-	public LTIEventDispatcher (AJEntityReporting baseReports, String updated_at, EventParser event, 
+	public LTIEventDispatcher (AJEntityReporting baseReports, EventParser event, 
 			Double rawScore, Double maxScore, Double score, Boolean isGraded) {
 		this.baseReports = baseReports;
 		this.event = event;
@@ -42,7 +42,6 @@ public class LTIEventDispatcher {
 		this.maxScore = maxScore;
 		this.score = score;
 		this.isGraded = isGraded;
-		this.updated_at = updated_at;
 	}
 	
 	public LTIEventDispatcher (AJEntityRubricGrading rubricGrading,  
@@ -95,7 +94,7 @@ public class LTIEventDispatcher {
 		  collPerfEvent.put("rawScore", rawScore);
 		  collPerfEvent.put("maxScore", maxScore);
 		  collPerfEvent.put("reaction", 0);
-//		  collPerfEvent.put("completedTime", event.getEndTime());
+		  collPerfEvent.put("completedTime", event.getEndTime());
 //		  collPerfEvent.put("isStudent",event.isStudent());
 		  collPerfEvent.put("accessToken", event.getAccessToken());
 		  collPerfEvent.put("sourceId", event.getSourceId());
