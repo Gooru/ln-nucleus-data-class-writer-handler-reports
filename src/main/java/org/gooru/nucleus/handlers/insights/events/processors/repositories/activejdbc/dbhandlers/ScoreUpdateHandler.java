@@ -57,6 +57,7 @@ public class ScoreUpdateHandler implements DBHandler {
 	private String contextCollectionType;
     private Boolean isGraded;
     private Long timeSpent = 0L;
+    private String updated_at;
 
     public ScoreUpdateHandler(ProcessorContext context) {
         this.context = context;
@@ -169,6 +170,7 @@ public class ScoreUpdateHandler implements DBHandler {
               	baseReports.set(AJEntityReporting.PATH_ID, pathId);
               	baseReports.set(AJEntityReporting.CONTEXT_COLLECTION_ID, contextCollectionId);
               	baseReports.set(AJEntityReporting.CONTEXT_COLLECTION_TYPE, contextCollectionType);
+              	updated_at = pathIdTypeModel.get(AJEntityReporting.UPDATE_TIMESTAMP).toString();
         	} else { //This Case should NEVER Arise
               	baseReports.set(AJEntityReporting.PATH_TYPE, null);
               	baseReports.set(AJEntityReporting.PATH_ID, 0L);
@@ -199,7 +201,7 @@ public class ScoreUpdateHandler implements DBHandler {
               Object tsObject =  Base.firstCell(AJEntityReporting.COMPUTE_TIMESPENT, baseReports.get(AJEntityReporting.COLLECTION_OID), 
             		  baseReports.get(AJEntityReporting.SESSION_ID));
               timeSpent = tsObject != null ? Long.valueOf(tsObject.toString()) : 0L;
-        	  LTIEventDispatcher ltiEventDispatcher = new LTIEventDispatcher(baseReports, timeSpent, rawScore, max_score, score, isGraded);
+        	  LTIEventDispatcher ltiEventDispatcher = new LTIEventDispatcher(baseReports, timeSpent, updated_at, rawScore, max_score, score, isGraded);
         	  ltiEventDispatcher.sendTeacherGradingEventtoLTI();
               RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(this.baseReports, this.studentId, this.isGraded);
               rdaEventDispatcher.sendCollScoreUpdateEventFromSUHToRDA();

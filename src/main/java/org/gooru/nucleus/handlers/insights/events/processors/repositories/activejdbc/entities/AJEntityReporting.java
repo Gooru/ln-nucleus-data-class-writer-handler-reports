@@ -175,7 +175,7 @@ public class AJEntityReporting extends Model {
     		+ "time_zone = ?, date_in_time_zone = ? WHERE id = ?";
 
   public static final String COMPUTE_TIMESPENT = "SELECT SUM(tsData.resource_timespent) as time_spent "
-    + "FROM  (SELECT DISTINCT ON (resource_id) time_spent as resource_timespent FROM base_reports "
+    + "FROM  (SELECT DISTINCT ON (resource_id) time_spent as resource_timespent, session_id FROM base_reports "
     + "WHERE collection_id = ? AND session_id = ? AND event_name = 'collection.resource.play' AND event_type = 'stop' "
     + "ORDER BY resource_id, updated_at desc) tsData GROUP BY session_id";
     
