@@ -19,15 +19,15 @@ public class GradingPendingEventDispatcher {
 	}
 	
 	  public void sendGradingPendingEventtoNotifications() {
-		    JsonObject notificationEvent = createGradingPendingNotificationEvent();
-	  	
-		    try {
-		      LOGGER.debug("Student Grading Pending Notification Event : {} ", notificationEvent);
-		      MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_NOTIFICATIONS, notificationEvent);
-		      LOGGER.info("Successfully dispatched Student Grading Pending Event..");
-		    } catch (Exception e) {
-		      LOGGER.error("Error while dispatching Student Grading Pending Event ", e);
-		    }
+
+		  try {
+			  JsonObject notificationEvent = createGradingPendingNotificationEvent();
+			  LOGGER.debug("Student Grading Pending Notification Event : {} ", notificationEvent);
+			  MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_NOTIFICATIONS, notificationEvent);
+			  LOGGER.info("Successfully dispatched Student Grading Pending Event..");
+		  } catch (Exception e) {
+			  LOGGER.error("Error while dispatching Student Grading Pending Event ", e);
+		  }
 		  }
 	  
 	  private JsonObject createGradingPendingNotificationEvent() {

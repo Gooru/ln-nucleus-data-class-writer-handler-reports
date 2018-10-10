@@ -9,6 +9,7 @@ import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.constants.GEPConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.MessageDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.LTIEventDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.RDAEventDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.RubricGradingEventDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityClassAuthorizedUsers;
@@ -42,13 +43,18 @@ public class RubricGradingHandler implements DBHandler {
 	private final ProcessorContext context;
 	private AJEntityRubricGrading rubricGrading;
 	private Double score;
+	private Double rawScore;
 	private Double max_score;
+	private Long timeSpent = 0L;
 	private Long pathId;
 	private String latestSessionId;
 	private String pathType;
 	private String contextCollectionId;
 	private String contextCollectionType;
 	private Boolean isGraded;
+	private String updated_at;
+	private String tenantId;
+	private String partnerId;
 
     public RubricGradingHandler(ProcessorContext context) {
         this.context = context;
@@ -167,14 +173,14 @@ public class RubricGradingHandler implements DBHandler {
 
     		if (scoreTS != null && !scoreTS.isEmpty()) {
     			scoreTS.forEach(m -> {
-    				score = (m.get(AJEntityReporting.SCORE) != null ? Double.valueOf(m.get(AJEntityReporting.SCORE).toString()) : null);
-    				LOGGER.debug("score {} ", score);
+    				rawScore = (m.get(AJEntityReporting.SCORE) != null ? Double.valueOf(m.get(AJEntityReporting.SCORE).toString()) : null);
+    				LOGGER.debug("rawScore {} ", rawScore);
     				max_score = (m.get(AJEntityReporting.MAX_SCORE) != null ? Double.valueOf(m.get(AJEntityReporting.MAX_SCORE).toString()) : null);
     				LOGGER.debug("max_score {} ", max_score);        
     			});
 
-    			if (score != null && max_score != null && max_score > 0.0) {
-    				score = ((score * 100) / max_score);
+    			if (rawScore != null && max_score != null && max_score > 0.0) {
+    				score = ((rawScore * 100) / max_score);
     				LOGGER.debug("Re-Computed total score {} ", score);
     			}
     		}
@@ -194,7 +200,10 @@ public class RubricGradingHandler implements DBHandler {
     		pathType = sessionPathIdTypeModel.get(AJEntityReporting.PATH_TYPE) != null ? sessionPathIdTypeModel.get(AJEntityReporting.PATH_TYPE).toString() : null;
     		pathId = sessionPathIdTypeModel.get(AJEntityReporting.PATH_ID) != null ? Long.valueOf(sessionPathIdTypeModel.get(AJEntityReporting.PATH_ID).toString()) : 0L;
     		contextCollectionId = sessionPathIdTypeModel.get(AJEntityReporting.CONTEXT_COLLECTION_ID) != null ? sessionPathIdTypeModel.get(AJEntityReporting.CONTEXT_COLLECTION_ID).toString() : null;
-    		contextCollectionType = sessionPathIdTypeModel.get(AJEntityReporting.CONTEXT_COLLECTION_TYPE) != null ? sessionPathIdTypeModel.get(AJEntityReporting.CONTEXT_COLLECTION_TYPE).toString() : null;    		
+    		contextCollectionType = sessionPathIdTypeModel.get(AJEntityReporting.CONTEXT_COLLECTION_TYPE) != null ? sessionPathIdTypeModel.get(AJEntityReporting.CONTEXT_COLLECTION_TYPE).toString() : null;
+    		updated_at = sessionPathIdTypeModel.get(AJEntityReporting.UPDATE_TIMESTAMP).toString();
+    		partnerId = sessionPathIdTypeModel.get(AJEntityReporting.PARTNER_ID) != null ? sessionPathIdTypeModel.get(AJEntityReporting.PARTNER_ID).toString() : null;
+    		tenantId = sessionPathIdTypeModel.get(AJEntityReporting.TENANT_ID) != null ? sessionPathIdTypeModel.get(AJEntityReporting.TENANT_ID).toString() : null;
     	}
     	
     	if ((!StringUtil.isNullOrEmpty(latestSessionId) && latestSessionId.equals(sessionId.toString())) && (rubricGrading.get(AJEntityRubricGrading.STUDENT_SCORE) != null)) {
@@ -207,16 +216,23 @@ public class RubricGradingHandler implements DBHandler {
     		LOGGER.debug("Latest Session Id is: " + latestSessionId);
     		LOGGER.debug("Collection Id is: " + rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID));
     		
-    		LOGGER.info("Sending Collection Update Score Event to GEP");
+    		LOGGER.info("Sending Collection Update Score Event to GEP, RDA and LTI");
         	  allGraded =  AJEntityReporting.findBySQL(AJEntityReporting.IS_COLLECTION_GRADED, rubricGrading.get(AJEntityRubricGrading.STUDENT_ID), 
         			  latestSessionId, rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID), EventConstants.COLLECTION_RESOURCE_PLAY, EventConstants.STOP, false);
         	  isGraded = false;
               if (allGraded == null || allGraded.isEmpty()) {
             	  sendCollScoreUpdateEventtoGEP(collType.toString());
-            	  RubricGradingEventDispatcher eventDispatcher = new RubricGradingEventDispatcher(rubricGrading, pathType, pathId, contextCollectionId, contextCollectionType); 
+            	  RubricGradingEventDispatcher eventDispatcher = new RubricGradingEventDispatcher(rubricGrading, pathType, pathId, contextCollectionId, contextCollectionType);            	  
+            	  isGraded = true;
             	  eventDispatcher.sendGradingCompleteTeacherEventtoNotifications();
             	  eventDispatcher.sendGradingCompleteStudentEventtoNotifications();
-            	  isGraded = true;
+            	  //We need to fetch the C/A Timespent, since the LTI-SBL event structure needs to be the same irrespective of the eventType
+            	  //& the assumption is that duplicate events will be overlayed onto each other and so should include ALL the KPIs 
+                  Object tsObject =  Base.firstCell(AJEntityReporting.COMPUTE_TIMESPENT, rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID), 
+                		  latestSessionId);
+                  timeSpent = tsObject != null ? Long.valueOf(tsObject.toString()) : 0L;
+            	  LTIEventDispatcher ltiEventDispatcher = new LTIEventDispatcher(rubricGrading, partnerId, tenantId, timeSpent, updated_at, rawScore, max_score, score, isGraded);
+            	  ltiEventDispatcher.sendTeacherGradingEventtoLTI();            	  
               }   
               RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(this.rubricGrading, collType.toString(), pathId, pathType, contextCollectionId, contextCollectionType, isGraded);
               rdaEventDispatcher.sendCollScoreUpdateEventFromRGHToRDA();

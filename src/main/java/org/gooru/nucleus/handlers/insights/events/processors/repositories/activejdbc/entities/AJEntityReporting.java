@@ -73,9 +73,6 @@ public class AJEntityReporting extends Model {
     public static final String CREATE_TIMESTAMP = "created_at";
     public static final String UPDATE_TIMESTAMP = "updated_at";   
     
-    public static final String SELECT_BASEREPORT_MAX_SEQUENCE_ID =
-            "SELECT max(sequence_id) FROM base_reports";
-
     public static final String GET_COLLECTION_SCORE = 
         "SELECT SUM(score) as score from base_reports "
         + "WHERE class_id = ? AND course_id = ? AND unit_id = ? AND lesson_id = ? AND collection_id = ? AND session_id = ? AND actor_id = ?";
@@ -177,6 +174,11 @@ public class AJEntityReporting extends Model {
     public static final String UPDATE_SELF_GRADED_EXT_ASSESSMENT = "UPDATE base_reports SET views = ?, score = ?, max_score = ?, updated_at = ?, "
     		+ "time_zone = ?, date_in_time_zone = ? WHERE id = ?";
 
+  public static final String COMPUTE_TIMESPENT = "SELECT SUM(tsData.resource_timespent) as time_spent "
+    + "FROM  (SELECT DISTINCT ON (resource_id) time_spent as resource_timespent, session_id FROM base_reports "
+    + "WHERE collection_id = ? AND session_id = ? AND event_name = 'collection.resource.play' AND event_type = 'stop' "
+    + "ORDER BY resource_id, updated_at desc) tsData GROUP BY session_id";
+    
     
     public static final String RESOURCE_ATTEMPT_STATUS_TYPE = "attempt_status";    
     public static final String PGTYPE_TEXT = "text";

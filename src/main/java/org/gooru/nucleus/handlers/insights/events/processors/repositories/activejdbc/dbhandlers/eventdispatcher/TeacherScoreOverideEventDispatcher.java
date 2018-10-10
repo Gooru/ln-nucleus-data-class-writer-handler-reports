@@ -24,9 +24,9 @@ public class TeacherScoreOverideEventDispatcher {
 	}
 
 	public void sendTeacherScoreUpdateEventtoNotifications() {
-		JsonObject notificationEvent = createTeacherScoreUpdateNotificationEvent();
 
 		try {
+			JsonObject notificationEvent = createTeacherScoreUpdateNotificationEvent();
 			LOGGER.debug("Teacher Score Overide Notification Event : {} ", notificationEvent);
 			MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_NOTIFICATIONS, notificationEvent);
 			LOGGER.info("Successfully dispatched Teacher Score Overide Notification Event..");

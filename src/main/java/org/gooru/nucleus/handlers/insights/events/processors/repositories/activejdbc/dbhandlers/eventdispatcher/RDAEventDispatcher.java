@@ -107,25 +107,26 @@ public class RDAEventDispatcher {
     }
 
     public void sendCollScoreUpdateEventFromSUHToRDA() {
-        JsonObject rdaEvent = createCollScoreUpdateEventFromBaseReports();
-        try {
-            LOGGER.debug("SUH::The Collection Score Update RDA Event is : {} ", rdaEvent);
-            MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_RDA, rdaEvent);
-            LOGGER.info("SUH::Successfully dispatched Collection score update RDA Event..");
-        } catch (Exception e) {
-            LOGGER.error("SUH::Error while dispatching Collection score update RDA Event ", e);
-        }
+    	try {
+    		JsonObject rdaEvent = createCollScoreUpdateEventFromBaseReports();
+    		LOGGER.debug("SUH::The Collection RDA Event is : {} ", rdaEvent);
+    		MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_RDA, rdaEvent);
+    		LOGGER.info("SUH::Successfully dispatched Collection score update RDA Event..");
+    	} catch (Exception e) {
+    		LOGGER.error("SUH::Error while dispatching Collection score update RDA Event ", e);
+    	}
     }
     
     public void sendCollScoreUpdateEventFromRGHToRDA() {
-        JsonObject rdaEvent = createCollScoreUpdateEventFromRubricGrading();        
-        try {
-            LOGGER.debug("RGH::The Collection Rubric Grade RDA Event is : {} ", rdaEvent);
-            MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_RDA, rdaEvent);
-            LOGGER.info("RGH::Successfully dispatched Collection score update RDA Event..");
-        } catch (Exception e) {
-            LOGGER.error("RGH::Error while dispatching Collection score update RDA Event ", e);
-        }
+
+    	try {
+    		JsonObject rdaEvent = createCollScoreUpdateEventFromRubricGrading();
+    		LOGGER.debug("RGH::The Collection RDA Event is : {} ", rdaEvent);
+    		MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_RDA, rdaEvent);
+    		LOGGER.info("RGH::Successfully dispatched Collection score update RDA Event..");
+    	} catch (Exception e) {
+    		LOGGER.error("RGH::Error while dispatching Collection score update RDA Event ", e);
+    	}
     }
     
     public void sendSelfGradeEventToRDA() {

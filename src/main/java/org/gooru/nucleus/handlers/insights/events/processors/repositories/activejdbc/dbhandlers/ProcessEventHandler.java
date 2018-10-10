@@ -11,6 +11,7 @@ import org.gooru.nucleus.handlers.insights.events.processors.MessageDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.insights.events.processors.events.EventParser;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.GradingPendingEventDispatcher;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.LTIEventDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.RDAEventDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityReporting;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult;
@@ -323,7 +324,6 @@ class ProcessEventHandler implements DBHandler {
          
 
         if ((event.getEventName().equals(EventConstants.COLLECTION_PLAY)) && event.getEventType().equalsIgnoreCase(EventConstants.STOP)) {
-          sendLTIEvent();
           //Send Collection Performance Event to GEP only if ALL the questions have been GRADED
       	  allGraded =  AJEntityReporting.findBySQL(AJEntityReporting.IS_COLLECTION_GRADED, event.getGooruUUID(), event.getSessionId(),
     			  event.getContentGooruId(), EventConstants.COLLECTION_RESOURCE_PLAY, EventConstants.STOP, false);
@@ -337,6 +337,9 @@ class ProcessEventHandler implements DBHandler {
           }
           RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(this.event, this.views, this.reaction, (tsObj != null ? tsObj : 0), this.maxScore, this.score, this.isGraded);
           rdaEventDispatcher.sendCollectionStopEventToRDA();
+          LTIEventDispatcher ltiEventDispatcher = new LTIEventDispatcher(baseReport, this.event, this.scoreObj, this.maxScore, this.score, this.isGraded);
+          ltiEventDispatcher.sendCollPerfEventtoLTI();
+          
         }
 
         if ((event.getEventName().equals(EventConstants.COLLECTION_RESOURCE_PLAY)) && event.getEventType().equalsIgnoreCase(EventConstants.STOP) && 
@@ -581,52 +584,5 @@ class ProcessEventHandler implements DBHandler {
       resEvent.put(GEPConstants.CONTEXT, context);
 
 	    return resEvent;
-	}  
-
-  private void sendLTIEvent() {
-    //Getting LTI event and publishing into Kafka topic.
-    JsonObject ltiEvent = getLTIEventStructure();
-    if (tsObj != null) {
-      ltiEvent.put("timeSpentInMs", tsObj);
-    }
-    if (maxScoreObj != null && maxScoreObj > 0.0 && scoreObj != null) {
-      ltiEvent.put("rawScore", scoreObj);
-      ltiEvent.put("maxScore", maxScoreObj);
-      ltiEvent.put("scoreInPercentage", (scoreObj * 100) / maxScoreObj);
-    } else {
-    	ltiEvent.putNull("score");
-    	ltiEvent.putNull("scoreInPercentage");
-    }
-    try {
-      LOGGER.debug("LTI Event : {} ", ltiEvent);
-      MessageDispatcher.getInstance().sendMessage2Kafka(ltiEvent);
-      LOGGER.info("Successfully dispatched LTI message..");
-    } catch (Exception e) {
-      LOGGER.error("Error while dispatching LTI message ", e);
-    }
-  }
-  
-  
-  private JsonObject getLTIEventStructure(){
-    JsonObject assessmentOutComeEvent = new JsonObject();
-    assessmentOutComeEvent.put("userUid", event.getGooruUUID());
-    assessmentOutComeEvent.put("contentGooruId", event.getContentGooruId());
-    assessmentOutComeEvent.put("classGooruId", event.getClassGooruId());
-    assessmentOutComeEvent.put("courseGooruId",event.getCourseGooruId());
-    assessmentOutComeEvent.put("unitGooruId",event.getUnitGooruId());
-    assessmentOutComeEvent.put("lessonGooruId",event.getLessonGooruId());
-    assessmentOutComeEvent.put("type",event.getCollectionType());
-    assessmentOutComeEvent.put("timeSpentInMs",0);
-    assessmentOutComeEvent.put("scoreInPercentage",0);
-    assessmentOutComeEvent.put("rawScore",0);
-    assessmentOutComeEvent.put("maxScore",0);
-    assessmentOutComeEvent.put("reaction",0);
-    assessmentOutComeEvent.put("completedTime",event.getEndTime());
-    assessmentOutComeEvent.put("isStudent",event.isStudent());
-    assessmentOutComeEvent.put("accessToken", event.getAccessToken());
-    assessmentOutComeEvent.put("sourceId", event.getSourceId());
-    assessmentOutComeEvent.put("questionsCount", event.getQuestionCount());
-    return assessmentOutComeEvent;
-}  
-    
+	}      
 }
