@@ -15,4 +15,6 @@ public interface ReportDataAggregateRepo {
     MessageResponse processResourceStopDataForRDA();
 
     MessageResponse processCollScoreUpdateDataForRDA();
+
+    MessageResponse processStudentSelfGradeDataForRDA();
 }

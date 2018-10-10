@@ -335,7 +335,7 @@ class ProcessEventHandler implements DBHandler {
         	  GradingPendingEventDispatcher eventDispatcher = new GradingPendingEventDispatcher(baseReport);
         	  eventDispatcher.sendGradingPendingEventtoNotifications();
           }
-          RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(this.event, this.views, this.reaction, this.timespent, this.maxScore, this.score, this.isGraded);
+          RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(this.event, this.views, this.reaction, (tsObj != null ? tsObj : 0), this.maxScore, this.score, this.isGraded);
           rdaEventDispatcher.sendCollectionStopEventToRDA();
           LTIEventDispatcher ltiEventDispatcher = new LTIEventDispatcher(baseReport, this.event, this.scoreObj, this.maxScore, this.score, this.isGraded);
           ltiEventDispatcher.sendCollPerfEventtoLTI();
