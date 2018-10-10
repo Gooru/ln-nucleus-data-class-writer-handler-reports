@@ -11,6 +11,8 @@ import org.gooru.nucleus.handlers.insights.events.processors.MessageDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.insights.events.processors.events.EventParser;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.GradingPendingEventDispatcher;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.LTIEventDispatcher;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.RDAEventDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityReporting;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult.ExecutionStatus;
@@ -42,7 +44,13 @@ class ProcessEventHandler implements DBHandler {
     Double maxScoreObj;
     Long tsObj;
 
-
+    Long views;
+    Long reaction;
+    Long timespent;
+    Double maxScore;
+    Double score;
+    Boolean isGraded;
+    
     public ProcessEventHandler(ProcessorContext context) {
         this.context = context;
     }
@@ -94,6 +102,10 @@ class ProcessEventHandler implements DBHandler {
       baseReport.set("time_spent", event.getTimespent());
       baseReport.set("tenant_id",event.getTenantId());
       baseReport.set("max_score",event.getMaxScore());
+      this.timespent = event.getTimespent();
+      this.views = event.getViews();
+      this.maxScore = event.getMaxScore();
+      this.reaction = event.getReaction();
       
       baseReport.set("app_id",event.getAppId());
       baseReport.set("partner_id",event.getPartnerId());
@@ -123,13 +135,22 @@ class ProcessEventHandler implements DBHandler {
       	}
       }
       
+      if (event.getContextCollectionId() != null) {
+    	  baseReport.set("context_collection_id", event.getContextCollectionId());    	  
+      }
+
+      if (event.getContextCollectionType() != null) {
+    	  baseReport.set("context_collection_type", event.getContextCollectionType());    	  
+      }
+
     	if ((event.getEventName().equals(EventConstants.COLLECTION_PLAY))){
     	  duplicateRow =  AJEntityReporting.findBySQL(AJEntityReporting.CHECK_DUPLICATE_COLLECTION_EVENT, event.getGooruUUID(), event.getSessionId(),
     			  event.getContentGooruId(),event.getEventType(), event.getEventName());
     	  baseReport.set("collection_id", event.getContentGooruId());
     	  baseReport.set("question_count", event.getQuestionCount());    	  
     	  if (event.getEventType().equalsIgnoreCase(EventConstants.START)) {
-    		  baseReport.set("score", event.getScore());    		  
+    		  baseReport.set("score", event.getScore());  
+    		  score = event.getScore();
     	  }    	  
     		
 			if (event.getEventType().equalsIgnoreCase(EventConstants.STOP)) {
@@ -137,12 +158,16 @@ class ProcessEventHandler implements DBHandler {
 						event.getCollectionType().equalsIgnoreCase(EventConstants.EXTERNAL_COLLECTION)) {
 					double ms = event.getMaxScore();
 					if (ms > 0.0) {
-						baseReport.set("score", (event.getScore() *100)/ms );						
+						baseReport.set("score", (event.getScore() *100)/ms );
+						score = (event.getScore() *100)/ms;
 					} else {
 						baseReport.set("score", 0.0);
+						score = 0.0;
 					}
 					baseReport.set("max_score", ms);
-					baseReport.set("time_spent", event.getTimespent());					
+					baseReport.set("time_spent", event.getTimespent());	
+					maxScore = ms;
+					timespent = event.getTimespent();
 				} else {
 					scoreTS = AJEntityReporting.findBySQL(AJEntityReporting.COMPUTE_ASSESSMENT_SCORE, event.getContentGooruId(), event.getSessionId());
 					if (!scoreTS.isEmpty()) {
@@ -160,9 +185,12 @@ class ProcessEventHandler implements DBHandler {
 						if (maxScoreObj != null && maxScoreObj > 0.0 && scoreObj != null) {
 							baseReport.set("score", ((scoreObj * 100) / maxScoreObj));
 							baseReport.set("max_score", maxScoreObj);
+							maxScore = maxScoreObj;
+		                    score = ((scoreObj * 100) / maxScoreObj);
 						}
 						if (event.getCollectionType().equalsIgnoreCase(EventConstants.ASSESSMENT)) {
 							baseReport.set("time_spent", (tsObj != null ? tsObj : 0));
+							timespent = (tsObj != null ? tsObj : 0);
 						}
 					}					
 				} 
@@ -182,6 +210,8 @@ class ProcessEventHandler implements DBHandler {
         		} else if (event.getEventType().equalsIgnoreCase(EventConstants.START)) {        			
         			baseReport.set("score", event.getScore());
         			baseReport.setBoolean("is_graded", true);
+        			this.score = event.getScore();
+                    this.isGraded = true;
       		  	}
         		
       			if (event.getEventType().equalsIgnoreCase(EventConstants.STOP) && (event.getAnswerStatus().equalsIgnoreCase(EventConstants.INCORRECT)  
@@ -190,12 +220,15 @@ class ProcessEventHandler implements DBHandler {
       				//Grading Type is set by default to "system", so no need to update the grading_type here.
       				baseReport.set("score", event.getScore());        
       		        baseReport.setBoolean("is_graded", true);
+      		        this.score = event.getScore();
       		        isGraded = true;
+      		        this.isGraded = true;
       			} else if (event.getEventType().equalsIgnoreCase(EventConstants.STOP) && 
       		  			(event.getAnswerStatus().equalsIgnoreCase(EventConstants.ATTEMPTED))) { 
       				baseReport.set("grading_type", event.getGradeType());  				
       				baseReport.setBoolean("is_graded", false);
       				isGraded = false;
+      				this.isGraded = false;
       		  	}    			
     		}
     	}    	
@@ -225,17 +258,19 @@ class ProcessEventHandler implements DBHandler {
                   long view = (Long.valueOf(dup.get("views").toString()) + event.getViews());
                   long ts = (Long.valueOf(dup.get("time_spent").toString()) + event.getTimespent());
                   long react = event.getReaction() != 0 ? event.getReaction() : 0;
+                  Double score = event.getScore();
                   //update the Answer Object and Answer Status from the latest event
                   //Rubrics - if the Answer Status is attempted then the default score that should be set is null
-                  if (event.getResourceType().equals(EventConstants.QUESTION) && event.getEventType().equalsIgnoreCase(EventConstants.STOP) 
+                  if (!event.getResourceType().equals(EventConstants.QUESTION) && event.getEventType().equalsIgnoreCase(EventConstants.STOP) 
                 		  && event.getAnswerStatus().equalsIgnoreCase(EventConstants.ATTEMPTED)) {
-                      Base.exec(AJEntityReporting.UPDATE_RESOURCE_EVENT, view, ts, null, new Timestamp(event.getEndTime()), 
-                    		  react, event.getAnswerStatus(), event.getAnswerObject().toString(), id);                	  
-                  } else {
-                      Base.exec(AJEntityReporting.UPDATE_RESOURCE_EVENT, view, ts, event.getScore(), new Timestamp(event.getEndTime()), 
-                    		  react, event.getAnswerStatus(), event.getAnswerObject().toString(), id);                	  
-                  }
-
+                      score = null;               	  
+                  } 
+                  Base.exec(AJEntityReporting.UPDATE_RESOURCE_EVENT, view, ts, score, new Timestamp(event.getEndTime()), 
+                      react, event.getAnswerStatus(), event.getAnswerObject().toString(), id);
+                  this.score = score;
+                  this.timespent = ts;
+                  this.views = view;
+                  this.reaction = react;
                 });
       
               }
@@ -245,29 +280,33 @@ class ProcessEventHandler implements DBHandler {
                   long view = (Long.valueOf(dup.get("views").toString()) + event.getViews());
                   long ts = (Long.valueOf(dup.get("time_spent").toString()) + event.getTimespent());
                   long react = event.getReaction() != 0 ? event.getReaction() : 0;
+                  double maxSco = event.getMaxScore();
+                  Double sco = event.getScore();
                   if (event.getEventType().equalsIgnoreCase(EventConstants.STOP)) {
                 	  if (event.getCollectionType().equalsIgnoreCase(EventConstants.EXTERNAL_ASSESSMENT) || 
                 			  event.getCollectionType().equalsIgnoreCase(EventConstants.EXTERNAL_COLLECTION)) {
-                		  double sco = 0.0;
-                		  double maxSco = event.getMaxScore();    					
+                	      sco = 0.0;
                 		  if (maxSco > 0.0) {
                 			  sco = ((event.getScore() * 100)/maxSco);
                 		  }
-                		  Base.exec(AJEntityReporting.UPDATE_COLLECTION_EVENT, view, ts, sco, maxSco, 
-                				  new Timestamp(event.getEndTime()), react, id);
                 	  } else {
                 		  //maxScore should be Null only in the case when all the questions in an Assessment are Free Response Question
                 		  //In that case Score will not be calculated unless the questions are graded via the grading flow  					
                 		  if (maxScoreObj != null && maxScoreObj > 0.0 && scoreObj != null) {
-                			  double sco = (scoreObj * 100) / maxScoreObj;
-                			  Base.exec(AJEntityReporting.UPDATE_COLLECTION_EVENT, view, ts, sco, maxScoreObj, 
-                					  new Timestamp(event.getEndTime()), react, id);
-                		  }      					
+                		      maxSco = maxScoreObj;
+                			  sco = (scoreObj * 100) / maxSco;
+                		  } else {
+                		      sco = null;
+                		  }
                 	  }
-                  } else {
-                	  Base.exec(AJEntityReporting.UPDATE_COLLECTION_EVENT, view, ts, event.getScore(), event.getMaxScore(), 
-                			  new Timestamp(event.getEndTime()), react, id);                	  
-                  }                  
+                  } 
+                  Base.exec(AJEntityReporting.UPDATE_COLLECTION_EVENT, view, ts, sco, maxSco, 
+                      new Timestamp(event.getEndTime()), react, id); 
+                  this.score = sco;
+                  this.timespent = ts;
+                  this.views = view;
+                  this.reaction = react;
+                  this.maxScore = maxSco;
                 });
               }
             }
@@ -279,25 +318,35 @@ class ProcessEventHandler implements DBHandler {
 
           if ((event.getEventName().equals(EventConstants.COLLECTION_PLAY)) && event.getEventType().equalsIgnoreCase(EventConstants.START)) {              
         	  sendCollStartEventtoGEP();
-            }
+        	  RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(this.event, this.views, this.reaction, this.timespent, this.maxScore, this.score, this.isGraded);
+        	  rdaEventDispatcher.sendCollectionStartEventToRDA();
+          }
          
 
         if ((event.getEventName().equals(EventConstants.COLLECTION_PLAY)) && event.getEventType().equalsIgnoreCase(EventConstants.STOP)) {
-          sendLTIEvent();
           //Send Collection Performance Event to GEP only if ALL the questions have been GRADED
       	  allGraded =  AJEntityReporting.findBySQL(AJEntityReporting.IS_COLLECTION_GRADED, event.getGooruUUID(), event.getSessionId(),
     			  event.getContentGooruId(), EventConstants.COLLECTION_RESOURCE_PLAY, EventConstants.STOP, false);
           if (allGraded == null || allGraded.isEmpty()) {
         	  sendCPEventtoGEP();  
+        	  this.isGraded = true;
           } else {
+              this.isGraded = false;
         	  GradingPendingEventDispatcher eventDispatcher = new GradingPendingEventDispatcher(baseReport);
         	  eventDispatcher.sendGradingPendingEventtoNotifications();
           }
+          RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(this.event, this.views, this.reaction, this.timespent, this.maxScore, this.score, this.isGraded);
+          rdaEventDispatcher.sendCollectionStopEventToRDA();
+          LTIEventDispatcher ltiEventDispatcher = new LTIEventDispatcher(baseReport, this.event, this.scoreObj, this.maxScore, this.score, this.isGraded);
+          ltiEventDispatcher.sendCollPerfEventtoLTI();
+          
         }
 
         if ((event.getEventName().equals(EventConstants.COLLECTION_RESOURCE_PLAY)) && event.getEventType().equalsIgnoreCase(EventConstants.STOP) && 
         		(isGraded == true)) {
             sendCRPEventtoGEP();
+            RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(this.event, this.views, this.reaction, this.timespent, this.maxScore, this.score, this.isGraded);
+            rdaEventDispatcher.sendCollectionResourcePlayEventToRDA();
           }
 
         return new ExecutionResult<>(MessageResponseFactory.createCreatedResponse(), ExecutionStatus.SUCCESSFUL);
@@ -458,6 +507,8 @@ class ProcessEventHandler implements DBHandler {
         cpEvent.put(GEPConstants.EVENT_NAME, GEPConstants.COLLECTION_START_EVENT);
         cpEvent.put(GEPConstants.COLLECTION_ID, event.getContentGooruId());
         cpEvent.put(GEPConstants.COLLECTION_TYPE, event.getCollectionType());
+        context.put(GEPConstants.CONTEXT_COLLECTION_ID,event.getContextCollectionId());
+        context.put(GEPConstants.CONTEXT_COLLECTION_TYPE, event.getContextCollectionType());
                 	
         context.put(GEPConstants.CLASS_ID, event.getClassGooruId());
         context.put(GEPConstants.COURSE_ID, event.getCourseGooruId() );
@@ -466,8 +517,10 @@ class ProcessEventHandler implements DBHandler {
         context.put(GEPConstants.PATH_ID, event.getPathId());
         context.put(GEPConstants.SESSION_ID, event.getSessionId());
         context.put(GEPConstants.QUESTION_COUNT, event.getQuestionCount());
-        context.put(GEPConstants.PARTNER_ID, event.getPartnerId());
-        context.put(GEPConstants.TENANT_ID, event.getTenantId());            
+        context.put(GEPConstants.PARTNER_ID, event.getPartnerId());        
+        context.put(GEPConstants.TENANT_ID, event.getTenantId());  
+        
+        context.put(GEPConstants.PATH_TYPE, event.getPathType());
         
         cpEvent.put(GEPConstants.CONTEXT, context);
 
@@ -483,7 +536,9 @@ class ProcessEventHandler implements DBHandler {
 	  cpEvent.put(GEPConstants.EVENT_ID, event.getEventId());
 	  cpEvent.put(GEPConstants.EVENT_NAME, GEPConstants.COLLECTION_PERF_EVENT);
 	  cpEvent.put(GEPConstants.COLLECTION_ID, event.getContentGooruId());
-	  cpEvent.put(GEPConstants.COLLECTION_TYPE, event.getCollectionType());
+	  cpEvent.put(GEPConstants.COLLECTION_TYPE, event.getCollectionType());	  
+      context.put(GEPConstants.CONTEXT_COLLECTION_ID,event.getContextCollectionId());
+      context.put(GEPConstants.CONTEXT_COLLECTION_TYPE, event.getContextCollectionType());
 
 	  context.put(GEPConstants.CLASS_ID, event.getClassGooruId());
 	  context.put(GEPConstants.COURSE_ID, event.getCourseGooruId() );
@@ -495,6 +550,7 @@ class ProcessEventHandler implements DBHandler {
 	  context.put(GEPConstants.PARTNER_ID, event.getPartnerId());
 	  context.put(GEPConstants.TENANT_ID, event.getTenantId());            
 
+      context.put(GEPConstants.PATH_TYPE, event.getPathType());
 	  cpEvent.put(GEPConstants.CONTEXT, context);
 
 	  return cpEvent;
@@ -517,53 +573,16 @@ class ProcessEventHandler implements DBHandler {
       context.put(GEPConstants.LESSON_ID, event.getLessonGooruId());
       context.put(GEPConstants.COLLECTION_ID,event.getParentGooruId());
       context.put(GEPConstants.COLLECTION_TYPE, event.getCollectionType());
+      context.put(GEPConstants.CONTEXT_COLLECTION_ID,event.getContextCollectionId());
+      context.put(GEPConstants.CONTEXT_COLLECTION_TYPE, event.getContextCollectionType());
       context.put(GEPConstants.PATH_ID, event.getPathId());
       context.put(GEPConstants.SESSION_ID, event.getSessionId());
       context.put(GEPConstants.PARTNER_ID, event.getPartnerId());
       context.put(GEPConstants.TENANT_ID, event.getTenantId());            
       
+      context.put(GEPConstants.PATH_TYPE, event.getPathType());
       resEvent.put(GEPConstants.CONTEXT, context);
 
 	    return resEvent;
 	}  
-  
-  private void sendLTIEvent() {
-    //Getting LTI event and publishing into Kafka topic.
-    JsonObject ltiEvent = getLTIEventStructure();
-    if (tsObj != null) {
-      ltiEvent.put("timeSpentInMs", tsObj);
-    }
-    if (scoreObj != null) {
-      ltiEvent.put("scoreInPercentage", (scoreObj * 100) / event.getQuestionCount());
-    }
-    try {
-      LOGGER.debug("LTI Event : {} ", ltiEvent);
-      MessageDispatcher.getInstance().sendMessage2Kafka(ltiEvent);
-      LOGGER.info("Successfully dispatched LTI message..");
-    } catch (Exception e) {
-      LOGGER.error("Error while dispatching LTI message ", e);
-    }
-  }
-  
-  
-  private JsonObject getLTIEventStructure(){
-    JsonObject assessmentOutComeEvent = new JsonObject();
-    assessmentOutComeEvent.put("userUid", event.getGooruUUID());
-    assessmentOutComeEvent.put("contentGooruId", event.getContentGooruId());
-    assessmentOutComeEvent.put("classGooruId", event.getClassGooruId());
-    assessmentOutComeEvent.put("courseGooruId",event.getCourseGooruId());
-    assessmentOutComeEvent.put("unitGooruId",event.getUnitGooruId());
-    assessmentOutComeEvent.put("lessonGooruId",event.getLessonGooruId());
-    assessmentOutComeEvent.put("type",event.getCollectionType());
-    assessmentOutComeEvent.put("timeSpentInMs",0);
-    assessmentOutComeEvent.put("scoreInPercentage",0);
-    assessmentOutComeEvent.put("reaction",0);
-    assessmentOutComeEvent.put("completedTime",event.getEndTime());
-    assessmentOutComeEvent.put("isStudent",event.isStudent());
-    assessmentOutComeEvent.put("accessToken", event.getAccessToken());
-    assessmentOutComeEvent.put("sourceId", event.getSourceId());
-    assessmentOutComeEvent.put("questionsCount", event.getQuestionCount());
-    return assessmentOutComeEvent;
-}  
-    
 }

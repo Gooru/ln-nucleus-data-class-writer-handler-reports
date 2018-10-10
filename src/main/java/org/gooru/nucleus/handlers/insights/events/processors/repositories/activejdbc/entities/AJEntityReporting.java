@@ -67,13 +67,12 @@ public class AJEntityReporting extends Model {
     public static final String IS_GRADED = "is_graded";
     public static final String GRADING_TYPE = "grading_type";
     public static final String CONTENT_SOURCE = "content_source";
+    public static final String CONTEXT_COLLECTION_ID = "context_collection_id";
+    public static final String CONTEXT_COLLECTION_TYPE = "context_collection_type";
 
     public static final String CREATE_TIMESTAMP = "created_at";
     public static final String UPDATE_TIMESTAMP = "updated_at";   
     
-    public static final String SELECT_BASEREPORT_MAX_SEQUENCE_ID =
-            "SELECT max(sequence_id) FROM base_reports";
-
     public static final String GET_COLLECTION_SCORE = 
         "SELECT SUM(score) as score from base_reports "
         + "WHERE class_id = ? AND course_id = ? AND unit_id = ? AND lesson_id = ? AND collection_id = ? AND session_id = ? AND actor_id = ?";
@@ -175,6 +174,11 @@ public class AJEntityReporting extends Model {
     public static final String UPDATE_SELF_GRADED_EXT_ASSESSMENT = "UPDATE base_reports SET views = ?, score = ?, max_score = ?, updated_at = ?, "
     		+ "time_zone = ?, date_in_time_zone = ? WHERE id = ?";
 
+  public static final String COMPUTE_TIMESPENT = "SELECT SUM(tsData.resource_timespent) as time_spent "
+    + "FROM  (SELECT DISTINCT ON (resource_id) time_spent as resource_timespent, session_id FROM base_reports "
+    + "WHERE collection_id = ? AND session_id = ? AND event_name = 'collection.resource.play' AND event_type = 'stop' "
+    + "ORDER BY resource_id, updated_at desc) tsData GROUP BY session_id";
+    
     
     public static final String RESOURCE_ATTEMPT_STATUS_TYPE = "attempt_status";    
     public static final String PGTYPE_TEXT = "text";
@@ -201,6 +205,8 @@ public class AJEntityReporting extends Model {
     public static final String SELECT_BASE_REPORT_ID = "SELECT id FROM base_reports WHERE collection_id = ? AND session_id = ? AND resource_id = ? AND event_type = ? ";
     
     //*********************************************************************************************************************************************
+
+    public static final String FETCH_AVG_REACTION_OF_COLL_BY_SESSION = "SELECT COALESCE(ROUND(AVG(reaction)),0) AS reaction FROM base_reports  WHERE event_name = 'reaction.create' and session_id = ? and collection_id = ?";
     
     private static final Map<String, FieldValidator> validatorRegistry;
     private static final Map<String, FieldConverter> converterRegistry;

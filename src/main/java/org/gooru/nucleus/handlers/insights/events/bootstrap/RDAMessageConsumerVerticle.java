@@ -8,7 +8,7 @@ import java.util.concurrent.Executors;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.gooru.nucleus.handlers.insights.events.constants.ConfigConstants;
-import org.gooru.nucleus.handlers.insights.events.kafka.processors.KafkaMessageConsumer;
+import org.gooru.nucleus.handlers.insights.events.kafka.processors.KafkaReportDataAggregateMessageConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,9 +16,13 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
 
-public class MessageConsumerVerticle extends AbstractVerticle {
+/**
+ * @author renuka@gooru
+ *  
+ */
+public class RDAMessageConsumerVerticle extends AbstractVerticle {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(MessageConsumerVerticle.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(RDAMessageConsumerVerticle.class);
   private static KafkaConsumer<String, String> consumer = null;
   private static ExecutorService service = null;
 
@@ -32,7 +36,7 @@ public class MessageConsumerVerticle extends AbstractVerticle {
     }, startApplicationFuture -> {
       if (!startApplicationFuture.succeeded()) {
         LOGGER.error("Error :{}", startApplicationFuture.cause());
-        voidFuture.fail("Not able to initialize the verticle machinery properly");
+        voidFuture.fail("Not able to initialize the RDAMessageConsumerVerticle machinery properly");
       }
     });
   }
@@ -57,6 +61,6 @@ public class MessageConsumerVerticle extends AbstractVerticle {
     // HYPHEN. EG : EVENTLOGS-QA, TEST-PROD, XAPITRANSFORMER-QA
     String[] topics = config.getString(ConfigConstants.CONFIG_KAFKA_TOPICS).split(ConfigConstants.COMMA);
     consumer.subscribe(Arrays.asList(topics));
-    service.submit(new KafkaMessageConsumer(consumer));
+    service.submit(new KafkaReportDataAggregateMessageConsumer(consumer));
   }
 }

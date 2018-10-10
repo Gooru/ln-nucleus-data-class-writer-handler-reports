@@ -19,15 +19,15 @@ public class GradingPendingEventDispatcher {
 	}
 	
 	  public void sendGradingPendingEventtoNotifications() {
-		    JsonObject notificationEvent = createGradingPendingNotificationEvent();
-	  	
-		    try {
-		      LOGGER.debug("Student Grading Pending Notification Event : {} ", notificationEvent);
-		      MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_NOTIFICATIONS, notificationEvent);
-		      LOGGER.info("Successfully dispatched Student Grading Pending Event..");
-		    } catch (Exception e) {
-		      LOGGER.error("Error while dispatching Student Grading Pending Event ", e);
-		    }
+
+		  try {
+			  JsonObject notificationEvent = createGradingPendingNotificationEvent();
+			  LOGGER.debug("Student Grading Pending Notification Event : {} ", notificationEvent);
+			  MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_NOTIFICATIONS, notificationEvent);
+			  LOGGER.info("Successfully dispatched Student Grading Pending Event..");
+		  } catch (Exception e) {
+			  LOGGER.error("Error while dispatching Student Grading Pending Event ", e);
+		  }
 		  }
 	  
 	  private JsonObject createGradingPendingNotificationEvent() {
@@ -39,10 +39,14 @@ public class GradingPendingEventDispatcher {
 		    pendingGradingEvent.put(NotificationConstants.UNIT_ID, baseReports.get(AJEntityReporting.UNIT_GOORU_OID));
 		    pendingGradingEvent.put(NotificationConstants.LESSON_ID, baseReports.get(AJEntityReporting.LESSON_GOORU_OID));		    
 		    pendingGradingEvent.put(NotificationConstants.COLLECTION_ID, baseReports.get(AJEntityReporting.COLLECTION_OID));
+		    
+		    //TODO: update the CURRENT_ITEM_ID and CURRENT_ITEM_TYPE with contextCollectionId and contextCollectionType
+		    //Once these attributes are available (currently they are not)
 		    pendingGradingEvent.put(NotificationConstants.CURRENT_ITEM_ID, baseReports.get(AJEntityReporting.COLLECTION_OID));
 		    pendingGradingEvent.put(NotificationConstants.CURRENT_ITEM_TYPE, baseReports.get(AJEntityReporting.COLLECTION_TYPE));		    
 		    pendingGradingEvent.put(NotificationConstants.PATH_ID, baseReports.get(AJEntityReporting.PATH_ID));
 		    pendingGradingEvent.put(NotificationConstants.PATH_TYPE, baseReports.get(AJEntityReporting.PATH_TYPE));
+		    
 		    pendingGradingEvent.put(NotificationConstants.ACTION, NotificationConstants.INITIATE);
 		    
 		    return pendingGradingEvent;

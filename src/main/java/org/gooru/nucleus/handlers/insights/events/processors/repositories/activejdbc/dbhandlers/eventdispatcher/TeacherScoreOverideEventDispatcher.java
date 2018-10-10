@@ -24,9 +24,9 @@ public class TeacherScoreOverideEventDispatcher {
 	}
 
 	public void sendTeacherScoreUpdateEventtoNotifications() {
-		JsonObject notificationEvent = createTeacherScoreUpdateNotificationEvent();
 
 		try {
+			JsonObject notificationEvent = createTeacherScoreUpdateNotificationEvent();
 			LOGGER.debug("Teacher Score Overide Notification Event : {} ", notificationEvent);
 			MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_NOTIFICATIONS, notificationEvent);
 			LOGGER.info("Successfully dispatched Teacher Score Overide Notification Event..");
@@ -44,6 +44,9 @@ public class TeacherScoreOverideEventDispatcher {
 		teacherScoreUpdateEvent.put(NotificationConstants.UNIT_ID, baseReports.get(AJEntityReporting.UNIT_GOORU_OID));
 		teacherScoreUpdateEvent.put(NotificationConstants.LESSON_ID, baseReports.get(AJEntityReporting.LESSON_GOORU_OID));		    
 		teacherScoreUpdateEvent.put(NotificationConstants.COLLECTION_ID, baseReports.get(AJEntityReporting.COLLECTION_OID));
+		
+	    //TODO: update the CURRENT_ITEM_ID and CURRENT_ITEM_TYPE with contextCollectionId and contextCollectionType
+	    //Once these attributes are available (currently they are not)
 		teacherScoreUpdateEvent.put(NotificationConstants.CURRENT_ITEM_ID, baseReports.get(AJEntityReporting.COLLECTION_OID));
 		teacherScoreUpdateEvent.put(NotificationConstants.CURRENT_ITEM_TYPE, baseReports.get(AJEntityReporting.COLLECTION_TYPE));		    
 		teacherScoreUpdateEvent.put(NotificationConstants.PATH_ID, baseReports.get(AJEntityReporting.PATH_ID));
