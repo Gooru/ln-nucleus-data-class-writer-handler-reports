@@ -1,5 +1,10 @@
 package org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers;
 
+import org.gooru.nucleus.handlers.insights.events.processors.RDAProcessorContext;
+import org.gooru.nucleus.handlers.insights.events.rda.processor.collection.CollectionScoreUpdateEventRDAHandler;
+import org.gooru.nucleus.handlers.insights.events.rda.processor.collection.CollectionStartEventRDAHandler;
+import org.gooru.nucleus.handlers.insights.events.rda.processor.collection.CollectionStopEventRDAHandler;
+import org.gooru.nucleus.handlers.insights.events.rda.processor.resource.ResourceStopEventRDAHandler;
 import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
 
 /**
@@ -45,5 +50,21 @@ import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
     
     public static DBHandler buildDCAStudentSelfReportingHandler(ProcessorContext context) {
         return new DCAStudentSelfReportingHandler(context);
+    }
+    
+    public static DBHandler buildCollectionStartRDAHandler(RDAProcessorContext context) {
+        return new CollectionStartEventRDAHandler(context);
+    }
+    
+    public static DBHandler buildCollectionStopRDAHandler(RDAProcessorContext context) {
+        return new CollectionStopEventRDAHandler(context);
+    }
+
+    public static DBHandler buildResourceStopRDAHandler(RDAProcessorContext context) {
+        return new ResourceStopEventRDAHandler(context);
+    }
+    
+    public static DBHandler buildCollScoreUpdateRDAHandler(RDAProcessorContext context) {
+        return new CollectionScoreUpdateEventRDAHandler(context);
     }
 }

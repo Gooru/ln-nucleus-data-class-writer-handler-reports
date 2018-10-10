@@ -24,15 +24,15 @@ public class StudentSelfReportingEventDispatcher {
 
 
     public void sendSelfReportEventtoNotifications() {
-	    JsonObject notificationEvent = createSelfReportNotificationEvent();
-    	
-	    try {
-	      LOGGER.debug("Student Self Reporting Notification Event : {} ", notificationEvent);
-	      MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_NOTIFICATIONS, notificationEvent);
-	      LOGGER.info("Successfully dispatched Student Self Reporting Notification Event..");
-	    } catch (Exception e) {
-	      LOGGER.error("Error while dispatching Student Self Reporting Notification Event ", e);
-	    }
+
+    	try {
+    		JsonObject notificationEvent = createSelfReportNotificationEvent();
+    		LOGGER.debug("Student Self Reporting Notification Event : {} ", notificationEvent);
+    		MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_NOTIFICATIONS, notificationEvent);
+    		LOGGER.info("Successfully dispatched Student Self Reporting Notification Event..");
+    	} catch (Exception e) {
+    		LOGGER.error("Error while dispatching Student Self Reporting Notification Event ", e);
+    	}
 	  }
     
     private JsonObject createSelfReportNotificationEvent() {
@@ -44,6 +44,9 @@ public class StudentSelfReportingEventDispatcher {
 	    selfReportEvent.put(NotificationConstants.UNIT_ID, baseReports.get(AJEntityReporting.UNIT_GOORU_OID));
 	    selfReportEvent.put(NotificationConstants.LESSON_ID, baseReports.get(AJEntityReporting.LESSON_GOORU_OID));		    
 	    selfReportEvent.put(NotificationConstants.COLLECTION_ID, baseReports.get(AJEntityReporting.COLLECTION_OID));
+	    
+	    //TODO: update the CURRENT_ITEM_ID and CURRENT_ITEM_TYPE with contextCollectionId and contextCollectionType
+	    //Once these attributes are available (currently they are not)
 	    selfReportEvent.put(NotificationConstants.CURRENT_ITEM_ID, baseReports.get(AJEntityReporting.COLLECTION_OID));
 	    selfReportEvent.put(NotificationConstants.CURRENT_ITEM_TYPE, baseReports.get(AJEntityReporting.COLLECTION_TYPE));		    
 	    selfReportEvent.put(NotificationConstants.PATH_ID, baseReports.get(AJEntityReporting.PATH_ID));

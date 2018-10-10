@@ -58,12 +58,14 @@ public class AJEntityDailyClassActivity extends Model {
     public static final String COLLECTION_SUB_TYPE = "collection_sub_type";
     public static final String MAX_SCORE = "max_score";
     public static final String PATH_ID = "path_id";
+    public static final String PATH_TYPE = "path_type";
     
     public static final String EVENT_ID = "event_id";
     public static final String TIME_ZONE = "time_zone";
     public static final String DATE_IN_TIME_ZONE = "date_in_time_zone";
     public static final String IS_GRADED = "is_graded";
     public static final String CONTENT_SOURCE = "content_source";
+    public static final String CONTEXT_COLLECTION_ID = "context_collection_id";
     
     public static final String CREATE_TIMESTAMP = "created_at";
     public static final String UPDATE_TIMESTAMP = "updated_at";   
