@@ -261,7 +261,7 @@ class ProcessEventHandler implements DBHandler {
                   Double score = event.getScore();
                   //update the Answer Object and Answer Status from the latest event
                   //Rubrics - if the Answer Status is attempted then the default score that should be set is null
-                  if (!event.getResourceType().equals(EventConstants.QUESTION) && event.getEventType().equalsIgnoreCase(EventConstants.STOP) 
+                  if (event.getResourceType().equals(EventConstants.QUESTION) && event.getEventType().equalsIgnoreCase(EventConstants.STOP) 
                 		  && event.getAnswerStatus().equalsIgnoreCase(EventConstants.ATTEMPTED)) {
                       score = null;               	  
                   } 
