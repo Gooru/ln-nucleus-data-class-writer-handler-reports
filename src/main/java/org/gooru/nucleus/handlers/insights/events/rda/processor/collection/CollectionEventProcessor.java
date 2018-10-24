@@ -56,6 +56,10 @@ public class CollectionEventProcessor implements Processor {
                 result = processCollScoreUpdateDataForRDA();
                 LOGGER.info("RDA: Collection Score Update Event successfully processed");
                 break;
+            case CollectionEventConstants.EventAttributes.COLLECTION_SELF_GRADE_EVENT:
+                result = processStudentSelfGradeDataForRDA();
+                LOGGER.info("RDA: Student Self Grade Event successfully processed");
+                break;
             default:
                 LOGGER.error("Invalid operation type passed in, not able to handle");
                 return MessageResponseFactory.createInvalidRequestResponse(RESOURCE_BUNDLE.getString("invalid.operation"));
@@ -91,6 +95,15 @@ public class CollectionEventProcessor implements Processor {
             return RepoBuilder.buildReportDataAggregateRepo(context).processCollScoreUpdateDataForRDA();
         } catch (Throwable t) {
             LOGGER.error("Exception while processing Collection stop event for RDA ", t.getMessage());
+            return MessageResponseFactory.createInternalErrorResponse(t.getMessage());
+        }
+    }
+    
+    private MessageResponse processStudentSelfGradeDataForRDA() {
+        try {
+            return RepoBuilder.buildReportDataAggregateRepo(context).processStudentSelfGradeDataForRDA();
+        } catch (Throwable t) {
+            LOGGER.error("Exception while processing Student Self Grade event for RDA ", t.getMessage());
             return MessageResponseFactory.createInternalErrorResponse(t.getMessage());
         }
     }

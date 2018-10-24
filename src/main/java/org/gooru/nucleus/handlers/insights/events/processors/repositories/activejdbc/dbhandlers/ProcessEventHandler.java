@@ -261,7 +261,7 @@ class ProcessEventHandler implements DBHandler {
                   Double score = event.getScore();
                   //update the Answer Object and Answer Status from the latest event
                   //Rubrics - if the Answer Status is attempted then the default score that should be set is null
-                  if (!event.getResourceType().equals(EventConstants.QUESTION) && event.getEventType().equalsIgnoreCase(EventConstants.STOP) 
+                  if (event.getResourceType().equals(EventConstants.QUESTION) && event.getEventType().equalsIgnoreCase(EventConstants.STOP) 
                 		  && event.getAnswerStatus().equalsIgnoreCase(EventConstants.ATTEMPTED)) {
                       score = null;               	  
                   } 
@@ -335,7 +335,7 @@ class ProcessEventHandler implements DBHandler {
         	  GradingPendingEventDispatcher eventDispatcher = new GradingPendingEventDispatcher(baseReport);
         	  eventDispatcher.sendGradingPendingEventtoNotifications();
           }
-          RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(this.event, this.views, this.reaction, this.timespent, this.maxScore, this.score, this.isGraded);
+          RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(this.event, this.views, this.reaction, (tsObj != null ? tsObj : 0), this.maxScore, this.score, this.isGraded);
           rdaEventDispatcher.sendCollectionStopEventToRDA();
           LTIEventDispatcher ltiEventDispatcher = new LTIEventDispatcher(baseReport, this.event, this.scoreObj, this.maxScore, this.score, this.isGraded);
           ltiEventDispatcher.sendCollPerfEventtoLTI();

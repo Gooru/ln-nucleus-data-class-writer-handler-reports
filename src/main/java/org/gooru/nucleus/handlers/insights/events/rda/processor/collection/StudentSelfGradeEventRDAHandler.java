@@ -24,9 +24,9 @@ import com.hazelcast.util.StringUtil;
  * @author renuka@gooru
  * 
  */
-public class CollectionStartEventRDAHandler implements DBHandler {
+public class StudentSelfGradeEventRDAHandler implements DBHandler {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(CollectionStartEventRDAHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(StudentSelfGradeEventRDAHandler.class);
     private final RDAProcessorContext context;
     private AJEntityCollectionPerformance collectionReport;
     private CollectionEventParser collectionEvent;
@@ -34,7 +34,7 @@ public class CollectionStartEventRDAHandler implements DBHandler {
     Double maxScoreObj;
     Long tsObj;
 
-    public CollectionStartEventRDAHandler(RDAProcessorContext context) {
+    public StudentSelfGradeEventRDAHandler(RDAProcessorContext context) {
         this.context = context;
     }
 
@@ -74,12 +74,10 @@ public class CollectionStartEventRDAHandler implements DBHandler {
             collectionReport.set("context_collection_id", collectionEvent.getContextCollectionId());
             collectionReport.set("context_collection_type", collectionEvent.getContextCollectionType());
             collectionReport.set("tenant_id", collectionEvent.getTenantId());
-            collectionReport.set("question_count", collectionEvent.getQuestionCount());
             collectionReport.set("partner_id", collectionEvent.getPartnerId());
             collectionReport.set("content_source", collectionEvent.getContentSource());
 
-            // pathId = 0L indicates the main Path. We store pathId only for the
-            // altPaths
+            // pathId = 0L indicates the main Path. We store pathId only for the altPaths
             if (collectionEvent.getPathId() != 0L) {
                 collectionReport.set("path_id", collectionEvent.getPathId());
                 if (!StringUtil.isNullOrEmpty(collectionEvent.getPathType())) {

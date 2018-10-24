@@ -8,6 +8,7 @@ import java.util.TimeZone;
 
 import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.RDAEventDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.StudentSelfReportingEventDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityDailyClassActivity;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityReporting;
@@ -38,12 +39,17 @@ public class StudentSelfReportingHandler implements DBHandler {
 	  private static final String EVIDENCE = "evidence";
 	  private static final String ILACTIVITY = "ILActivity";
 	  private static final String COURSEMAP = "courseMap";
+	  private static final String TIME_SPENT = "time_spent";
 	  private final ProcessorContext context;
 	  private AJEntityReporting baseReports;	  
 	  private Double score;
 	  private Double percentScore;
 	  private Double rawScore;
 	  private Double maxScore;
+	  private Double finalScore;
+	  private Double finalMaxScore;
+	  private Long views;
+	  private Long eventTime;
 	  String localeDate;
 
 	    public StudentSelfReportingHandler(ProcessorContext context) {	    	
@@ -103,6 +109,7 @@ public class StudentSelfReportingHandler implements DBHandler {
 	        baseReports.set(AJEntityReporting.GOORUUID, userId);
 	        baseReports.set(AJEntityReporting.COLLECTION_OID, extCollectionId);	 
 	        baseReports.set(AJEntityDailyClassActivity.VIEWS, view);
+	        this.views = view;
 	        percentScore = (req.getValue(PERCENT_SCORE) != null) ? Double.valueOf(req.getValue(PERCENT_SCORE).toString()) : null;	        
 	        if(percentScore != null) {
 	        	if ((percentScore.compareTo(100.00) > 0) || (percentScore.compareTo(0.00) < 0)) {
@@ -110,7 +117,10 @@ public class StudentSelfReportingHandler implements DBHandler {
 	        				ExecutionResult.ExecutionStatus.FAILED);
 	        	} else {
 		        	baseReports.set(AJEntityReporting.SCORE, percentScore);
-		        	baseReports.set(AJEntityReporting.MAX_SCORE, 100);	        	}
+		        	baseReports.set(AJEntityReporting.MAX_SCORE, 100);
+		        	this.finalScore = percentScore;
+		        	this.finalMaxScore = 100.0;
+		        }
 	        } else if (req.getValue(SCORE) == null || req.getValue(MAX_SCORE) == null ) {
 	        	return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload"), ExecutionResult.ExecutionStatus.FAILED);
 	        } else {
@@ -127,7 +137,9 @@ public class StudentSelfReportingHandler implements DBHandler {
 	        	}		        
 		        	score = (rawScore *100)/maxScore;
 		        	baseReports.set(AJEntityReporting.SCORE, score);
-		        	baseReports.set(AJEntityReporting.MAX_SCORE, maxScore);		        
+		        	baseReports.set(AJEntityReporting.MAX_SCORE, maxScore);	
+		        	this.finalScore = score;
+		        	this.finalMaxScore = maxScore;
 	        }
 	        
 	        //Remove ALL the values from the Request that needed processing, so that the rest of the values from 
@@ -162,6 +174,7 @@ public class StudentSelfReportingHandler implements DBHandler {
 	        }
 	        
 	        long ts = System.currentTimeMillis();
+	        this.eventTime = ts;
 	        baseReports.set(AJEntityReporting.CREATE_TIMESTAMP,new Timestamp(ts));
 	        baseReports.set(AJEntityReporting.UPDATE_TIMESTAMP,new Timestamp(ts));
 	        
@@ -180,7 +193,7 @@ public class StudentSelfReportingHandler implements DBHandler {
 	    			baseReports.get(AJEntityReporting.SESSION_ID), EventConstants.COLLECTION_PLAY, EventConstants.STOP);
 	    	
 	    	StudentSelfReportingEventDispatcher eventDispatcher = new StudentSelfReportingEventDispatcher(baseReports); 
-	    	
+	    	RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(baseReports, this.views, req.getLong(TIME_SPENT), this.finalMaxScore, this.finalScore, true, this.eventTime);
 	    	if (duplicateRow == null || duplicateRow.isEmpty()) {
 	    		boolean result = baseReports.save();    		
 		    	
@@ -196,7 +209,7 @@ public class StudentSelfReportingHandler implements DBHandler {
 	    		LOGGER.info("Student Self grades for External Assessments stored successfully " + req);	
 	    		
 	    		eventDispatcher.sendSelfReportEventtoNotifications();
-	    		
+	    		rdaEventDispatcher.sendSelfGradeEventToRDA();
 		        return new ExecutionResult<>(MessageResponseFactory.createOkayResponse(), ExecutionStatus.SUCCESSFUL);
 		      } else {
 		    	  LOGGER.info("Duplicate record exists. Updating the Self graded score ");
@@ -208,19 +221,24 @@ public class StudentSelfReportingHandler implements DBHandler {
 	        	        if(percentScore != null) {
 	        	        	Base.exec(AJEntityReporting.UPDATE_SELF_GRADED_EXT_ASSESSMENT, views, percentScore, 100, new Timestamp(ts), 
 	        	        			baseReports.get(AJEntityReporting.TIME_ZONE), baseReports.get(AJEntityReporting.DATE_IN_TIME_ZONE), id);
+	        	        	this.finalScore = percentScore;
+	        	        	this.finalMaxScore = 100.0;
 	        	        } else {
 	        	        	Base.exec(AJEntityReporting.UPDATE_SELF_GRADED_EXT_ASSESSMENT, views, score, maxScore, new Timestamp(ts), 
-	        	        			baseReports.get(AJEntityReporting.TIME_ZONE), baseReports.get(AJEntityReporting.DATE_IN_TIME_ZONE), id);	        	        	
-	        	        }                                        	  
-
+	        	        			baseReports.get(AJEntityReporting.TIME_ZONE), baseReports.get(AJEntityReporting.DATE_IN_TIME_ZONE), id);
+	        	        	this.finalScore = score;
+	        	        	this.finalMaxScore = maxScore;
+	        	        }     
+	        	        this.views = views;
 	                  });
 	                
 	                LOGGER.info("Student Self grades for External Assessments stored successfully " + req);
 	                eventDispatcher.sendSelfReportEventtoNotifications();
-
+	                rdaEventDispatcher = new RDAEventDispatcher(baseReports, this.views, req.getLong(TIME_SPENT), this.finalMaxScore, this.finalScore, true, this.eventTime);
+	                rdaEventDispatcher.sendSelfGradeEventToRDA();
 	                return new ExecutionResult<>(MessageResponseFactory.createOkayResponse(), ExecutionStatus.SUCCESSFUL);
 	    		
-	    	}
+	    	}   
 	    }
 	        
 	    	   
