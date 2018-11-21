@@ -333,7 +333,7 @@ public class CollectionEventParser {
             this.pathId = this.context.containsKey(CollectionEventConstants.EventAttributes.PATH_ID) ? this.context.getInteger(CollectionEventConstants.EventAttributes.PATH_ID) : 0;
             this.contentSource = this.context.containsKey(CollectionEventConstants.EventAttributes.CONTENT_SOURCE) ? this.context.getString(CollectionEventConstants.EventAttributes.CONTENT_SOURCE) : null;
             this.questionCount =
-                this.context.containsKey(CollectionEventConstants.EventAttributes.QUESTION_COUNT) ? this.context.getInteger(CollectionEventConstants.EventAttributes.QUESTION_COUNT) : 0;
+                this.context.containsKey(CollectionEventConstants.EventAttributes.QUESTION_COUNT) && this.context.getValue(CollectionEventConstants.EventAttributes.QUESTION_COUNT) != null ? this.context.getInteger(CollectionEventConstants.EventAttributes.QUESTION_COUNT) : 0;
 
         } catch (Exception e) {
             LOGGER.error("Error in event parser : {}", e);

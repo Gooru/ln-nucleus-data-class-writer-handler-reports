@@ -25,5 +25,9 @@ public interface BaseReportingRepo {
     MessageResponse updateStudentSelfReportedScore();
 
     MessageResponse updateStudentSelfReportedScoreOnDCA();
+    
+    MessageResponse insertOfflineStudentData();
+
+    MessageResponse insertDCAOfflineStudentData();
 
 }

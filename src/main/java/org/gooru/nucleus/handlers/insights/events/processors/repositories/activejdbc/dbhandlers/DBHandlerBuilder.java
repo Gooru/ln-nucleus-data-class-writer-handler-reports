@@ -1,12 +1,13 @@
 package org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers;
 
+import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.insights.events.processors.RDAProcessorContext;
 import org.gooru.nucleus.handlers.insights.events.rda.processor.collection.CollectionScoreUpdateEventRDAHandler;
 import org.gooru.nucleus.handlers.insights.events.rda.processor.collection.CollectionStartEventRDAHandler;
 import org.gooru.nucleus.handlers.insights.events.rda.processor.collection.CollectionStopEventRDAHandler;
+import org.gooru.nucleus.handlers.insights.events.rda.processor.collection.OfflineStudentPerfEventRDAHandler;
 import org.gooru.nucleus.handlers.insights.events.rda.processor.collection.StudentSelfGradeEventRDAHandler;
 import org.gooru.nucleus.handlers.insights.events.rda.processor.resource.ResourceStopEventRDAHandler;
-import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
 
 /**
  * Created by mukul@gooru
@@ -72,4 +73,17 @@ import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
     public static DBHandler buildStudentSelfGradeRDAHandler(RDAProcessorContext context) {
         return new StudentSelfGradeEventRDAHandler(context);
     }
+    
+    public static DBHandler buildDCAOfflineStudentReportingHandler(ProcessorContext context) {
+        return new DCAOfflineStudentReportingHandler(context);
+    }
+    
+    public static DBHandler buildOfflineStudentReportingHandler(ProcessorContext context) {
+        return new OfflineStudentReportingHandler(context);
+    }
+    
+    public static DBHandler buildOfflineStudentPerfRDAHandler(RDAProcessorContext context) {
+        return new OfflineStudentPerfEventRDAHandler(context);
+    }
+    
 }

@@ -66,9 +66,11 @@ public class AJEntityDailyClassActivity extends Model {
     public static final String IS_GRADED = "is_graded";
     public static final String CONTENT_SOURCE = "content_source";
     public static final String CONTEXT_COLLECTION_ID = "context_collection_id";
+    public static final String CONTEXT_COLLECTION_TYPE = "context_collection_type";
     
     public static final String CREATE_TIMESTAMP = "created_at";
     public static final String UPDATE_TIMESTAMP = "updated_at";   
+    public static final String GRADING_TYPE = "grading_type";
     
     public static final String GET_COLLECTION_SCORE = 
         "SELECT SUM(score) as score from daily_class_activity "
