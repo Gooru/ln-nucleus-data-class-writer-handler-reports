@@ -44,11 +44,15 @@ import org.gooru.nucleus.handlers.insights.events.rda.processor.resource.Resourc
     
     public static DBHandler buildScoreUpdateHandler(ProcessorContext context) {
         return new ScoreUpdateHandler(context);
-      }
+    }
+    
+    public static DBHandler buildDCAScoreUpdateHandler(ProcessorContext context) {
+        return new DCAScoreUpdateHandler(context);
+    }
     
     public static DBHandler buildStudentSelfReportingHandler(ProcessorContext context) {
         return new StudentSelfReportingHandler(context);
-      }
+    }
     
     public static DBHandler buildDCAStudentSelfReportingHandler(ProcessorContext context) {
         return new DCAStudentSelfReportingHandler(context);

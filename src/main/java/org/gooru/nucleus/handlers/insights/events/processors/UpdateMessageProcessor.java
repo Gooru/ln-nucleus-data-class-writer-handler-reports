@@ -6,6 +6,7 @@ import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.constants.MessageConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.events.EventParser;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.RepoBuilder;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityReporting;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponse;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponseFactory;
@@ -42,8 +43,27 @@ public class UpdateMessageProcessor implements Processor {
 	      if (validateResult.isCompleted()) {
 	        return validateResult.result();
 	      }
-	      context = createContext();	      
-	      result = updateAssessmentScore();
+	      context = createContext();
+	      String contentSource = context.request().getString(AJEntityReporting.CONTENT_SOURCE);
+          if (!StringUtil.isNullOrEmpty(contentSource)) {
+              contentSource = contentSource.toLowerCase();
+              switch (contentSource) {
+              case EventConstants.COURSEMAP:
+                  result = updateAssessmentScore();
+                  break;
+              case EventConstants.DCA:
+                  result = updateDCAAssessmentScore();
+                  break;
+              default:
+                  LOGGER.error("Invalid content source passed in, not able to handle");
+                  return MessageResponseFactory
+                        .createInvalidRequestResponse(RESOURCE_BUNDLE.getString("invalid.operation"));
+              }
+          } else {
+              LOGGER.error("Content source is either null or empty, not able to handle");
+              return MessageResponseFactory
+                    .createInvalidRequestResponse(RESOURCE_BUNDLE.getString("invalid.operation"));
+          }
 
 	      return result;
 	      
@@ -60,6 +80,15 @@ public class UpdateMessageProcessor implements Processor {
 	      LOGGER.error("Exception while processing Collection Play Event Data", t.getMessage());
 	      return MessageResponseFactory.createInternalErrorResponse(t.getMessage());
 	    }
+	  }
+	  
+	  private MessageResponse updateDCAAssessmentScore() {
+	        try {
+	          return RepoBuilder.buildBaseReportingRepo(context).updateDCAAssessmentScore();
+	        } catch (Throwable t) {
+	          LOGGER.error("Exception while processing Collection Play Event Data", t.getMessage());
+	          return MessageResponseFactory.createInternalErrorResponse(t.getMessage());
+	        }
 	  }
 
 	  private ProcessorContext createContext() {	    

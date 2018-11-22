@@ -50,6 +50,11 @@
     }
     
     @Override
+    public MessageResponse updateDCAAssessmentScore() {
+      return TransactionExecutor.executeTransaction(DBHandlerBuilder.buildDCAScoreUpdateHandler(context));
+    }
+    
+    @Override
     public MessageResponse updateStudentSelfReportedScore() {
         return TransactionExecutor.executeTransaction(DBHandlerBuilder.buildStudentSelfReportingHandler(context));
       }

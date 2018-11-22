@@ -30,4 +30,6 @@ public interface BaseReportingRepo {
 
     MessageResponse insertDCAOfflineStudentData();
 
+    MessageResponse updateDCAAssessmentScore();
+
 }
