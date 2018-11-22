@@ -2,8 +2,10 @@ package org.gooru.nucleus.handlers.insights.events.processors.repositories.activ
 
 import java.sql.Timestamp;
 
+import org.apache.commons.lang3.StringUtils;
 import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.GEPEventDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.RDAEventDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityReporting;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.EntityBuilder;
@@ -46,6 +48,8 @@ public class OfflineStudentReportingHandler implements DBHandler {
     private Double totalResScore;
     private Double totalResMaxScore;
     private Boolean isGraded;
+    private String userId;
+    private JsonArray userIds;
     
     public OfflineStudentReportingHandler(ProcessorContext context) {
         this.context = context;
@@ -57,9 +61,16 @@ public class OfflineStudentReportingHandler implements DBHandler {
             LOGGER.warn("Invalid Data");
             return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse("Invalid Data"), ExecutionStatus.FAILED);
         }
+
+        try {
+            userId = context.request().getString(STUDENT_ID);
+        } catch (Exception e) {
+            userIds = context.request().getJsonArray(STUDENT_ID);
+        }
         
-        if (StringUtil.isNullOrEmpty(context.request().getString(AJEntityReporting.COLLECTION_OID)) || StringUtil.isNullOrEmpty(context.request().getString(STUDENT_ID)) ||
+        if (StringUtil.isNullOrEmpty(context.request().getString(AJEntityReporting.COLLECTION_OID)) || !(StringUtils.isNotEmpty(userId) || userIds != null) ||
             StringUtil.isNullOrEmpty(context.request().getString(AJEntityReporting.COURSE_GOORU_OID)) || StringUtil.isNullOrEmpty(context.request().getString(AJEntityReporting.SESSION_ID))) {
+            LOGGER.warn("Invalid Json Payload");
             return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload"), ExecutionStatus.FAILED);
         }
         LOGGER.debug("checkSanity() OK");
@@ -86,11 +97,10 @@ public class OfflineStudentReportingHandler implements DBHandler {
         LazyList<AJEntityReporting> duplicateRow = null;
         JsonObject requestPayload = context.request();
         String collectionId = requestPayload.getString(AJEntityReporting.COLLECTION_OID);
-        String userId = requestPayload.getString(STUDENT_ID);
         String collectionType = requestPayload.getString(AJEntityReporting.COLLECTION_TYPE);
         requestPayload.remove(USER_ID_FROM_SESSION);
         requestPayload.remove(STUDENT_ID);
-        
+
         long ts = System.currentTimeMillis();
         if (requestPayload.getString(AJEntityReporting.TIME_ZONE) != null) {
             String timeZone = requestPayload.getString(AJEntityReporting.TIME_ZONE);
@@ -169,10 +179,24 @@ public class OfflineStudentReportingHandler implements DBHandler {
         
         if (baseReports.isValid()) {
             if (duplicateRow == null || duplicateRow.isEmpty()) {
-                if (baseReports.insert()) {
+              //Set timespent for all students of the class
+                if (collectionType.equalsIgnoreCase(EventConstants.EXTERNAL_COLLECTION) && userIds != null && !userIds.isEmpty()) {
+                    userIds.forEach(user -> {
+                        AJEntityReporting baseReports = new AJEntityReporting();
+                        this.baseReports.toMap().keySet().forEach(key -> {
+                            baseReports.set(key, this.baseReports.get(key));
+                        });
+                        baseReports.set(AJEntityReporting.GOORUUID, user.toString());
+                        if (baseReports.insert()) {
+                            LOGGER.info("Offline student record (Ext-Coll) inserted successfully into Reports DB");
+                            sendCPEventToGEPAndRDA(baseReports, ts);
+                        } else {
+                            LOGGER.error("Error while inserting offline student event into Reports DB: " + context.request().toString());
+                        }
+                    });
+                } else if (baseReports.insert()) {
                     LOGGER.info("Offline student record inserted successfully into Reports DB");
-                    RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(baseReports, this.views, this.reaction, this.totalResTS, this.finalMaxScore, this.finalScore, this.isGraded, ts);
-                    rdaEventDispatcher.sendOfflineStudentReportEventToRDA();;
+                    sendCPEventToGEPAndRDA(baseReports, ts);
                 } else {
                     LOGGER.error("Error while inserting offline student event into Reports DB: " + context.request().toString());
                 }
@@ -187,6 +211,13 @@ public class OfflineStudentReportingHandler implements DBHandler {
         
     }
 
+    private void sendCPEventToGEPAndRDA(AJEntityReporting baseReports, long ts) {
+        RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(baseReports, this.views, this.reaction, this.totalResTS, this.finalMaxScore, this.finalScore, this.isGraded, ts);
+        rdaEventDispatcher.sendOfflineStudentReportEventToRDA();
+        GEPEventDispatcher eventDispatcher = new GEPEventDispatcher(baseReports, this.totalResTS,this.totalResMaxScore, this.totalResScore, System.currentTimeMillis());
+        eventDispatcher.sendCPEventFromBaseReportstoGEP();
+    }
+    
     private void removeProcessedFieldsFromPayload(JsonObject requestPayload) {
         requestPayload.remove(AJEntityReporting.MAX_SCORE);
         requestPayload.remove(PERCENT_SCORE);
@@ -272,6 +303,8 @@ public class OfflineStudentReportingHandler implements DBHandler {
                     if (duplicateRow == null || duplicateRow.isEmpty()) {
                         if (baseReport.insert()) {
                             LOGGER.info("Offline Student CRP event inserted successfully in Reports DB");
+                            GEPEventDispatcher eventDispatcher = new GEPEventDispatcher(baseReport, null, null, null, System.currentTimeMillis());
+                            eventDispatcher.sendCRPEventFromBaseReportstoGEP();
                         } else {
                             LOGGER.error("Error while inserting offline student CRP event into Reports DB: " + context.request().toString());
                         }

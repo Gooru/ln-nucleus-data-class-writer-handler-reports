@@ -2,6 +2,7 @@ package org.gooru.nucleus.handlers.insights.events.processors.repositories.activ
 
 import java.sql.Timestamp;
 
+import org.apache.commons.lang3.StringUtils;
 import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.GEPEventDispatcher;
@@ -46,6 +47,8 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
     private Long totalResTS = 0L;
     private Double totalResScore;
     private Double totalResMaxScore;
+    private String userId;
+    private JsonArray userIds;
     
     public DCAOfflineStudentReportingHandler(ProcessorContext context) {
         this.context = context;
@@ -57,9 +60,14 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
             LOGGER.warn("Invalid Data");
             return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse("Invalid Data"), ExecutionStatus.FAILED);
         }
-        
-        if (StringUtil.isNullOrEmpty(context.request().getString(AJEntityDailyClassActivity.COLLECTION_OID)) || StringUtil.isNullOrEmpty(context.request().getString(STUDENT_ID)) 
+        try {
+            userId = context.request().getString(STUDENT_ID);
+        } catch (Exception e) {
+            userIds = context.request().getJsonArray(STUDENT_ID);
+        }
+        if (StringUtil.isNullOrEmpty(context.request().getString(AJEntityDailyClassActivity.COLLECTION_OID)) || !(StringUtils.isNotEmpty(userId) || userIds != null) 
             || StringUtil.isNullOrEmpty(context.request().getString(AJEntityDailyClassActivity.SESSION_ID))) {
+            LOGGER.warn("Invalid Json Payload");
             return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload"), ExecutionStatus.FAILED);
         }
         LOGGER.debug("checkSanity() OK");
@@ -169,7 +177,23 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
         
         if (dcaReport.isValid()) {
             if (duplicateRow == null || duplicateRow.isEmpty()) {
-                if (dcaReport.insert()) {
+              //Set timespent for all students of the class
+                if (collectionType.equalsIgnoreCase(EventConstants.EXTERNAL_COLLECTION) && userIds != null && !userIds.isEmpty()) {
+                    userIds.forEach(user -> {
+                        AJEntityDailyClassActivity dcaReport = new AJEntityDailyClassActivity();
+                        this.dcaReport.toMap().keySet().forEach(key -> {
+                            dcaReport.set(key, this.dcaReport.get(key));
+                        });
+                        dcaReport.set(AJEntityReporting.GOORUUID, user.toString());
+                        if (dcaReport.insert()) {
+                            LOGGER.info("Offline student record (Ext-Coll) inserted successfully into Reports DB");
+                            GEPEventDispatcher eventDispatcher = new GEPEventDispatcher(dcaReport, this.totalResTS, this.totalResMaxScore, this.totalResScore, System.currentTimeMillis());
+                            eventDispatcher.sendCPEventFromDCAtoGEP();
+                        } else {
+                            LOGGER.error("Error while inserting offline student event into Reports DB: " + context.request().toString());
+                        }
+                    });
+                } else if (dcaReport.insert()) {
                     LOGGER.info("Offline student record inserted successfully into Reports DB");
                     GEPEventDispatcher eventDispatcher = new GEPEventDispatcher(dcaReport, this.totalResTS,this.totalResMaxScore, this.totalResScore, System.currentTimeMillis());
                     eventDispatcher.sendCPEventFromDCAtoGEP();

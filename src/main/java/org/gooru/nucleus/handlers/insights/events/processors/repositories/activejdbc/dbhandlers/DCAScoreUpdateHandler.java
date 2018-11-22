@@ -10,7 +10,6 @@ import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.constants.GEPConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.MessageDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
-import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.LTIEventDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.TeacherScoreOverideEventDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityClassAuthorizedUsers;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityDailyClassActivity;
@@ -203,8 +202,6 @@ public class DCAScoreUpdateHandler implements DBHandler {
               Object tsObject =  Base.firstCell(AJEntityDailyClassActivity.COMPUTE_TIMESPENT, dcaReports.get(AJEntityDailyClassActivity.COLLECTION_OID), 
             		  dcaReports.get(AJEntityDailyClassActivity.SESSION_ID));
               timeSpent = tsObject != null ? Long.valueOf(tsObject.toString()) : 0L;
-        	  LTIEventDispatcher ltiEventDispatcher = new LTIEventDispatcher(dcaReports, timeSpent, updated_at, rawScore, max_score, score, isGraded);
-        	  ltiEventDispatcher.sendDCATeacherOverrideEventtoLTI();
               
         LOGGER.debug("DONE");
         return new ExecutionResult<>(MessageResponseFactory.createOkayResponse(), ExecutionStatus.SUCCESSFUL);

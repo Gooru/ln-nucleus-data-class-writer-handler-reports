@@ -152,8 +152,8 @@ public class GEPEventDispatcher {
         String collectionType = report.getString(AJEntityDailyClassActivity.COLLECTION_TYPE);
 
         if (collectionType.equalsIgnoreCase(EventConstants.EXTERNAL_ASSESSMENT) || collectionType.equalsIgnoreCase(EventConstants.EXTERNAL_COLLECTION)) {
-            double ms = report.getDouble(AJEntityDailyClassActivity.MAX_SCORE);
-            if (ms > 0.0) {
+            Double ms = report.getDouble(AJEntityDailyClassActivity.MAX_SCORE);
+            if (ms != null && ms > 0.0) {
                 result.put(GEPConstants.SCORE, report.getDouble(AJEntityDailyClassActivity.SCORE));
             } else {
                 result.put(GEPConstants.SCORE, 0.0);
