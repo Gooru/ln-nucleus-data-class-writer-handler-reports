@@ -39,6 +39,7 @@ ext {
     logbackVersion = '1.0.13'
     hikariVersion = '2.7.6'
     postgresVersion = '9.4-1206-jdbc42'
+    apacheCommonsVerion = '3.1'
 }
 
 version = "0.1-snapshot"
@@ -61,6 +62,7 @@ dependencies {
     compile "ch.qos.logback:logback-classic:${logbackVersion}"
     compile "com.zaxxer:HikariCP:${hikariVersion}"
     compile "org.postgresql:postgresql:${postgresVersion}"
+    compile "org.apache.commons:commons-lang3:${apacheCommonsVerion}"
     // active jdbc
     compile 'org.javalite:activejdbc:1.4.11'
     compile 'org.javalite:activejdbc-instrumentation:1.4.11'
