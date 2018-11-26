@@ -25,7 +25,7 @@ public final class ProcessorBuilder {
         return new SelfReportingProcessor(message);
     }
     
-    public static Processor buildOfflineStudentReportingProcessor(JsonObject message) {
+    public static Processor buildOfflineStudentReportingProcessor(Message<Object> message) {
         return new OfflineStudentReportingProcessor(message);
     }
 
