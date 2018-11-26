@@ -252,7 +252,7 @@ public class ResourceEventParser {
             this.collectionId = context.containsKey(ResourceEventConstants.EventAttributes.COLLECTION_ID) ? this.context.getString(ResourceEventConstants.EventAttributes.COLLECTION_ID) : null;
             this.collectionType = context.containsKey(ResourceEventConstants.EventAttributes.COLLECTION_TYPE) ? this.context.getString(ResourceEventConstants.EventAttributes.COLLECTION_TYPE) : null;
             this.pathType = context.containsKey(ResourceEventConstants.EventAttributes.PATH_TYPE) ? context.getString(ResourceEventConstants.EventAttributes.PATH_TYPE) : null;
-            this.pathId = context.containsKey(ResourceEventConstants.EventAttributes.PATH_ID) ? context.getInteger(ResourceEventConstants.EventAttributes.PATH_ID) : 0;
+            this.pathId = context.containsKey(ResourceEventConstants.EventAttributes.PATH_ID) && context.getValue(ResourceEventConstants.EventAttributes.PATH_ID) != null ? this.context.getInteger(ResourceEventConstants.EventAttributes.PATH_ID) : 0;
 
         } catch (Exception e) {
             LOGGER.error("Error in event parser : {}", e);

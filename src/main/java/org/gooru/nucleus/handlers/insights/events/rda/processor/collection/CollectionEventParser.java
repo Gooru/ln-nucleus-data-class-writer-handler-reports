@@ -330,7 +330,7 @@ public class CollectionEventParser {
             this.partnerId = this.context.containsKey(CollectionEventConstants.EventAttributes.PARTNER_ID) ? this.context.getString(CollectionEventConstants.EventAttributes.PARTNER_ID) : null;
             this.tenantId = this.context.containsKey(CollectionEventConstants.EventAttributes.TENANT_ID) ? this.context.getString(CollectionEventConstants.EventAttributes.TENANT_ID) : null;
             this.pathType = this.context.containsKey(CollectionEventConstants.EventAttributes.PATH_TYPE) ? this.context.getString(CollectionEventConstants.EventAttributes.PATH_TYPE) : null;
-            this.pathId = this.context.containsKey(CollectionEventConstants.EventAttributes.PATH_ID) ? this.context.getInteger(CollectionEventConstants.EventAttributes.PATH_ID) : 0;
+            this.pathId = this.context.containsKey(CollectionEventConstants.EventAttributes.PATH_ID) && this.context.getValue(CollectionEventConstants.EventAttributes.PATH_ID) != null ? this.context.getInteger(CollectionEventConstants.EventAttributes.PATH_ID) : 0;
             this.contentSource = this.context.containsKey(CollectionEventConstants.EventAttributes.CONTENT_SOURCE) ? this.context.getString(CollectionEventConstants.EventAttributes.CONTENT_SOURCE) : null;
             this.questionCount =
                 this.context.containsKey(CollectionEventConstants.EventAttributes.QUESTION_COUNT) && this.context.getValue(CollectionEventConstants.EventAttributes.QUESTION_COUNT) != null ? this.context.getInteger(CollectionEventConstants.EventAttributes.QUESTION_COUNT) : 0;

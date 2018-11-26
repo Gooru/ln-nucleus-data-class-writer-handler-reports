@@ -43,7 +43,7 @@ import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageRe
     
     @Override
     public MessageResponse processOfflineStudentPerfForRDA() {
-      return TransactionExecutor.executeTransaction(DBHandlerBuilder.buildStudentSelfGradeRDAHandler(context));
+      return TransactionExecutor.executeTransaction(DBHandlerBuilder.buildOfflineStudentPerfRDAHandler(context));
     }
   
   }
