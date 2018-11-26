@@ -1,11 +1,14 @@
 package org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers;
 
 import java.sql.Timestamp;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.GEPEventDispatcher;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityClassAuthorizedUsers;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityDailyClassActivity;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityReporting;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.EntityBuilder;
@@ -14,6 +17,7 @@ import org.gooru.nucleus.handlers.insights.events.processors.responses.Execution
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult.ExecutionStatus;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponse;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponseFactory;
+import org.javalite.activejdbc.Base;
 import org.javalite.activejdbc.LazyList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,6 +53,7 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
     private Double totalResMaxScore;
     private String userId;
     private JsonArray userIds;
+    private Boolean isGraded;
     
     public DCAOfflineStudentReportingHandler(ProcessorContext context) {
         this.context = context;
@@ -74,14 +79,15 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
         return new ExecutionResult<>(null, ExecutionStatus.CONTINUE_PROCESSING);
     }
 
+    @SuppressWarnings("rawtypes")
     @Override
     public ExecutionResult<MessageResponse> validateRequest() {
         if (context.request().getString("userIdFromSession") != null) {
-            if (!context.request().getString("userIdFromSession").equals(context.request().getString(STUDENT_ID))) {
-                return new ExecutionResult<>(MessageResponseFactory.createForbiddenResponse("Auth Failure"), ExecutionStatus.FAILED);
+            List<Map> owner = Base.findAll(AJEntityClassAuthorizedUsers.SELECT_CLASS_OWNER, context.request().getString("class_id"), context.request().getString("userIdFromSession"));
+            if (owner.isEmpty()) {
+                LOGGER.warn("User is not a teacher or collaborator");
+                return new ExecutionResult<>(MessageResponseFactory.createForbiddenResponse("User is not a teacher/collaborator"), ExecutionStatus.FAILED);
             }
-        } else if (StringUtil.isNullOrEmpty(context.request().getString("userIdFromSession"))) {
-            return new ExecutionResult<>(MessageResponseFactory.createForbiddenResponse("Auth Failure"), ExecutionStatus.FAILED);
         }
         LOGGER.debug("validateRequest() OK");
         return new ExecutionResult<>(null, ExecutionStatus.CONTINUE_PROCESSING);
@@ -126,6 +132,7 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
                     this.finalScore = percentScore;
                     this.finalMaxScore = 100.0;
                 }
+                this.isGraded = true;
             } else if ((collectionType.equalsIgnoreCase(EventConstants.EXTERNAL_ASSESSMENT)) && (requestPayload.getValue(AJEntityDailyClassActivity.SCORE) == null || requestPayload.getValue(AJEntityDailyClassActivity.MAX_SCORE) == null)) {
                 return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload"), ExecutionResult.ExecutionStatus.FAILED);
             } else if (requestPayload.getValue(AJEntityDailyClassActivity.SCORE) != null && requestPayload.getValue(AJEntityDailyClassActivity.MAX_SCORE) != null) {
@@ -138,6 +145,7 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
                 score = (rawScore * 100) / maxScore;
                 this.finalScore = score;
                 this.finalMaxScore = maxScore;
+                this.isGraded = true;
             }
         } else if (this.totalResScore != null && this.totalResMaxScore != null && this.totalResMaxScore > 0.0) {
             //if resource play data is given in request, then use total score of questions
@@ -146,6 +154,7 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
             LOGGER.debug("Re-Computed total Assessment score {} ", finalScore);
         }        
         
+        dcaReport.set(AJEntityDailyClassActivity.IS_GRADED, this.isGraded);
         dcaReport.set(AJEntityDailyClassActivity.VIEWS, this.views);
         dcaReport.set(AJEntityDailyClassActivity.TIMESPENT, this.totalResTS);
         dcaReport.set(AJEntityDailyClassActivity.REACTION, this.reaction);

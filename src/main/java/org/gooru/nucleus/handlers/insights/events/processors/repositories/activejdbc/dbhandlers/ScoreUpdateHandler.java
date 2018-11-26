@@ -85,9 +85,8 @@ public class ScoreUpdateHandler implements DBHandler {
                 context.request().getString("userIdFromSession"));
         if (owner.isEmpty()) {
           LOGGER.warn("User is not a teacher or collaborator");
-          // return new
-          // ExecutionResult<>(MessageResponseFactory.createForbiddenResponse("User
-          // is not a teacher/collaborator"), ExecutionStatus.FAILED);
+           return new
+           ExecutionResult<>(MessageResponseFactory.createForbiddenResponse("User is not a teacher/collaborator"), ExecutionStatus.FAILED);
         }
       }
       LOGGER.debug("validateRequest() OK");
