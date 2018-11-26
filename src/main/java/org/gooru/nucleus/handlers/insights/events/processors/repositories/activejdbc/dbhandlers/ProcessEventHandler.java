@@ -318,7 +318,7 @@ class ProcessEventHandler implements DBHandler {
 
           if ((event.getEventName().equals(EventConstants.COLLECTION_PLAY)) && event.getEventType().equalsIgnoreCase(EventConstants.START)) {              
         	  sendCollStartEventtoGEP();
-        	  RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(this.event, this.views, this.reaction, this.timespent, this.maxScore, this.score, this.isGraded);
+        	  RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(baseReport, this.views, this.reaction, this.timespent, this.maxScore, this.score, this.isGraded, this.event.getEndTime());
         	  rdaEventDispatcher.sendCollectionStartEventToRDA();
           }
          
@@ -335,7 +335,7 @@ class ProcessEventHandler implements DBHandler {
         	  GradingPendingEventDispatcher eventDispatcher = new GradingPendingEventDispatcher(baseReport);
         	  eventDispatcher.sendGradingPendingEventtoNotifications();
           }
-          RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(this.event, this.views, this.reaction, (tsObj != null ? tsObj : 0), this.maxScore, this.score, this.isGraded);
+          RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(baseReport, this.views, this.reaction, (tsObj != null ? tsObj : 0), this.maxScore, this.score, this.isGraded, this.event.getEndTime());
           rdaEventDispatcher.sendCollectionStopEventToRDA();
           LTIEventDispatcher ltiEventDispatcher = new LTIEventDispatcher(baseReport, this.event, this.scoreObj, this.maxScore, this.score, this.isGraded);
           ltiEventDispatcher.sendCollPerfEventtoLTI();
@@ -345,7 +345,7 @@ class ProcessEventHandler implements DBHandler {
         if ((event.getEventName().equals(EventConstants.COLLECTION_RESOURCE_PLAY)) && event.getEventType().equalsIgnoreCase(EventConstants.STOP) && 
         		(isGraded == true)) {
             sendCRPEventtoGEP();
-            RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(this.event, this.views, this.reaction, this.timespent, this.maxScore, this.score, this.isGraded);
+            RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(baseReport, this.views, this.reaction, this.timespent, this.maxScore, this.score, this.isGraded, this.event.getEndTime());
             rdaEventDispatcher.sendCollectionResourcePlayEventToRDA();
           }
 

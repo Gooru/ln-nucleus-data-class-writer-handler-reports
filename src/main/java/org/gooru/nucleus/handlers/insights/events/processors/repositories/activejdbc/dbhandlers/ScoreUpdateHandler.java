@@ -208,7 +208,7 @@ public class ScoreUpdateHandler implements DBHandler {
             		  baseReports.get(AJEntityReporting.SESSION_ID));
               timeSpent = tsObject != null ? Long.valueOf(tsObject.toString()) : 0L;
         	  LTIEventDispatcher ltiEventDispatcher = new LTIEventDispatcher(baseReports, timeSpent, updated_at, rawScore, max_score, score, isGraded);
-        	  ltiEventDispatcher.sendTeacherGradingEventtoLTI();
+        	  ltiEventDispatcher.sendTeacherOverrideEventtoLTI();
               RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(this.baseReports, this.studentId, this.isGraded);
               rdaEventDispatcher.sendCollScoreUpdateEventFromSUHToRDA();
               

@@ -50,6 +50,11 @@
     }
     
     @Override
+    public MessageResponse updateDCAAssessmentScore() {
+      return TransactionExecutor.executeTransaction(DBHandlerBuilder.buildDCAScoreUpdateHandler(context));
+    }
+    
+    @Override
     public MessageResponse updateStudentSelfReportedScore() {
         return TransactionExecutor.executeTransaction(DBHandlerBuilder.buildStudentSelfReportingHandler(context));
       }
@@ -58,4 +63,14 @@
     public MessageResponse updateStudentSelfReportedScoreOnDCA() {
         return TransactionExecutor.executeTransaction(DBHandlerBuilder.buildDCAStudentSelfReportingHandler(context));
       }
+    
+    @Override
+    public MessageResponse insertOfflineStudentData() {
+        return TransactionExecutor.executeTransaction(DBHandlerBuilder.buildOfflineStudentReportingHandler(context));
+    }
+    
+    @Override
+    public MessageResponse insertDCAOfflineStudentData() {
+        return TransactionExecutor.executeTransaction(DBHandlerBuilder.buildDCAOfflineStudentReportingHandler(context));
+    }
   }

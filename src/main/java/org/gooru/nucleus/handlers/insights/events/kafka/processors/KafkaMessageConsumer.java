@@ -56,6 +56,9 @@ public class KafkaMessageConsumer implements Runnable {
         if (eventObject.containsKey(ConfigConstants._EVENT_NAME)
                 && eventObject.getString(ConfigConstants._EVENT_NAME).equalsIgnoreCase(EventConstants.RESOURCE_RUBRIC_GRADE)) {
           ProcessorBuilder.buildRubrics(eventObject).process();
+        } else if (eventObject.containsKey(ConfigConstants._EVENT_NAME)
+            && eventObject.getString(ConfigConstants._EVENT_NAME).equalsIgnoreCase(EventConstants.OFFLINE_STUDENT_EVENT)) {
+            ProcessorBuilder.buildOfflineStudentReportingProcessor(eventObject).process();
         } else {          
           ProcessorBuilder.build(eventObject).process();
         }
