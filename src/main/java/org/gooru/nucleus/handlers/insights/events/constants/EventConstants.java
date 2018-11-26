@@ -893,9 +893,7 @@ public class EventConstants {
 	public static final String CONTEXT_COLLECTION_ID = "contextCollectionId";
 	
 	public static final String CONTEXT_COLLECTION_TYPE = "contextCollectionType";
-	
-	public static final String OFFLINE_STUDENT_EVENT = "offline.student.perf";
-	
+		
 	private EventConstants() {
 		throw new AssertionError();
 	}

@@ -1,5 +1,12 @@
 *.class
-
+.gradle/
+.classpath
+.activejdbc_instrument
+.project
+.settings/
+bin/
+build/
+*.log
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/
 
