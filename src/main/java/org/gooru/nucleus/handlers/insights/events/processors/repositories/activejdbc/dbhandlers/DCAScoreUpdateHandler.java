@@ -88,12 +88,10 @@ public class DCAScoreUpdateHandler implements DBHandler {
       if (context.request().getString("userIdFromSession") != null) {
         List<Map> owner = Base.findAll(AJEntityClassAuthorizedUsers.SELECT_CLASS_OWNER, context.request().getString("class_id"),
                 context.request().getString("userIdFromSession"));
-        if (owner.isEmpty()) {
-          LOGGER.warn("User is not a teacher or collaborator");
-          // return new
-          // ExecutionResult<>(MessageResponseFactory.createForbiddenResponse("User
-          // is not a teacher/collaborator"), ExecutionStatus.FAILED);
-        }
+            if (owner.isEmpty()) {
+                LOGGER.warn("User is not a teacher or collaborator");
+                return new ExecutionResult<>(MessageResponseFactory.createForbiddenResponse("User is not a teacher/collaborator"), ExecutionStatus.FAILED);
+            }
       }
       LOGGER.debug("validateRequest() OK");
       return new ExecutionResult<>(null, ExecutionStatus.CONTINUE_PROCESSING);
