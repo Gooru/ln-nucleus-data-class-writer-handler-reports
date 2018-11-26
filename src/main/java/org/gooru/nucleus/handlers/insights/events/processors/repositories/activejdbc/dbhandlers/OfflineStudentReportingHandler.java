@@ -233,7 +233,7 @@ public class OfflineStudentReportingHandler implements DBHandler {
             LazyList<AJEntityReporting> duplicateRow;
             JsonArray resources = requestPayload.getJsonArray(RESOURCES);
             requestPayload.remove(RESOURCES);
-            this.questionCount = resources.size();
+            this.questionCount = 0;
             this.totalResMaxScore = 0.0;
             this.totalResScore = null;
             for (Object res : resources) {
@@ -254,32 +254,37 @@ public class OfflineStudentReportingHandler implements DBHandler {
                 if (localeDate != null) {
                     baseReport.setDateinTZ(localeDate);
                 }
-                                
-                Double score = resource.getDouble(AJEntityReporting.SCORE);
-                if (score != null) {
-                    String answerStatus = EventConstants.ATTEMPTED;
-                    if (score == 0) {
-                        answerStatus = EventConstants.INCORRECT;
-                    } else if (score == 1) {
-                        answerStatus = EventConstants.CORRECT;
-                    }
-
-                    Double totalResMaxScore = resource.getDouble(AJEntityReporting.MAX_SCORE);
-                    if (totalResMaxScore != null) {
-                        if (this.totalResScore != null) {
-                            this.totalResScore += score;
-                        } else {
-                            this.totalResScore = score;
+                
+                String resourceType = resource.getString(AJEntityReporting.RESOURCE_TYPE);
+                if (resourceType.equalsIgnoreCase(EventConstants.QUESTION)) {
+                    this.questionCount += 1;
+                    Double score = resource.getDouble(AJEntityReporting.SCORE);
+                    if (score != null) {
+                        String answerStatus = EventConstants.ATTEMPTED;
+                        if (score == 0) {
+                            answerStatus = EventConstants.INCORRECT;
+                        } else if (score == 1) {
+                            answerStatus = EventConstants.CORRECT;
                         }
 
-                        if (this.totalResMaxScore != null) {
-                            this.totalResMaxScore += totalResMaxScore;
-                        } else {
-                            this.totalResMaxScore = totalResMaxScore;
+                        Double totalResMaxScore = resource.getDouble(AJEntityReporting.MAX_SCORE);
+                        if (totalResMaxScore != null) {
+                            if (this.totalResScore != null) {
+                                this.totalResScore += score;
+                            } else {
+                                this.totalResScore = score;
+                            }
+
+                            if (this.totalResMaxScore != null) {
+                                this.totalResMaxScore += totalResMaxScore;
+                            } else {
+                                this.totalResMaxScore = totalResMaxScore;
+                            }
                         }
+                        baseReport.set(AJEntityReporting.RESOURCE_ATTEMPT_STATUS, answerStatus);
+                        this.isGraded = true;
+                        baseReport.setBoolean(AJEntityReporting.IS_GRADED, this.isGraded);
                     }
-                    baseReport.set(AJEntityReporting.RESOURCE_ATTEMPT_STATUS, answerStatus);
-                    baseReport.setBoolean(AJEntityReporting.IS_GRADED, true);
                 }
                 
                 long views = 1;
