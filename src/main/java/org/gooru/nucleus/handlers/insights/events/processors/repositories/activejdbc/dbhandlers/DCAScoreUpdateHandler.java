@@ -255,6 +255,7 @@ public class DCAScoreUpdateHandler implements DBHandler {
     	context.put(GEPConstants.COLLECTION_ID, dcaReports.get(AJEntityDailyClassActivity.COLLECTION_OID));
     	context.put(GEPConstants.COLLECTION_TYPE, dcaReports.get(AJEntityDailyClassActivity.COLLECTION_TYPE));
 
+    	context.put(GEPConstants.CONTENT_SOURCE, GEPConstants.DAILY_CLASS_ACTIVIY);
     	context.put(GEPConstants.PATH_TYPE, dcaReports.get(AJEntityDailyClassActivity.PATH_TYPE));
     	context.put(GEPConstants.PATH_ID, dcaReports.get(AJEntityDailyClassActivity.PATH_ID));
     	
@@ -299,7 +300,7 @@ public class DCAScoreUpdateHandler implements DBHandler {
     	context.put(GEPConstants.UNIT_ID, dcaReports.get(AJEntityDailyClassActivity.UNIT_GOORU_OID));
     	context.put(GEPConstants.LESSON_ID, dcaReports.get(AJEntityDailyClassActivity.LESSON_GOORU_OID));
     	context.put(GEPConstants.SESSION_ID, dcaReports.get(AJEntityDailyClassActivity.SESSION_ID));
-    	
+    	context.put(GEPConstants.CONTENT_SOURCE, GEPConstants.DAILY_CLASS_ACTIVIY);    	
     	context.put(GEPConstants.PATH_TYPE, dcaReports.get(AJEntityDailyClassActivity.PATH_TYPE));
     	context.put(GEPConstants.PATH_ID, dcaReports.get(AJEntityDailyClassActivity.PATH_ID));
     	
