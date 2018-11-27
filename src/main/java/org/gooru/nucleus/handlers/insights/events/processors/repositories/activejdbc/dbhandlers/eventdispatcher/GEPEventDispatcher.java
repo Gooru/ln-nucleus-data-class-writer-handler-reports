@@ -7,6 +7,7 @@ import org.gooru.nucleus.handlers.insights.events.constants.GEPConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.MessageDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityDailyClassActivity;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityReporting;
+import org.gooru.nucleus.handlers.insights.events.rda.processor.collection.CollectionEventConstants;
 import org.javalite.activejdbc.Model;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -102,6 +103,7 @@ public class GEPEventDispatcher {
         context.put(GEPConstants.SESSION_ID, report.getString(AJEntityDailyClassActivity.SESSION_ID));
         context.put(GEPConstants.PARTNER_ID, report.getString(AJEntityDailyClassActivity.PARTNER_ID));
         context.put(GEPConstants.TENANT_ID, report.getString(AJEntityDailyClassActivity.TENANT_ID));
+        context.put(GEPConstants.CONTENT_SOURCE, report.get(AJEntityDailyClassActivity.CONTENT_SOURCE));
 
         context.put(GEPConstants.PATH_TYPE, report.getString(AJEntityDailyClassActivity.PATH_TYPE));
         gepCRPEvent.put(GEPConstants.CONTEXT, context);
@@ -144,6 +146,7 @@ public class GEPEventDispatcher {
         context.put(GEPConstants.QUESTION_COUNT, report.getString(AJEntityDailyClassActivity.QUESTION_COUNT));
         context.put(GEPConstants.PARTNER_ID, report.getString(AJEntityDailyClassActivity.PARTNER_ID));
         context.put(GEPConstants.TENANT_ID, report.getString(AJEntityDailyClassActivity.TENANT_ID));
+        context.put(GEPConstants.CONTENT_SOURCE, report.get(AJEntityDailyClassActivity.CONTENT_SOURCE));
 
         context.put(GEPConstants.PATH_TYPE, report.getString(AJEntityDailyClassActivity.PATH_TYPE));
         gepCPEvent.put(GEPConstants.CONTEXT, context);
