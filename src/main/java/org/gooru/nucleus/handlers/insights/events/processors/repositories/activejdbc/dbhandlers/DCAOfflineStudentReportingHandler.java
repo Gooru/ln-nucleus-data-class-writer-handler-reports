@@ -1,8 +1,12 @@
 package org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers;
 
 import java.sql.Timestamp;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 
 import org.apache.commons.lang3.StringUtils;
 import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
@@ -54,7 +58,8 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
     private String userId;
     private JsonArray userIds;
     private Boolean isGraded;
-    
+    private SimpleDateFormat DATE_FORMAT_YMD = new SimpleDateFormat("yyyy-MM-dd");
+
     public DCAOfflineStudentReportingHandler(ProcessorContext context) {
         this.context = context;
     }
@@ -101,17 +106,28 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
         JsonObject requestPayload = context.request();
         String collectionId = requestPayload.getString(AJEntityDailyClassActivity.COLLECTION_OID);
         String collectionType = requestPayload.getString(AJEntityDailyClassActivity.COLLECTION_TYPE);
-        requestPayload.remove(USER_ID_FROM_SESSION);
-        requestPayload.remove(STUDENT_ID);
         
         long ts = System.currentTimeMillis();
-        if (requestPayload.getString(AJEntityDailyClassActivity.TIME_ZONE) != null) {
-            String timeZone = requestPayload.getString(AJEntityDailyClassActivity.TIME_ZONE);
-            localeDate = BaseUtil.UTCToLocale(ts, timeZone);
+        if (requestPayload.getString(AJEntityReporting.TIME_ZONE) != null) {
+            String timeZone = requestPayload.getString(AJEntityReporting.TIME_ZONE);
+            if (requestPayload.getString(EventConstants.CONDUCTED_ON) != null) {
+                try {
+                    DATE_FORMAT_YMD.setTimeZone(TimeZone.getTimeZone("Etc/UTC"));
+                    Date date = DATE_FORMAT_YMD.parse(requestPayload.getString(EventConstants.CONDUCTED_ON));
+                    localeDate = BaseUtil.UTCToLocale(date, timeZone);
+                } catch (ParseException e) {
+                    LOGGER.error("OSRH::Parse exception for conducted_on : {}", e.getMessage());
+                }
+            } else {
+                localeDate = BaseUtil.UTCToLocale(ts, timeZone);
+            }
             if (localeDate != null) {
                 dcaReport.setDateinTZ(localeDate);
             }
         }
+        requestPayload.remove(USER_ID_FROM_SESSION);
+        requestPayload.remove(STUDENT_ID);
+        requestPayload.remove(EventConstants.CONDUCTED_ON);
         
         if (requestPayload.containsKey(AJEntityDailyClassActivity.TIMESPENT) && requestPayload.getLong(AJEntityDailyClassActivity.TIMESPENT) != null) this.totalResTS = requestPayload.getLong(AJEntityDailyClassActivity.TIMESPENT);
         if (requestPayload.containsKey(AJEntityDailyClassActivity.REACTION) && requestPayload.getLong(AJEntityDailyClassActivity.REACTION) != null) this.reaction = requestPayload.getLong(AJEntityDailyClassActivity.REACTION);
@@ -169,6 +185,10 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
         dcaReport.set(AJEntityDailyClassActivity.EVENTTYPE, EventConstants.STOP);
         dcaReport.set(AJEntityDailyClassActivity.CREATE_TIMESTAMP, new Timestamp(ts));
         dcaReport.set(AJEntityDailyClassActivity.UPDATE_TIMESTAMP, new Timestamp(ts));
+        if (collectionType.contains(EventConstants.ASSESSMENT)) {
+            dcaReport.set(AJEntityReporting.GRADING_TYPE, EventConstants.TEACHER);
+            dcaReport.set(AJEntityReporting.IS_GRADED, this.isGraded);
+        }
         
         //Remove ALL the values from the Request that needed processing, so that the rest of the values from the request can be mapped to model
         removeProcessedFieldsFromPayload(requestPayload);

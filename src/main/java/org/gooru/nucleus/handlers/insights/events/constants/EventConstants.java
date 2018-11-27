@@ -893,6 +893,8 @@ public class EventConstants {
 	public static final String CONTEXT_COLLECTION_ID = "contextCollectionId";
 	
 	public static final String CONTEXT_COLLECTION_TYPE = "contextCollectionType";
+	
+	public static final String CONDUCTED_ON = "conducted_on";
 		
 	private EventConstants() {
 		throw new AssertionError();

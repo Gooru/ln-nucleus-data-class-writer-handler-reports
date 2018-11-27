@@ -35,4 +35,44 @@ public final class BaseUtil {
         return strLocaleDate;
     }
     
+    public static String UTCToLocale(Date utcDate, String timeZone) {
+
+        String strLocaleDate = null;
+        try {
+            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+            simpleDateFormat.setTimeZone(TimeZone.getTimeZone("Etc/UTC"));
+            String strUTCDate = simpleDateFormat.format(utcDate);
+            simpleDateFormat.setTimeZone(TimeZone.getTimeZone(timeZone));
+
+            strLocaleDate = simpleDateFormat.format(utcDate);
+
+            LOGGER.debug("UTC Date String: " + strUTCDate);
+            LOGGER.debug("Locale Date String: " + strLocaleDate);
+
+        } catch (Exception e) {
+            LOGGER.error(e.getMessage());
+        }
+
+        return strLocaleDate;
+    }
+    
+    public static String UTCToLocale(String utcStringDate, String timeZone) {
+        String strLocaleDate = null;
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        simpleDateFormat.setTimeZone(TimeZone.getTimeZone("Etc/UTC"));
+        try {
+            Date date = simpleDateFormat.parse(utcStringDate);
+            String strUTCDate = simpleDateFormat.format(date);
+            simpleDateFormat.setTimeZone(TimeZone.getTimeZone(timeZone));
+            strLocaleDate = simpleDateFormat.format(date);
+
+            LOGGER.debug("UTC Date String: " + strUTCDate);
+            LOGGER.debug("Locale Date String: " + strLocaleDate);
+
+        } catch (Exception e) {
+            LOGGER.error(e.getMessage());
+        }
+        return strLocaleDate;
+    }
+
 }

@@ -247,7 +247,8 @@ public class RDAEventDispatcher {
         context.put(CollectionEventConstants.EventAttributes.UNIT_ID, baseReports.get(AJEntityReporting.UNIT_GOORU_OID));
         context.put(CollectionEventConstants.EventAttributes.LESSON_ID, baseReports.get(AJEntityReporting.LESSON_GOORU_OID));
         context.put(CollectionEventConstants.EventAttributes.SESSION_ID, baseReports.get(AJEntityReporting.SESSION_ID));
-        
+        context.put(CollectionEventConstants.EventAttributes.CONTENT_SOURCE, baseReports.get(AJEntityReporting.CONTENT_SOURCE));
+
         context.put(CollectionEventConstants.EventAttributes.PATH_TYPE, baseReports.get(AJEntityReporting.PATH_TYPE));
         context.put(CollectionEventConstants.EventAttributes.PATH_ID, baseReports.get(AJEntityReporting.PATH_ID));
        
@@ -285,6 +286,7 @@ public class RDAEventDispatcher {
         context.put(CollectionEventConstants.EventAttributes.UNIT_ID, rubricGrading.get(AJEntityRubricGrading.UNIT_ID));
         context.put(CollectionEventConstants.EventAttributes.LESSON_ID, rubricGrading.get(AJEntityRubricGrading.LESSON_ID));
         context.put(CollectionEventConstants.EventAttributes.SESSION_ID, rubricGrading.get(AJEntityRubricGrading.SESSION_ID));
+        context.put(CollectionEventConstants.EventAttributes.CONTENT_SOURCE, baseReports.get(AJEntityReporting.CONTENT_SOURCE));
 
         cpEvent.put(CollectionEventConstants.EventAttributes.CONTEXT, context);
         
