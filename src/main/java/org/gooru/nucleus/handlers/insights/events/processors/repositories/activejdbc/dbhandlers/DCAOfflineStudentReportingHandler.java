@@ -7,6 +7,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.UUID;
 
 import org.apache.commons.lang3.StringUtils;
 import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
@@ -213,6 +214,7 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
                             dcaReport.set(key, this.dcaReport.get(key));
                         });
                         dcaReport.set(AJEntityReporting.GOORUUID, user.toString());
+                        dcaReport.set(AJEntityReporting.SESSION_ID, UUID.randomUUID().toString());
                         if (dcaReport.insert()) {
                             LOGGER.info("Offline student record (Ext-Coll) inserted successfully into Reports DB");
                             GEPEventDispatcher eventDispatcher = new GEPEventDispatcher(dcaReport, this.totalResTS, this.totalResMaxScore, this.totalResScore, System.currentTimeMillis());
