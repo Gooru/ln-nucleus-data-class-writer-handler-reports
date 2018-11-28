@@ -287,14 +287,13 @@ public class RubricGradingHandler implements DBHandler {
     	context.put(GEPConstants.LESSON_ID, rubricGrading.get(AJEntityRubricGrading.LESSON_ID));
     	context.put(GEPConstants.COLLECTION_ID, rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID));
     	context.put(GEPConstants.COLLECTION_TYPE, collectionType);
-    	
+    	//Currently Rubric grading is supported only for Course Map
+    	context.put(GEPConstants.CONTENT_SOURCE, GEPConstants.COURSE_MAP);    	
     	context.put(GEPConstants.CONTEXT_COLLECTION_ID, contextCollectionId);
     	context.put(GEPConstants.CONTEXT_COLLECTION_TYPE, contextCollectionType);
     	context.put(GEPConstants.PATH_ID, pathId);
-    	context.put(GEPConstants.PATH_TYPE, pathType);
-    	    	
+    	context.put(GEPConstants.PATH_TYPE, pathType);    	    	
     	context.put(GEPConstants.SESSION_ID, rubricGrading.get(AJEntityRubricGrading.SESSION_ID));
-
     	resEvent.put(GEPConstants.CONTEXT, context);
 
     	result.put(GEPConstants.SCORE, rubricGrading.get(AJEntityRubricGrading.STUDENT_SCORE));
@@ -329,13 +328,14 @@ public class RubricGradingHandler implements DBHandler {
     	cpEvent.put(GEPConstants.EVENT_ID, UUID.randomUUID().toString());
     	cpEvent.put(GEPConstants.EVENT_NAME, GEPConstants.COLL_SCORE_UPDATE_EVENT);
     	cpEvent.put(GEPConstants.COLLECTION_ID, rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID));
-    	cpEvent.put(GEPConstants.COLLECTION_TYPE, collectionType);
+    	cpEvent.put(GEPConstants.COLLECTION_TYPE, collectionType);    	
     	
     	context.put(GEPConstants.CONTEXT_COLLECTION_ID, contextCollectionId);
     	context.put(GEPConstants.CONTEXT_COLLECTION_TYPE, contextCollectionType);
     	context.put(GEPConstants.PATH_ID, pathId);
     	context.put(GEPConstants.PATH_TYPE, pathType);
-    	
+    	//Currently Rubric grading is supported only for Course Map
+    	context.put(GEPConstants.CONTENT_SOURCE, GEPConstants.COURSE_MAP);
     	context.put(GEPConstants.CLASS_ID, rubricGrading.get(AJEntityRubricGrading.CLASS_ID));
     	context.put(GEPConstants.COURSE_ID, rubricGrading.get(AJEntityRubricGrading.COURSE_ID));
     	context.put(GEPConstants.UNIT_ID, rubricGrading.get(AJEntityRubricGrading.UNIT_ID));

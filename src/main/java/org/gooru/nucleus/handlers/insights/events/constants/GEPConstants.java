@@ -19,6 +19,11 @@ public class GEPConstants {
 	public static final String PARTNER_ID = "partnerId";
 	public static final String TENANT_ID = "tenantId";
 	public static final String QUESTION = "question";
+	public static final String CONTENT_SOURCE = "contentSource";
+	public static final String COURSE_MAP = "coursemap";
+	public static final String ILACTIVITY = "ILActivity";
+	public static final String DAILY_CLASS_ACTIVIY = "dailyclassactivity";
+	public static final String COMPETENCY_MASTERY = "competencyMastery";
 	
 	public static final String ACTIVITY_TIME = "activityTime";
 	public static final String SCORE = "score";
@@ -39,7 +44,6 @@ public class GEPConstants {
 	public static final String CONTEXT_COLLECTION_ID = "contextCollectionId";
 	public static final String CONTEXT_COLLECTION_TYPE = "contextCollectionType";
 	public static final String PATH_TYPE = "pathType";
-	public static final String CONTENT_SOURCE = "contentSource";
 	
 	public static final String COLLECTION_PERF_EVENT = "collection.performance";
 	public static final String COLLECTION_START_EVENT = "collection.start";
