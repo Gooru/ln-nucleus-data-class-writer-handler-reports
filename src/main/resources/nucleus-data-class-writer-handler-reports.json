@@ -19,6 +19,9 @@
 	"org.gooru.nucleus.handlers.insights.events.bootstrap.SelfReportingVerticle": {
 		
 	},
+ 	"org.gooru.nucleus.handlers.insights.events.bootstrap.OfflineStudentReportingVerticle": {
+ 		
+ 	},
 	"org.gooru.nucleus.handlers.insights.events.bootstrap.MessageConsumerVerticle": {
 		"thead.pool.size": 10,
 		"defaultKafkaConsumerSettings": {

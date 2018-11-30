@@ -24,5 +24,9 @@ public final class ProcessorBuilder {
     public static Processor buildSelfReportingProcessor (Message<Object> message) {
         return new SelfReportingProcessor(message);
     }
+    
+    public static Processor buildOfflineStudentReportingProcessor(Message<Object> message) {
+        return new OfflineStudentReportingProcessor(message);
+    }
 
 }

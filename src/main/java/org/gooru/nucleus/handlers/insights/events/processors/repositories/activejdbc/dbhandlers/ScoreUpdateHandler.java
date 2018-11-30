@@ -85,9 +85,8 @@ public class ScoreUpdateHandler implements DBHandler {
                 context.request().getString("userIdFromSession"));
         if (owner.isEmpty()) {
           LOGGER.warn("User is not a teacher or collaborator");
-          // return new
-          // ExecutionResult<>(MessageResponseFactory.createForbiddenResponse("User
-          // is not a teacher/collaborator"), ExecutionStatus.FAILED);
+           return new
+           ExecutionResult<>(MessageResponseFactory.createForbiddenResponse("User is not a teacher/collaborator"), ExecutionStatus.FAILED);
         }
       }
       LOGGER.debug("validateRequest() OK");
@@ -208,7 +207,7 @@ public class ScoreUpdateHandler implements DBHandler {
             		  baseReports.get(AJEntityReporting.SESSION_ID));
               timeSpent = tsObject != null ? Long.valueOf(tsObject.toString()) : 0L;
         	  LTIEventDispatcher ltiEventDispatcher = new LTIEventDispatcher(baseReports, timeSpent, updated_at, rawScore, max_score, score, isGraded);
-        	  ltiEventDispatcher.sendTeacherGradingEventtoLTI();
+        	  ltiEventDispatcher.sendTeacherOverrideEventtoLTI();
               RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(this.baseReports, this.studentId, this.isGraded);
               rdaEventDispatcher.sendCollScoreUpdateEventFromSUHToRDA();
               
@@ -265,7 +264,7 @@ public class ScoreUpdateHandler implements DBHandler {
     	context.put(GEPConstants.LESSON_ID, baseReports.get(AJEntityReporting.LESSON_GOORU_OID));
     	context.put(GEPConstants.COLLECTION_ID, baseReports.get(AJEntityReporting.COLLECTION_OID));
     	context.put(GEPConstants.COLLECTION_TYPE, baseReports.get(AJEntityReporting.COLLECTION_TYPE));
-
+    	context.put(GEPConstants.CONTENT_SOURCE, GEPConstants.COURSE_MAP);
     	context.put(GEPConstants.PATH_TYPE, baseReports.get(AJEntityReporting.PATH_TYPE));
     	context.put(GEPConstants.PATH_ID, baseReports.get(AJEntityReporting.PATH_ID));
     	
@@ -310,7 +309,7 @@ public class ScoreUpdateHandler implements DBHandler {
     	context.put(GEPConstants.UNIT_ID, baseReports.get(AJEntityReporting.UNIT_GOORU_OID));
     	context.put(GEPConstants.LESSON_ID, baseReports.get(AJEntityReporting.LESSON_GOORU_OID));
     	context.put(GEPConstants.SESSION_ID, baseReports.get(AJEntityReporting.SESSION_ID));
-    	
+    	context.put(GEPConstants.CONTENT_SOURCE, GEPConstants.COURSE_MAP);
     	context.put(GEPConstants.PATH_TYPE, baseReports.get(AJEntityReporting.PATH_TYPE));
     	context.put(GEPConstants.PATH_ID, baseReports.get(AJEntityReporting.PATH_ID));
     	

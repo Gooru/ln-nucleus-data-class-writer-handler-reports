@@ -193,7 +193,8 @@ public class StudentSelfReportingHandler implements DBHandler {
 	    			baseReports.get(AJEntityReporting.SESSION_ID), EventConstants.COLLECTION_PLAY, EventConstants.STOP);
 	    	
 	    	StudentSelfReportingEventDispatcher eventDispatcher = new StudentSelfReportingEventDispatcher(baseReports); 
-	    	RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(baseReports, this.views, req.getLong(TIME_SPENT), this.finalMaxScore, this.finalScore, true, this.eventTime);
+	    	RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(baseReports, this.views, null, req.getLong(TIME_SPENT), this.finalMaxScore, this.finalScore, true, this.eventTime);
+
 	    	if (duplicateRow == null || duplicateRow.isEmpty()) {
 	    		boolean result = baseReports.save();    		
 		    	
@@ -234,7 +235,7 @@ public class StudentSelfReportingHandler implements DBHandler {
 	                
 	                LOGGER.info("Student Self grades for External Assessments stored successfully " + req);
 	                eventDispatcher.sendSelfReportEventtoNotifications();
-	                rdaEventDispatcher = new RDAEventDispatcher(baseReports, this.views, req.getLong(TIME_SPENT), this.finalMaxScore, this.finalScore, true, this.eventTime);
+	                rdaEventDispatcher = new RDAEventDispatcher(baseReports, this.views, null, req.getLong(TIME_SPENT), this.finalMaxScore, this.finalScore, true, this.eventTime);
 	                rdaEventDispatcher.sendSelfGradeEventToRDA();
 	                return new ExecutionResult<>(MessageResponseFactory.createOkayResponse(), ExecutionStatus.SUCCESSFUL);
 	    		

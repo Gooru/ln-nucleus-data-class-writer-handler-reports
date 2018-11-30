@@ -60,6 +60,10 @@ public class CollectionEventProcessor implements Processor {
                 result = processStudentSelfGradeDataForRDA();
                 LOGGER.info("RDA: Student Self Grade Event successfully processed");
                 break;
+            case CollectionEventConstants.EventAttributes.OFFLINE_STUDENT_COLLECTION_PERF_EVENT:
+                result = processOfflineStudentPerfForRDA();
+                LOGGER.info("RDA: Student Offline Perf Event successfully processed");
+                break;
             default:
                 LOGGER.error("Invalid operation type passed in, not able to handle");
                 return MessageResponseFactory.createInvalidRequestResponse(RESOURCE_BUNDLE.getString("invalid.operation"));
@@ -108,6 +112,15 @@ public class CollectionEventProcessor implements Processor {
         }
     }
 
+    private MessageResponse processOfflineStudentPerfForRDA() {
+        try {
+            return RepoBuilder.buildReportDataAggregateRepo(context).processOfflineStudentPerfForRDA();
+        } catch (Throwable t) {
+            LOGGER.error("Exception while processing Offline Student Perf for RDA ", t.getMessage());
+            return MessageResponseFactory.createInternalErrorResponse(t.getMessage());
+        }
+    }
+    
     private RDAProcessorContext createContext() {
         try {
             event = new CollectionEventParser(request.toString());

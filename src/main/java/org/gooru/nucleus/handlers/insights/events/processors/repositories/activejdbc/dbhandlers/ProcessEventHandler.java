@@ -318,7 +318,7 @@ class ProcessEventHandler implements DBHandler {
 
           if ((event.getEventName().equals(EventConstants.COLLECTION_PLAY)) && event.getEventType().equalsIgnoreCase(EventConstants.START)) {              
         	  sendCollStartEventtoGEP();
-        	  RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(this.event, this.views, this.reaction, this.timespent, this.maxScore, this.score, this.isGraded);
+        	  RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(baseReport, this.views, this.reaction, this.timespent, this.maxScore, this.score, this.isGraded, this.event.getEndTime());
         	  rdaEventDispatcher.sendCollectionStartEventToRDA();
           }
          
@@ -335,7 +335,7 @@ class ProcessEventHandler implements DBHandler {
         	  GradingPendingEventDispatcher eventDispatcher = new GradingPendingEventDispatcher(baseReport);
         	  eventDispatcher.sendGradingPendingEventtoNotifications();
           }
-          RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(this.event, this.views, this.reaction, (tsObj != null ? tsObj : 0), this.maxScore, this.score, this.isGraded);
+          RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(baseReport, this.views, this.reaction, (tsObj != null ? tsObj : 0), this.maxScore, this.score, this.isGraded, this.event.getEndTime());
           rdaEventDispatcher.sendCollectionStopEventToRDA();
           LTIEventDispatcher ltiEventDispatcher = new LTIEventDispatcher(baseReport, this.event, this.scoreObj, this.maxScore, this.score, this.isGraded);
           ltiEventDispatcher.sendCollPerfEventtoLTI();
@@ -345,7 +345,7 @@ class ProcessEventHandler implements DBHandler {
         if ((event.getEventName().equals(EventConstants.COLLECTION_RESOURCE_PLAY)) && event.getEventType().equalsIgnoreCase(EventConstants.STOP) && 
         		(isGraded == true)) {
             sendCRPEventtoGEP();
-            RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(this.event, this.views, this.reaction, this.timespent, this.maxScore, this.score, this.isGraded);
+            RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(baseReport, this.views, this.reaction, this.timespent, this.maxScore, this.score, this.isGraded, this.event.getEndTime());
             rdaEventDispatcher.sendCollectionResourcePlayEventToRDA();
           }
 
@@ -430,17 +430,17 @@ class ProcessEventHandler implements DBHandler {
 	  }
   
   private void sendCollStartEventtoGEP() {
-
-	  JsonObject gepEvent = createCollStartEvent();
-	  JsonObject result = new JsonObject();
 	  
-	  result.putNull(GEPConstants.SCORE);
-	  result.putNull(GEPConstants.MAX_SCORE);
-	  result.put(GEPConstants.TIMESPENT, 0.0);
-    	
-	  gepEvent.put(GEPConstants.RESULT, result);
-	  
-	    try {
+	    try {	    	
+	  	  JsonObject gepEvent = createCollStartEvent();
+		  JsonObject result = new JsonObject();
+		  
+		  result.putNull(GEPConstants.SCORE);
+		  result.putNull(GEPConstants.MAX_SCORE);
+		  result.put(GEPConstants.TIMESPENT, 0.0);
+	    	
+		  gepEvent.put(GEPConstants.RESULT, result);
+		  
 	      LOGGER.debug("The Collection Start GEP Event is : {} ", gepEvent);
 	      MessageDispatcher.getInstance().sendGEPEvent2Kafka(TOPIC_GEP_USAGE_EVENTS, gepEvent);
 	      LOGGER.info("Successfully dispatched Collection Start GEP Event..");
@@ -452,43 +452,44 @@ class ProcessEventHandler implements DBHandler {
   
   private void sendCRPEventtoGEP() {
 	    
-	    JsonObject gepEvent = createCRPEvent();
-	    JsonObject result = new JsonObject();
-
-	    //Currently there are no EVENTS generated for EXTERNAL_C/A. 
-//		if (event.getCollectionType().equalsIgnoreCase(EventConstants.EXTERNAL_ASSESSMENT) || 
-//				event.getCollectionType().equalsIgnoreCase(EventConstants.EXTERNAL_COLLECTION)) {
-//			
-//		}
-	    
-	    if (event.getResourceType().equals(EventConstants.QUESTION)) {
-  			if (event.getAnswerStatus().equalsIgnoreCase(EventConstants.INCORRECT)  
-  					|| event.getAnswerStatus().equalsIgnoreCase(EventConstants.CORRECT) 
-  					|| event.getAnswerStatus().equalsIgnoreCase(EventConstants.SKIPPED)) {
-  				double sco = event.getScore();
-  				double max_sco = event.getMaxScore();
-  				if (max_sco > 0.0) {
-  					result.put(GEPConstants.SCORE, ((sco * 100) / max_sco));
-  					result.put(GEPConstants.MAX_SCORE, max_sco);
-  				} else {
-  					//TODO: Should the score be sent as NULL or 0.0
-  					result.putNull(GEPConstants.SCORE);
-  					result.put(GEPConstants.MAX_SCORE, 0.0);
-  				}  				
-  			} else if (event.getAnswerStatus().equalsIgnoreCase(EventConstants.ATTEMPTED)) { 
-  				result.putNull(GEPConstants.SCORE);
-  				result.put(GEPConstants.MAX_SCORE, 0.0);
-  		  	}   	    	
-	    } else if (event.getResourceType().equals(EventConstants.RESOURCE)) {
-	    	result.putNull(GEPConstants.SCORE);
-	    	result.putNull(GEPConstants.MAX_SCORE);
-	    }
-	    
-	    result.put(GEPConstants.TIMESPENT, event.getTimespent());
-	    result.put(GEPConstants.ANSWER_STATUS, event.getAnswerStatus());
-    	gepEvent.put(GEPConstants.RESULT, result);
-    	
 	    try {
+	    	
+		    JsonObject gepEvent = createCRPEvent();
+		    JsonObject result = new JsonObject();
+
+		    //Currently there are no EVENTS generated for EXTERNAL_C/A. 
+//			if (event.getCollectionType().equalsIgnoreCase(EventConstants.EXTERNAL_ASSESSMENT) || 
+//					event.getCollectionType().equalsIgnoreCase(EventConstants.EXTERNAL_COLLECTION)) {
+//				
+//			}
+		    
+		    if (event.getResourceType().equals(EventConstants.QUESTION)) {
+	  			if (event.getAnswerStatus().equalsIgnoreCase(EventConstants.INCORRECT)  
+	  					|| event.getAnswerStatus().equalsIgnoreCase(EventConstants.CORRECT) 
+	  					|| event.getAnswerStatus().equalsIgnoreCase(EventConstants.SKIPPED)) {
+	  				double sco = event.getScore();
+	  				double max_sco = event.getMaxScore();
+	  				if (max_sco > 0.0) {
+	  					result.put(GEPConstants.SCORE, ((sco * 100) / max_sco));
+	  					result.put(GEPConstants.MAX_SCORE, max_sco);
+	  				} else {
+	  					//TODO: Should the score be sent as NULL or 0.0
+	  					result.putNull(GEPConstants.SCORE);
+	  					result.put(GEPConstants.MAX_SCORE, 0.0);
+	  				}  				
+	  			} else if (event.getAnswerStatus().equalsIgnoreCase(EventConstants.ATTEMPTED)) { 
+	  				result.putNull(GEPConstants.SCORE);
+	  				result.put(GEPConstants.MAX_SCORE, 0.0);
+	  		  	}   	    	
+		    } else if (event.getResourceType().equals(EventConstants.RESOURCE)) {
+		    	result.putNull(GEPConstants.SCORE);
+		    	result.putNull(GEPConstants.MAX_SCORE);
+		    }
+		    
+		    result.put(GEPConstants.TIMESPENT, event.getTimespent());
+		    result.put(GEPConstants.ANSWER_STATUS, event.getAnswerStatus());
+	    	gepEvent.put(GEPConstants.RESULT, result);
+	    	
 	      LOGGER.debug("The Collection Resource GEP Event is : {} ", gepEvent);
 	      MessageDispatcher.getInstance().sendGEPEvent2Kafka(TOPIC_GEP_USAGE_EVENTS, gepEvent);
 	      LOGGER.info("Successfully dispatched Collection Resource GEP Event..");
@@ -519,7 +520,7 @@ class ProcessEventHandler implements DBHandler {
         context.put(GEPConstants.QUESTION_COUNT, event.getQuestionCount());
         context.put(GEPConstants.PARTNER_ID, event.getPartnerId());        
         context.put(GEPConstants.TENANT_ID, event.getTenantId());  
-        
+        context.put(GEPConstants.CONTENT_SOURCE, event.getContentSource());
         context.put(GEPConstants.PATH_TYPE, event.getPathType());
         
         cpEvent.put(GEPConstants.CONTEXT, context);
@@ -550,6 +551,7 @@ class ProcessEventHandler implements DBHandler {
 	  context.put(GEPConstants.PARTNER_ID, event.getPartnerId());
 	  context.put(GEPConstants.TENANT_ID, event.getTenantId());            
 
+	  context.put(GEPConstants.CONTENT_SOURCE, event.getContentSource());
       context.put(GEPConstants.PATH_TYPE, event.getPathType());
 	  cpEvent.put(GEPConstants.CONTEXT, context);
 
@@ -560,7 +562,7 @@ class ProcessEventHandler implements DBHandler {
 	    JsonObject resEvent = new JsonObject();
 	    JsonObject context = new JsonObject();	    
 	    
-	    resEvent.put(GEPConstants.USER_ID, event.getGooruUUID());
+	  resEvent.put(GEPConstants.USER_ID, event.getGooruUUID());
       resEvent.put(GEPConstants.ACTIVITY_TIME, event.getEndTime());
       resEvent.put(GEPConstants.EVENT_ID, event.getEventId());
       resEvent.put(GEPConstants.EVENT_NAME, GEPConstants.RESOURCE_PERF_EVENT);
@@ -575,6 +577,7 @@ class ProcessEventHandler implements DBHandler {
       context.put(GEPConstants.COLLECTION_TYPE, event.getCollectionType());
       context.put(GEPConstants.CONTEXT_COLLECTION_ID,event.getContextCollectionId());
       context.put(GEPConstants.CONTEXT_COLLECTION_TYPE, event.getContextCollectionType());
+      context.put(GEPConstants.CONTENT_SOURCE, event.getContentSource());
       context.put(GEPConstants.PATH_ID, event.getPathId());
       context.put(GEPConstants.SESSION_ID, event.getSessionId());
       context.put(GEPConstants.PARTNER_ID, event.getPartnerId());
