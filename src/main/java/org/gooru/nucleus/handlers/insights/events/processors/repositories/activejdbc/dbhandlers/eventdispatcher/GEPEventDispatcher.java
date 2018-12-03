@@ -21,7 +21,9 @@ import io.vertx.core.json.JsonObject;
 public class GEPEventDispatcher {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GEPEventDispatcher.class);
-    public static final String TOPIC_GEP = "gep";
+	//TODO: This Kafka Topic name needs to be picked up from config
+	public static final String TOPIC_GEP = "org.gooru.da.sink.logW.usage.events";
+    //public static final String TOPIC_GEP = "gep";
     private AJEntityReporting baseReports;
     private AJEntityDailyClassActivity dcaReport;
     private long activityTime;
