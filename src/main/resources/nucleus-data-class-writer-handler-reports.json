@@ -8,6 +8,22 @@
 		"jdbcUrl": "jdbc:postgresql://localhost:5432/nucleus",
 		"maximumPoolSize": 20
 	},
+	"coreDataSource": {
+		"nucleus.ds.type": "hikari",
+		"username": "nucleus",
+		"password": "nucleus",
+		"autoCommit": false,
+		"jdbcUrl": "jdbc:postgresql://localhost:5432/nucleus",
+		"maximumPoolSize": 20
+	},
+	"dsDataSource": {
+		"nucleus.ds.type": "hikari",
+		"username": "nucleus",
+		"password": "nucleus",
+		"autoCommit": false,
+		"jdbcUrl": "jdbc:postgresql://localhost:5432/nucleus",
+		"maximumPoolSize": 20
+	},
 	"cassandra": {
 		"hosts": "localhost",
 		"keyspace": "event_logger_insights",
