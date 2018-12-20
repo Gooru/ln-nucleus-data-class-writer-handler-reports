@@ -1,7 +1,7 @@
 package org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers;
 
+import io.netty.util.internal.StringUtil;
 import java.sql.Timestamp;
-
 import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.insights.events.processors.events.EventParser;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityUserTaxonomySubject;
@@ -13,14 +13,11 @@ import org.javalite.activejdbc.Base;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.netty.util.internal.StringUtil;
-
 /**
- * 
  * @author daniel
- *
  */
 public class UserTaxonomySubjectHandler implements DBHandler {
+
   private static final Logger LOGGER = LoggerFactory.getLogger(UserTaxonomySubjectHandler.class);
   private final ProcessorContext context;
   private AJEntityUserTaxonomySubject userTaxonomySubject;
@@ -34,8 +31,9 @@ public class UserTaxonomySubjectHandler implements DBHandler {
   public ExecutionResult<MessageResponse> checkSanity() {
     if (context.request() == null || context.request().isEmpty()) {
       LOGGER.warn("invalid request received");
-      return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse("Invalid data received to process events"),
-              ExecutionStatus.FAILED);
+      return new ExecutionResult<>(MessageResponseFactory
+          .createInvalidRequestResponse("Invalid data received to process events"),
+          ExecutionStatus.FAILED);
     }
 
     LOGGER.debug("checkSanity() OK");
@@ -54,23 +52,27 @@ public class UserTaxonomySubjectHandler implements DBHandler {
     event = context.getEvent();
     if (!StringUtil.isNullOrEmpty(event.getCourseGooruId())) {
       // Get Subject ID for this course
-      Object taxSubjectId = Base.firstCell(AJEntityUserTaxonomySubject.SELECT_SUBJECT_ID_BY_COURSE, event.getCourseGooruId());
+      Object taxSubjectId = Base.firstCell(AJEntityUserTaxonomySubject.SELECT_SUBJECT_ID_BY_COURSE,
+          event.getCourseGooruId());
       if (taxSubjectId != null) {
         userTaxonomySubject = new AJEntityUserTaxonomySubject();
         userTaxonomySubject.set(AJEntityUserTaxonomySubject.COURSE_ID, event.getCourseGooruId());
         userTaxonomySubject.set(AJEntityUserTaxonomySubject.ACTOR_ID, event.getGooruUUID());
         userTaxonomySubject.set(AJEntityUserTaxonomySubject.TAX_SUBJECT_ID, taxSubjectId);
-        userTaxonomySubject.set(AJEntityUserTaxonomySubject.UPDATED_AT, new Timestamp(event.getEndTime()));
-        userTaxonomySubject.set(AJEntityUserTaxonomySubject.CLASS_ID,event.getClassGooruId());
+        userTaxonomySubject
+            .set(AJEntityUserTaxonomySubject.UPDATED_AT, new Timestamp(event.getEndTime()));
+        userTaxonomySubject.set(AJEntityUserTaxonomySubject.CLASS_ID, event.getClassGooruId());
         if (userTaxonomySubject.isValid()) {
           if (userTaxonomySubject.insert()) {
             LOGGER.info("Successfully inserted in UserTaxonomySubject");
           } else {
-            LOGGER.error("Error while inserting in UserTaxonomySubject :" + context.request().toString());
+            LOGGER.error(
+                "Error while inserting in UserTaxonomySubject :" + context.request().toString());
           }
         } else {
           LOGGER.warn("Event validation error");
-          return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(), ExecutionStatus.FAILED);
+          return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(),
+              ExecutionStatus.FAILED);
         }
       } else {
         LOGGER.debug("Don't process if tax subject id is NULL");
@@ -78,7 +80,8 @@ public class UserTaxonomySubjectHandler implements DBHandler {
     } else {
       LOGGER.debug("Don't process if couse id is NULL");
     }
-    return new ExecutionResult<>(MessageResponseFactory.createCreatedResponse(), ExecutionStatus.SUCCESSFUL);
+    return new ExecutionResult<>(MessageResponseFactory.createCreatedResponse(),
+        ExecutionStatus.SUCCESSFUL);
   }
 
   @Override

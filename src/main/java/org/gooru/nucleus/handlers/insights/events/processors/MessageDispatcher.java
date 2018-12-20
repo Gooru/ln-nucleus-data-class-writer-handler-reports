@@ -1,5 +1,6 @@
 package org.gooru.nucleus.handlers.insights.events.processors;
 
+import io.vertx.core.json.JsonObject;
 import org.apache.kafka.clients.producer.BufferExhaustedException;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -9,9 +10,8 @@ import org.gooru.nucleus.handlers.insights.events.app.components.KafkaRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.vertx.core.json.JsonObject;
-
 public final class MessageDispatcher {
+
   private static final MessageDispatcher INSTANCE = new MessageDispatcher();
   private static final Logger LOGGER = LoggerFactory.getLogger(MessageDispatcher.class);
 
@@ -30,15 +30,15 @@ public final class MessageDispatcher {
   }
 
   public void sendGEPEvent2Kafka(String topic, JsonObject eventBody) {
-	    //String topic = KafkaRegistry.getInstance().getKafkaTopicFromConfig(attrTopic);
-	    sendMessageToKafka(topic, eventBody);
-	  }
-  
+    //String topic = KafkaRegistry.getInstance().getKafkaTopicFromConfig(attrTopic);
+    sendMessageToKafka(topic, eventBody);
+  }
+
   public void sendEvent2Kafka(String attrTopic, JsonObject eventBody) {
-	    String topic = KafkaRegistry.getInstance().getKafkaTopicFromConfig(attrTopic);
-	    sendMessageToKafka(topic, eventBody);
-	  }
-  
+    String topic = KafkaRegistry.getInstance().getKafkaTopicFromConfig(attrTopic);
+    sendMessageToKafka(topic, eventBody);
+  }
+
   private void sendMessageToKafka(String topic, JsonObject eventBody) {
     Producer<String, String> producer = KafkaRegistry.getInstance().getKafkaProducer();
     ProducerRecord<String, String> kafkaMsg;
@@ -49,10 +49,13 @@ public final class MessageDispatcher {
       if (producer != null) {
         producer.send(kafkaMsg, (metadata, exception) -> {
           if (exception == null) {
-            LOGGER.info("Message Delivered Successfully: Offset : " + metadata.offset() + " : Topic : " + metadata.topic() + " : Partition : "
+            LOGGER.info(
+                "Message Delivered Successfully: Offset : " + metadata.offset() + " : Topic : "
+                    + metadata.topic() + " : Partition : "
                     + metadata.partition() + " : Message : " + kafkaMsg);
           } else {
-            LOGGER.error("Message Could not be delivered : " + kafkaMsg + ". Cause: " + exception.getMessage());
+            LOGGER.error("Message Could not be delivered : " + kafkaMsg + ". Cause: " + exception
+                .getMessage());
           }
         });
         LOGGER.debug("Message Sent Successfully: " + kafkaMsg);

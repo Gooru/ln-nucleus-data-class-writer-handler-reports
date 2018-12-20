@@ -7,11 +7,11 @@ import java.util.List;
  */
 public final class JsonFormatterBuilder {
 
-    private JsonFormatterBuilder() {
-    }
+  private JsonFormatterBuilder() {
+  }
 
-    public static JsonFormatter buildSimpleJsonFormatter(boolean pretty, List<String> attributes) {
+  public static JsonFormatter buildSimpleJsonFormatter(boolean pretty, List<String> attributes) {
 
-        return new SimpleJsonFormatter(pretty, attributes);
-    }
+    return new SimpleJsonFormatter(pretty, attributes);
+  }
 }
