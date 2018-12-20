@@ -2,6 +2,7 @@ package org.gooru.nucleus.handlers.insights.events.processors.repositories.activ
 
 import java.sql.SQLException;
 import java.util.ResourceBundle;
+import javax.sql.DataSource;
 import org.gooru.nucleus.handlers.insights.events.app.components.DataSourceRegistry;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.DBHandler;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult;
@@ -34,11 +35,22 @@ public final class TransactionExecutor {
 
   }
 
-  private static ExecutionResult<MessageResponse> executeWithTransaction(DBHandler handler) {
-    ExecutionResult<MessageResponse> executionResult;
+  public static MessageResponse executeTransaction(DBHandler handler, DataSource dataSource) {
+    // First validations without any DB
+    ExecutionResult<MessageResponse> executionResult = handler.checkSanity();
+    // Now we need to run with transaction, if we are going to continue
+    if (executionResult.continueProcessing()) {
+      executionResult = executeWithTransaction(handler, dataSource);
+    }
+    return executionResult.result();
 
+  }
+
+  private static ExecutionResult<MessageResponse> executeWithTransaction(DBHandler handler,
+      DataSource dataSource) {
+    ExecutionResult<MessageResponse> executionResult;
     try {
-      Base.open(DataSourceRegistry.getInstance().getDefaultDataSource());
+      Base.open(dataSource);
       // If we need a read only transaction, then it is time to set up now
       if (handler.handlerReadOnly()) {
         Base.connection().setReadOnly(true);
@@ -76,5 +88,10 @@ public final class TransactionExecutor {
       }
       Base.close();
     }
+  }
+
+  private static ExecutionResult<MessageResponse> executeWithTransaction(DBHandler handler) {
+    DataSource dataSource = DataSourceRegistry.getInstance().getDefaultDataSource();
+    return executeWithTransaction(handler, dataSource);
   }
 }

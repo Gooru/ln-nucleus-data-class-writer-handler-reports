@@ -17,6 +17,8 @@ import org.slf4j.LoggerFactory;
 public class DataSourceRegistry implements Initializer, Finalizer {
 
   private static final String DEFAULT_DATA_SOURCE = "defaultDataSource";
+  private static final String CORE_DATA_SOURCE = "coreDataSource";
+  private static final String DS_DATA_SOURCE = "dsDataSource";
   private static final String DEFAULT_DATA_SOURCE_TYPE = "nucleus.ds.type";
   private static final String DS_HIKARI = "hikari";
   private static final Logger LOGGER = LoggerFactory.getLogger(DataSourceRegistry.class);
@@ -63,6 +65,14 @@ public class DataSourceRegistry implements Initializer, Finalizer {
 
   public DataSource getDefaultDataSource() {
     return registry.get(DEFAULT_DATA_SOURCE);
+  }
+
+  public DataSource getCoreDataSource() {
+    return registry.get(CORE_DATA_SOURCE);
+  }
+
+  public DataSource getDsDataSource() {
+    return registry.get(DS_DATA_SOURCE);
   }
 
   public DataSource getDataSourceByName(String name) {
