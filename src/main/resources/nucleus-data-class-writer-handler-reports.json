@@ -35,6 +35,9 @@
 	"org.gooru.nucleus.handlers.insights.events.bootstrap.SelfReportingVerticle": {
 		
 	},
+	"org.gooru.nucleus.handlers.insights.events.bootstrap.PostProcessingVerticle": {
+		"workerPoolSize" : 40
+	},
  	"org.gooru.nucleus.handlers.insights.events.bootstrap.OfflineStudentReportingVerticle": {
  		
  	},

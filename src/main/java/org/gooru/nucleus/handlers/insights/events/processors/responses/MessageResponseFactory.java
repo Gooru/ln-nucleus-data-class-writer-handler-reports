@@ -50,9 +50,9 @@ public final class MessageResponseFactory {
 
   }
 
-  public static MessageResponse createNoContentResponse(String message) {
+  public static MessageResponse createNoContentResponse() {
     return new MessageResponse.Builder().successful().setStatusNoOutput()
-        .setResponseBody(new JsonObject().put(MessageConstants.MSG_MESSAGE, message)).build();
+        .setResponseBody(new JsonObject()).build();
   }
 
   //Mukul

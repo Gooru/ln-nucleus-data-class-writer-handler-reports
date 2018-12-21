@@ -16,6 +16,7 @@ public final class MessagebusEndpoints {
 
   //Student Offline Report
   public static final String MBEP_ANALYTICS_OFFLINE_REPORT = "org.gooru.nucleus.message.bus.analytics.offline.report";
+  public static final String MBEP_POSTPROCESSOR = "org.gooru.nucleus.message.bus.analytics.postprocessor";
 
   private MessagebusEndpoints() {
     throw new AssertionError();

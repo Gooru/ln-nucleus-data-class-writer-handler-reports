@@ -25,7 +25,8 @@ public class DataSourceRegistry implements Initializer, Finalizer {
   // All the elements in this array are supposed to be present in config file
   // as keys as we are going to initialize them with the value associated with
   // that key
-  private final List<String> datasources = Arrays.asList(DEFAULT_DATA_SOURCE);
+  private final List<String> datasources = Arrays
+      .asList(DEFAULT_DATA_SOURCE, CORE_DATA_SOURCE, DS_DATA_SOURCE);
   private final Map<String, DataSource> registry = new HashMap<>();
   private volatile boolean initialized;
 
