@@ -4,19 +4,18 @@ import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageRe
 
 /**
  * @author renuka@gooru
- *  
  */
 public interface ReportDataAggregateRepo {
 
-    MessageResponse processCollectionStartDataForRDA();
+  MessageResponse processCollectionStartDataForRDA();
 
-    MessageResponse processCollectionStopDataForRDA();
+  MessageResponse processCollectionStopDataForRDA();
 
-    MessageResponse processResourceStopDataForRDA();
+  MessageResponse processResourceStopDataForRDA();
 
-    MessageResponse processCollScoreUpdateDataForRDA();
+  MessageResponse processCollScoreUpdateDataForRDA();
 
-    MessageResponse processStudentSelfGradeDataForRDA();
+  MessageResponse processStudentSelfGradeDataForRDA();
 
-    MessageResponse processOfflineStudentPerfForRDA();
+  MessageResponse processOfflineStudentPerfForRDA();
 }

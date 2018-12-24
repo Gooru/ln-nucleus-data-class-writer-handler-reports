@@ -4,13 +4,14 @@ package org.gooru.nucleus.handlers.insights.events.processors.repositories.activ
  * Created by ashish on 28/1/16.
  */
 public interface ValidatorRegistry {
-    FieldValidator lookupValidator(String fieldName);
 
-    default FieldValidator noopSuccessValidator(String fieldName) {
-        return (n) -> true;
-    }
+  FieldValidator lookupValidator(String fieldName);
 
-    default FieldValidator noopFailedValidator(String fieldName) {
-        return (n) -> false;
-    }
+  default FieldValidator noopSuccessValidator(String fieldName) {
+    return (n) -> true;
+  }
+
+  default FieldValidator noopFailedValidator(String fieldName) {
+    return (n) -> false;
+  }
 }

@@ -4,10 +4,9 @@ import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageRe
 
 /**
  * @author mukul@gooru
- *  
  */
 public interface KafkaProcessor {
 
-	MessageResponse process();
+  MessageResponse process();
 
 }

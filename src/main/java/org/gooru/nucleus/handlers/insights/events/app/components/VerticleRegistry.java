@@ -5,8 +5,7 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * This is repository for verticles which needs to be deployed by
- * {@link DeployVerticle}
+ * This is repository for verticles which needs to be deployed by {@link DeployVerticle}
  *
  * @author Insights Team
  */

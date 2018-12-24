@@ -1,8 +1,12 @@
 package org.gooru.nucleus.handlers.insights.events.bootstrap;
 
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.CompositeFuture;
+import io.vertx.core.DeploymentOptions;
+import io.vertx.core.Future;
+import io.vertx.core.json.JsonObject;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.gooru.nucleus.handlers.insights.events.app.components.VerticleRegistry;
 import org.gooru.nucleus.handlers.insights.events.bootstrap.shutdown.Finalizer;
 import org.gooru.nucleus.handlers.insights.events.bootstrap.shutdown.Finalizers;
@@ -10,12 +14,6 @@ import org.gooru.nucleus.handlers.insights.events.bootstrap.startup.Initializer;
 import org.gooru.nucleus.handlers.insights.events.bootstrap.startup.Initializers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import io.vertx.core.AbstractVerticle;
-import io.vertx.core.CompositeFuture;
-import io.vertx.core.DeploymentOptions;
-import io.vertx.core.Future;
-import io.vertx.core.json.JsonObject;
 
 /**
  * @author Insights Team
@@ -100,10 +98,10 @@ public class DeployVerticle extends AbstractVerticle {
       futures.add(deployFuture);
       LOGGER.debug("Full Config :::" + config());
       JsonObject config = config().getJsonObject(verticleName);
-      
-      LOGGER.debug("verticleName :: " +verticleName);
-      
-      LOGGER.debug("verticleName config :: " +config);
+
+      LOGGER.debug("verticleName :: " + verticleName);
+
+      LOGGER.debug("verticleName config :: " + config);
 
       if (config.isEmpty()) {
         vertx.deployVerticle(verticleName, deployFuture.completer());

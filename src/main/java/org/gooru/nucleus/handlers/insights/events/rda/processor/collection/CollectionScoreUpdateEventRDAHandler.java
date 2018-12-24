@@ -14,62 +14,70 @@ import org.slf4j.LoggerFactory;
 
 /**
  * @author renuka@gooru
- * 
  */
 public class CollectionScoreUpdateEventRDAHandler implements DBHandler {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(CollectionScoreUpdateEventRDAHandler.class);
-    private final RDAProcessorContext context;
-    private CollectionEventParser event;
+  private static final Logger LOGGER = LoggerFactory
+      .getLogger(CollectionScoreUpdateEventRDAHandler.class);
+  private final RDAProcessorContext context;
+  private CollectionEventParser event;
 
-    public CollectionScoreUpdateEventRDAHandler(RDAProcessorContext context) {
-        this.context = context;
+  public CollectionScoreUpdateEventRDAHandler(RDAProcessorContext context) {
+    this.context = context;
+  }
+
+  @Override
+  public ExecutionResult<MessageResponse> checkSanity() {
+    if (context.request() == null || context.request().isEmpty()) {
+      LOGGER.warn("invalid request received");
+      return new ExecutionResult<>(MessageResponseFactory
+          .createInvalidRequestResponse("Invalid data received to process events"),
+          ExecutionStatus.FAILED);
     }
 
-    @Override
-    public ExecutionResult<MessageResponse> checkSanity() {
-        if (context.request() == null || context.request().isEmpty()) {
-            LOGGER.warn("invalid request received");
-            return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse("Invalid data received to process events"), ExecutionStatus.FAILED);
+    LOGGER.debug("checkSanity() OK");
+    return new ExecutionResult<>(null, ExecutionStatus.CONTINUE_PROCESSING);
+  }
+
+  @Override
+  public ExecutionResult<MessageResponse> validateRequest() {
+    LOGGER.debug("validateRequest() OK");
+    return new ExecutionResult<>(null, ExecutionStatus.CONTINUE_PROCESSING);
+  }
+
+  @Override
+  public ExecutionResult<MessageResponse> executeRequest() {
+    try {
+      event = context.getCollectionEvent();
+      if (event.getUser() != null && event.getSessionId() != null
+          && event.getCollectionId() != null) {
+        LazyList<AJEntityCollectionPerformance> duplicateRow =
+            AJEntityCollectionPerformance
+                .findBySQL(AJEntityCollectionPerformance.CHECK_DUPLICATE_COLLECTION_EVENT,
+                    event.getUser(), event.getSessionId(), event.getCollectionId());
+        if (duplicateRow != null && !duplicateRow.isEmpty()) {
+          LOGGER.debug("Found duplicate row in the DB, so updating duplicate row.....");
+          duplicateRow.forEach(dup -> {
+            int id = Integer.valueOf(dup.get("id").toString());
+            Base.exec(AJEntityCollectionPerformance.UPDATE_ASSESSMENT_SCORE, event.getScore(),
+                event.getMaxScore(), event.getIsGraded(), id);
+          });
         }
-
-        LOGGER.debug("checkSanity() OK");
-        return new ExecutionResult<>(null, ExecutionStatus.CONTINUE_PROCESSING);
-    }
-
-    @Override
-    public ExecutionResult<MessageResponse> validateRequest() {
-        LOGGER.debug("validateRequest() OK");
-        return new ExecutionResult<>(null, ExecutionStatus.CONTINUE_PROCESSING);
-    }
-
-    @Override
-    public ExecutionResult<MessageResponse> executeRequest() {
-        try {
-            event = context.getCollectionEvent();
-            if (event.getUser() != null && event.getSessionId() != null && event.getCollectionId() != null) {
-                LazyList<AJEntityCollectionPerformance> duplicateRow =
-                    AJEntityCollectionPerformance.findBySQL(AJEntityCollectionPerformance.CHECK_DUPLICATE_COLLECTION_EVENT, event.getUser(), event.getSessionId(), event.getCollectionId());
-                if (duplicateRow != null && !duplicateRow.isEmpty()) {
-                    LOGGER.debug("Found duplicate row in the DB, so updating duplicate row.....");
-                    duplicateRow.forEach(dup -> {
-                        int id = Integer.valueOf(dup.get("id").toString());
-                        Base.exec(AJEntityCollectionPerformance.UPDATE_ASSESSMENT_SCORE, event.getScore(), event.getMaxScore(), event.getIsGraded(), id);
-                    });
-                }
-            }
-        } catch (Exception e) {
-            LOGGER.error("EXCEPTION::::", e);
-            return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(), ExecutionStatus.FAILED);
-
-        }
-        return new ExecutionResult<>(MessageResponseFactory.createCreatedResponse(), ExecutionStatus.SUCCESSFUL);
+      }
+    } catch (Exception e) {
+      LOGGER.error("EXCEPTION::::", e);
+      return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(),
+          ExecutionStatus.FAILED);
 
     }
+    return new ExecutionResult<>(MessageResponseFactory.createCreatedResponse(),
+        ExecutionStatus.SUCCESSFUL);
 
-    @Override
-    public boolean handlerReadOnly() {
-        return false;
-    }
+  }
+
+  @Override
+  public boolean handlerReadOnly() {
+    return false;
+  }
 
 }

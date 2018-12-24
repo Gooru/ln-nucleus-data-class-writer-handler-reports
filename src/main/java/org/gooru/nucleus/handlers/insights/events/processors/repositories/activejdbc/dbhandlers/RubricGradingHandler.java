@@ -1,10 +1,11 @@
 package org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers;
 
+import com.hazelcast.util.StringUtil;
+import io.vertx.core.json.JsonObject;
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
 import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.constants.GEPConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.MessageDispatcher;
@@ -25,10 +26,6 @@ import org.javalite.activejdbc.LazyList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.hazelcast.util.StringUtil;
-
-import io.vertx.core.json.JsonObject;
-
 
 /**
  * Created by mukul@gooru
@@ -36,327 +33,382 @@ import io.vertx.core.json.JsonObject;
 
 public class RubricGradingHandler implements DBHandler {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(RubricGradingHandler.class);
-	//TODO: This Kafka Topic name needs to be picked up from config
-	public static final String TOPIC_GEP_USAGE_EVENTS = "org.gooru.da.sink.logW.usage.events";
-	public static final String TOPIC_NOTIFICATIONS = "notifications";
-	private final ProcessorContext context;
-	private AJEntityRubricGrading rubricGrading;
-	private Double score;
-	private Double rawScore;
-	private Double max_score;
-	private Long timeSpent = 0L;
-	private Long pathId;
-	private String latestSessionId;
-	private String pathType;
-	private String contextCollectionId;
-	private String contextCollectionType;
-	private Boolean isGraded;
-	private String updated_at;
-	private String tenantId;
-	private String partnerId;
+  private static final Logger LOGGER = LoggerFactory.getLogger(RubricGradingHandler.class);
+  //TODO: This Kafka Topic name needs to be picked up from config
+  public static final String TOPIC_GEP_USAGE_EVENTS = "org.gooru.da.sink.logW.usage.events";
+  public static final String TOPIC_NOTIFICATIONS = "notifications";
+  private final ProcessorContext context;
+  private AJEntityRubricGrading rubricGrading;
+  private Double score;
+  private Double rawScore;
+  private Double max_score;
+  private Long timeSpent = 0L;
+  private Long pathId;
+  private String latestSessionId;
+  private String pathType;
+  private String contextCollectionId;
+  private String contextCollectionType;
+  private Boolean isGraded;
+  private String updated_at;
+  private String tenantId;
+  private String partnerId;
 
-    public RubricGradingHandler(ProcessorContext context) {
-        this.context = context;
+  public RubricGradingHandler(ProcessorContext context) {
+    this.context = context;
+  }
+
+  @Override
+  public ExecutionResult<MessageResponse> checkSanity() {
+    if (context.request() == null || context.request().isEmpty()) {
+      LOGGER.warn("Invalid Rubric Grading Data");
+      return new ExecutionResult<>(
+          MessageResponseFactory.createInvalidRequestResponse("Invalid Rubric Grading Data"),
+          ExecutionStatus.FAILED);
     }
 
-    @Override
-    public ExecutionResult<MessageResponse> checkSanity() {
-         if (context.request() == null || context.request().isEmpty()) {
-            LOGGER.warn("Invalid Rubric Grading Data");
-            return new ExecutionResult<>(
-                MessageResponseFactory.createInvalidRequestResponse("Invalid Rubric Grading Data"),
-                ExecutionStatus.FAILED);
-        }
+    LOGGER.debug("checkSanity() OK");
+    return new ExecutionResult<>(null, ExecutionStatus.CONTINUE_PROCESSING);
+  }
 
-        LOGGER.debug("checkSanity() OK");
-        return new ExecutionResult<>(null, ExecutionStatus.CONTINUE_PROCESSING);
+  @Override
+  public ExecutionResult<MessageResponse> validateRequest() {
+    if (context.request().getString("userIdFromSession") != null) {
+      List<Map> owner = Base.findAll(AJEntityClassAuthorizedUsers.SELECT_CLASS_OWNER,
+          context.request().getString("class_id"),
+          context.request().getString("userIdFromSession"));
+      if (owner.isEmpty()) {
+        LOGGER.warn("User is not a teacher or collaborator");
+        // return new
+        // ExecutionResult<>(MessageResponseFactory.createForbiddenResponse("User
+        // is not a teacher/collaborator"), ExecutionStatus.FAILED);
+      }
     }
+    LOGGER.debug("validateRequest() OK");
+    return new ExecutionResult<>(null, ExecutionStatus.CONTINUE_PROCESSING);
+  }
 
-    @Override
-    public ExecutionResult<MessageResponse> validateRequest() {
-      if (context.request().getString("userIdFromSession") != null) {
-        List<Map> owner = Base.findAll(AJEntityClassAuthorizedUsers.SELECT_CLASS_OWNER, context.request().getString("class_id"),
-                context.request().getString("userIdFromSession"));
-        if (owner.isEmpty()) {
-          LOGGER.warn("User is not a teacher or collaborator");
-          // return new
-          // ExecutionResult<>(MessageResponseFactory.createForbiddenResponse("User
-          // is not a teacher/collaborator"), ExecutionStatus.FAILED);
+  @Override
+  public ExecutionResult<MessageResponse> executeRequest() {
+
+    rubricGrading = new AJEntityRubricGrading();
+    LazyList<AJEntityReporting> allGraded = null;
+    JsonObject req = context.request();
+    String teacherId = req.getString("userIdFromSession");
+    req.remove("userIdFromSession");
+    //Analytics will not store gut_codes in the Rubric Grading Table.
+    req.remove(AJEntityRubricGrading.GUT_CODES);
+    LazyList<AJEntityReporting> duplicateRow = null;
+    //LazyList<AJEntityReporting> sessionPathIdTypeList = null;
+
+    new DefAJEntityRubricGradingEntityBuilder()
+        .build(rubricGrading, req, AJEntityRubricGrading.getConverterRegistry());
+    Object collType = Base.firstCell(AJEntityReporting.FIND_COLLECTION_TYPE,
+        rubricGrading.get(AJEntityRubricGrading.CLASS_ID),
+        rubricGrading.get(AJEntityRubricGrading.COURSE_ID),
+        rubricGrading.get(AJEntityRubricGrading.UNIT_ID),
+        rubricGrading.get(AJEntityRubricGrading.LESSON_ID),
+        rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID));
+    LOGGER.debug("Collection Type " + collType);
+
+    //Currently this situation may arise if the teacher decides to change the Grades in the current Rubric Grading session
+    //using the Prev-Next buttons (ref: UI). So the Rubric associated to a question will always be the same.
+    //However teacher only gets One Attempt at Grading. (i.e once this Rubric Grading session is closed by the teacher,
+    // the grades cannot be changed)
+    duplicateRow = AJEntityReporting.findBySQL(AJEntityRubricGrading.THIS_QUESTION_GRADES_FIND,
+        rubricGrading.get(AJEntityRubricGrading.STUDENT_ID),
+        rubricGrading.get(AJEntityRubricGrading.CLASS_ID),
+        rubricGrading.get(AJEntityRubricGrading.COURSE_ID),
+        rubricGrading.get(AJEntityRubricGrading.UNIT_ID),
+        rubricGrading.get(AJEntityRubricGrading.LESSON_ID),
+        rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID),
+        rubricGrading.get(AJEntityRubricGrading.RESOURCE_ID),
+        rubricGrading.get(AJEntityRubricGrading.SESSION_ID));
+
+    if (duplicateRow == null || duplicateRow.isEmpty()) {
+      if (collType != null) {
+        rubricGrading.set("collection_type", collType.toString());
+      }
+
+      rubricGrading.set(AJEntityRubricGrading.GRADER_ID, teacherId);
+      rubricGrading.set("grader", "Teacher");
+      //Timestamps are mandatory
+      rubricGrading.set("created_at", new Timestamp(
+          Long.valueOf(rubricGrading.get(AJEntityRubricGrading.CREATED_AT).toString())));
+      rubricGrading.set("updated_at", new Timestamp(
+          Long.valueOf(rubricGrading.get(AJEntityRubricGrading.UPDATED_AT).toString())));
+
+      boolean result = rubricGrading.save();
+      if (!result) {
+        LOGGER.error("Grades cannot be inserted into the DB for the student " + req
+            .getValue(AJEntityRubricGrading.STUDENT_ID));
+        if (rubricGrading.hasErrors()) {
+          Map<String, String> map = rubricGrading.errors();
+          JsonObject errors = new JsonObject();
+          map.forEach(errors::put);
+          return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(errors),
+              ExecutionResult.ExecutionStatus.FAILED);
         }
       }
-      LOGGER.debug("validateRequest() OK");
-      return new ExecutionResult<>(null, ExecutionStatus.CONTINUE_PROCESSING);
+      LOGGER.debug("Student Rubric grades stored successfully for the student " + req
+          .getValue(AJEntityRubricGrading.STUDENT_ID));
+    } else if (duplicateRow != null) {
+      LOGGER.debug(
+          "Found duplicate row in the DB, this question appears to be graded previously, will be updated");
+      duplicateRow.forEach(dup -> {
+        int id = Integer.valueOf(dup.get("id").toString());
+        //update the Answer Object and Answer Status from the latest event
+        Base.exec(AJEntityRubricGrading.UPDATE_QUESTION_GRADES,
+            rubricGrading.get(AJEntityRubricGrading.STUDENT_SCORE),
+            rubricGrading.get(AJEntityRubricGrading.MAX_SCORE),
+            rubricGrading.get(AJEntityRubricGrading.OVERALL_COMMENT),
+            rubricGrading.get(AJEntityRubricGrading.CATEGORY_SCORE),
+            new Timestamp(
+                Long.valueOf(rubricGrading.get(AJEntityRubricGrading.UPDATED_AT).toString())), id);
+      });
     }
 
-    @Override
-      public ExecutionResult<MessageResponse> executeRequest() {
-    
-    	rubricGrading = new AJEntityRubricGrading();
-        LazyList<AJEntityReporting> allGraded = null;
-    	JsonObject req = context.request(); 
-    	String teacherId = req.getString("userIdFromSession");
-    	req.remove("userIdFromSession");
-    	//Analytics will not store gut_codes in the Rubric Grading Table.
-    	req.remove(AJEntityRubricGrading.GUT_CODES);
-    	LazyList<AJEntityReporting> duplicateRow = null;
-    	//LazyList<AJEntityReporting> sessionPathIdTypeList = null;
-
-    	new DefAJEntityRubricGradingEntityBuilder().build(rubricGrading, req, AJEntityRubricGrading.getConverterRegistry());
-    	Object collType = Base.firstCell(AJEntityReporting.FIND_COLLECTION_TYPE, rubricGrading.get(AJEntityRubricGrading.CLASS_ID),
-    			rubricGrading.get(AJEntityRubricGrading.COURSE_ID), rubricGrading.get(AJEntityRubricGrading.UNIT_ID),
-    			rubricGrading.get(AJEntityRubricGrading.LESSON_ID), rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID));
-    	LOGGER.debug("Collection Type " + collType);
-
-    	//Currently this situation may arise if the teacher decides to change the Grades in the current Rubric Grading session
-    	//using the Prev-Next buttons (ref: UI). So the Rubric associated to a question will always be the same.
-    	//However teacher only gets One Attempt at Grading. (i.e once this Rubric Grading session is closed by the teacher, 
-    	// the grades cannot be changed)
-    	duplicateRow =  AJEntityReporting.findBySQL(AJEntityRubricGrading.THIS_QUESTION_GRADES_FIND, 
-    			rubricGrading.get(AJEntityRubricGrading.STUDENT_ID), rubricGrading.get(AJEntityRubricGrading.CLASS_ID),
-    			rubricGrading.get(AJEntityRubricGrading.COURSE_ID), rubricGrading.get(AJEntityRubricGrading.UNIT_ID),
-    			rubricGrading.get(AJEntityRubricGrading.LESSON_ID), rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID),
-    			rubricGrading.get(AJEntityRubricGrading.RESOURCE_ID), rubricGrading.get(AJEntityRubricGrading.SESSION_ID));
-
-    	if (duplicateRow == null || duplicateRow.isEmpty()) {
-    		if (collType != null){
-    			rubricGrading.set("collection_type", collType.toString());        	
-    		}
-
-    		rubricGrading.set(AJEntityRubricGrading.GRADER_ID,teacherId);
-    		rubricGrading.set("grader", "Teacher");
-    		//Timestamps are mandatory 
-    		rubricGrading.set("created_at", new Timestamp(Long.valueOf(rubricGrading.get(AJEntityRubricGrading.CREATED_AT).toString())));
-    		rubricGrading.set("updated_at", new Timestamp(Long.valueOf(rubricGrading.get(AJEntityRubricGrading.UPDATED_AT).toString())));
-
-    		boolean result = rubricGrading.save();
-    		if (!result) {
-    			LOGGER.error("Grades cannot be inserted into the DB for the student " + req.getValue(AJEntityRubricGrading.STUDENT_ID));
-    			if (rubricGrading.hasErrors()) {
-    				Map<String, String> map = rubricGrading.errors();
-    				JsonObject errors = new JsonObject();
-    				map.forEach(errors::put);
-    				return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(errors), ExecutionResult.ExecutionStatus.FAILED);
-    			}
-    		}
-    		LOGGER.debug("Student Rubric grades stored successfully for the student " + req.getValue(AJEntityRubricGrading.STUDENT_ID));        	
-    	} else if (duplicateRow != null) {
-    		LOGGER.debug("Found duplicate row in the DB, this question appears to be graded previously, will be updated");
-    		duplicateRow.forEach(dup -> {
-    			int id = Integer.valueOf(dup.get("id").toString());
-    			//update the Answer Object and Answer Status from the latest event
-    			Base.exec(AJEntityRubricGrading.UPDATE_QUESTION_GRADES, rubricGrading.get(AJEntityRubricGrading.STUDENT_SCORE),
-    					rubricGrading.get(AJEntityRubricGrading.MAX_SCORE), rubricGrading.get(AJEntityRubricGrading.OVERALL_COMMENT),
-    					rubricGrading.get(AJEntityRubricGrading.CATEGORY_SCORE), 
-    					new Timestamp(Long.valueOf(rubricGrading.get(AJEntityRubricGrading.UPDATED_AT).toString())), id);
-    		});
-    	}
-
-    	Object sessionId = rubricGrading.get(AJEntityRubricGrading.SESSION_ID);
-    	if (sessionId == null) {
-    		return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse("Invalid SessionId"), ExecutionResult.ExecutionStatus.FAILED);
-    	}
-
-    	if (sessionId != null) {
-    		LOGGER.debug("Student Score : {} ", rubricGrading.get(AJEntityRubricGrading.STUDENT_SCORE));
-    		LOGGER.debug("Max Score : {} ", rubricGrading.get(AJEntityRubricGrading.MAX_SCORE));
-    		LOGGER.debug("session id : {} ", sessionId.toString());
-    		LOGGER.debug("resource id : {} ", rubricGrading.get(AJEntityRubricGrading.RESOURCE_ID));
-
-    		Base.exec(AJEntityReporting.UPDATE_QUESTION_SCORE, rubricGrading.get(AJEntityRubricGrading.STUDENT_SCORE),
-    				rubricGrading.get(AJEntityRubricGrading.MAX_SCORE), true, sessionId.toString(), rubricGrading.get(AJEntityRubricGrading.RESOURCE_ID));
-
-    		LOGGER.debug("Computing total score...");
-    		LazyList<AJEntityReporting> scoreTS = AJEntityReporting.findBySQL(AJEntityReporting.COMPUTE_ASSESSMENT_SCORE_POST_GRADING, 
-    				rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID), sessionId.toString());
-    		LOGGER.debug("scoreTS {} ", scoreTS);
-
-    		if (scoreTS != null && !scoreTS.isEmpty()) {
-    			scoreTS.forEach(m -> {
-    				rawScore = (m.get(AJEntityReporting.SCORE) != null ? Double.valueOf(m.get(AJEntityReporting.SCORE).toString()) : null);
-    				LOGGER.debug("rawScore {} ", rawScore);
-    				max_score = (m.get(AJEntityReporting.MAX_SCORE) != null ? Double.valueOf(m.get(AJEntityReporting.MAX_SCORE).toString()) : null);
-    				LOGGER.debug("max_score {} ", max_score);        
-    			});
-
-    			if (rawScore != null && max_score != null && max_score > 0.0) {
-    				score = ((rawScore * 100) / max_score);
-    				LOGGER.debug("Re-Computed total score {} ", score);
-    			}
-    		}
-    		Base.exec(AJEntityReporting.UPDATE_ASSESSMENT_SCORE, score, max_score, rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID), sessionId.toString());
-    		LOGGER.debug("Total score updated successfully...");
-    	}
-
-    	AJEntityReporting sessionPathIdTypeModel =  AJEntityReporting.findFirst("actor_id = ? AND class_id = ? AND course_id = ? AND unit_id = ? "
-    			+ "AND lesson_id = ? AND collection_id = ? AND event_name = 'collection.play' AND event_type = 'stop' ORDER BY updated_at DESC",
-    			rubricGrading.get(AJEntityRubricGrading.STUDENT_ID),
-    			rubricGrading.get(AJEntityRubricGrading.CLASS_ID), rubricGrading.get(AJEntityRubricGrading.COURSE_ID),
-       			rubricGrading.get(AJEntityRubricGrading.UNIT_ID), rubricGrading.get(AJEntityRubricGrading.LESSON_ID), 
-    			rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID));
-
-    	if (sessionPathIdTypeModel != null) {
-    		latestSessionId = sessionPathIdTypeModel.get(AJEntityReporting.SESSION_ID) != null ? sessionPathIdTypeModel.get(AJEntityReporting.SESSION_ID).toString() : null;
-    		pathType = sessionPathIdTypeModel.get(AJEntityReporting.PATH_TYPE) != null ? sessionPathIdTypeModel.get(AJEntityReporting.PATH_TYPE).toString() : null;
-    		pathId = sessionPathIdTypeModel.get(AJEntityReporting.PATH_ID) != null ? Long.valueOf(sessionPathIdTypeModel.get(AJEntityReporting.PATH_ID).toString()) : 0L;
-    		contextCollectionId = sessionPathIdTypeModel.get(AJEntityReporting.CONTEXT_COLLECTION_ID) != null ? sessionPathIdTypeModel.get(AJEntityReporting.CONTEXT_COLLECTION_ID).toString() : null;
-    		contextCollectionType = sessionPathIdTypeModel.get(AJEntityReporting.CONTEXT_COLLECTION_TYPE) != null ? sessionPathIdTypeModel.get(AJEntityReporting.CONTEXT_COLLECTION_TYPE).toString() : null;
-    		updated_at = sessionPathIdTypeModel.get(AJEntityReporting.UPDATE_TIMESTAMP).toString();
-    		partnerId = sessionPathIdTypeModel.get(AJEntityReporting.PARTNER_ID) != null ? sessionPathIdTypeModel.get(AJEntityReporting.PARTNER_ID).toString() : null;
-    		tenantId = sessionPathIdTypeModel.get(AJEntityReporting.TENANT_ID) != null ? sessionPathIdTypeModel.get(AJEntityReporting.TENANT_ID).toString() : null;
-    	}
-    	
-    	if ((!StringUtil.isNullOrEmpty(latestSessionId) && latestSessionId.equals(sessionId.toString())) && (rubricGrading.get(AJEntityRubricGrading.STUDENT_SCORE) != null)) {
-    		LOGGER.info("Sending Resource Update Score Event to GEP");
-    		sendResourceScoreUpdateEventtoGEP(collType.toString());
-    	}
-    	 
-    	if ((!StringUtil.isNullOrEmpty(latestSessionId) && latestSessionId.equals(sessionId.toString())) && score != null && max_score != null) {
-    		LOGGER.debug("Student Id is: " + rubricGrading.get(AJEntityRubricGrading.STUDENT_ID));
-    		LOGGER.debug("Latest Session Id is: " + latestSessionId);
-    		LOGGER.debug("Collection Id is: " + rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID));
-    		
-    		LOGGER.info("Sending Collection Update Score Event to GEP, RDA and LTI");
-        	  allGraded =  AJEntityReporting.findBySQL(AJEntityReporting.IS_COLLECTION_GRADED, rubricGrading.get(AJEntityRubricGrading.STUDENT_ID), 
-        			  latestSessionId, rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID), EventConstants.COLLECTION_RESOURCE_PLAY, EventConstants.STOP, false);
-        	  isGraded = false;
-              if (allGraded == null || allGraded.isEmpty()) {
-            	  sendCollScoreUpdateEventtoGEP(collType.toString());
-            	  RubricGradingEventDispatcher eventDispatcher = new RubricGradingEventDispatcher(rubricGrading, pathType, pathId, contextCollectionId, contextCollectionType);            	  
-            	  isGraded = true;
-            	  eventDispatcher.sendGradingCompleteTeacherEventtoNotifications();
-            	  eventDispatcher.sendGradingCompleteStudentEventtoNotifications();
-            	  //We need to fetch the C/A Timespent, since the LTI-SBL event structure needs to be the same irrespective of the eventType
-            	  //& the assumption is that duplicate events will be overlayed onto each other and so should include ALL the KPIs 
-                  Object tsObject =  Base.firstCell(AJEntityReporting.COMPUTE_TIMESPENT, rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID), 
-                		  latestSessionId);
-                  timeSpent = tsObject != null ? Long.valueOf(tsObject.toString()) : 0L;
-            	  LTIEventDispatcher ltiEventDispatcher = new LTIEventDispatcher(rubricGrading, partnerId, tenantId, timeSpent, updated_at, rawScore, max_score, score, isGraded);
-            	  ltiEventDispatcher.sendTeacherGradingEventtoLTI();            	  
-              }   
-              RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(this.rubricGrading, collType.toString(), pathId, pathType, contextCollectionId, contextCollectionType, isGraded);
-              rdaEventDispatcher.sendCollScoreUpdateEventFromRGHToRDA();
-    	}
-    	
-    	LOGGER.debug("DONE");
-    	return new ExecutionResult<>(MessageResponseFactory.createCreatedResponse(), ExecutionStatus.SUCCESSFUL);
-      }   
-    
-    private static class DefAJEntityRubricGradingEntityBuilder implements EntityBuilder<AJEntityRubricGrading> {
+    Object sessionId = rubricGrading.get(AJEntityRubricGrading.SESSION_ID);
+    if (sessionId == null) {
+      return new ExecutionResult<>(
+          MessageResponseFactory.createInvalidRequestResponse("Invalid SessionId"),
+          ExecutionResult.ExecutionStatus.FAILED);
     }
-    
 
-    @Override
-    public boolean handlerReadOnly() {
-        return false;
+    if (sessionId != null) {
+      LOGGER.debug("Student Score : {} ", rubricGrading.get(AJEntityRubricGrading.STUDENT_SCORE));
+      LOGGER.debug("Max Score : {} ", rubricGrading.get(AJEntityRubricGrading.MAX_SCORE));
+      LOGGER.debug("session id : {} ", sessionId.toString());
+      LOGGER.debug("resource id : {} ", rubricGrading.get(AJEntityRubricGrading.RESOURCE_ID));
+
+      Base.exec(AJEntityReporting.UPDATE_QUESTION_SCORE,
+          rubricGrading.get(AJEntityRubricGrading.STUDENT_SCORE),
+          rubricGrading.get(AJEntityRubricGrading.MAX_SCORE), true, sessionId.toString(),
+          rubricGrading.get(AJEntityRubricGrading.RESOURCE_ID));
+
+      LOGGER.debug("Computing total score...");
+      LazyList<AJEntityReporting> scoreTS = AJEntityReporting
+          .findBySQL(AJEntityReporting.COMPUTE_ASSESSMENT_SCORE_POST_GRADING,
+              rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID), sessionId.toString());
+      LOGGER.debug("scoreTS {} ", scoreTS);
+
+      if (scoreTS != null && !scoreTS.isEmpty()) {
+        scoreTS.forEach(m -> {
+          rawScore = (m.get(AJEntityReporting.SCORE) != null ? Double
+              .valueOf(m.get(AJEntityReporting.SCORE).toString()) : null);
+          LOGGER.debug("rawScore {} ", rawScore);
+          max_score = (m.get(AJEntityReporting.MAX_SCORE) != null ? Double
+              .valueOf(m.get(AJEntityReporting.MAX_SCORE).toString()) : null);
+          LOGGER.debug("max_score {} ", max_score);
+        });
+
+        if (rawScore != null && max_score != null && max_score > 0.0) {
+          score = ((rawScore * 100) / max_score);
+          LOGGER.debug("Re-Computed total score {} ", score);
+        }
+      }
+      Base.exec(AJEntityReporting.UPDATE_ASSESSMENT_SCORE, score, max_score,
+          rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID), sessionId.toString());
+      LOGGER.debug("Total score updated successfully...");
     }
-    
-    
-    //********************************************************
-    //TODO: Move GEP Event Processing to the EventDispatcher 
-    //********************************************************
 
-    private void sendResourceScoreUpdateEventtoGEP(String cType) {
-    	
-    	JsonObject gepEvent = createResourceScoreUpdateEvent(cType);
+    AJEntityReporting sessionPathIdTypeModel = AJEntityReporting
+        .findFirst("actor_id = ? AND class_id = ? AND course_id = ? AND unit_id = ? "
+                + "AND lesson_id = ? AND collection_id = ? AND event_name = 'collection.play' AND event_type = 'stop' ORDER BY updated_at DESC",
+            rubricGrading.get(AJEntityRubricGrading.STUDENT_ID),
+            rubricGrading.get(AJEntityRubricGrading.CLASS_ID),
+            rubricGrading.get(AJEntityRubricGrading.COURSE_ID),
+            rubricGrading.get(AJEntityRubricGrading.UNIT_ID),
+            rubricGrading.get(AJEntityRubricGrading.LESSON_ID),
+            rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID));
 
-    	try {
-    		LOGGER.debug("The Collection GEP Event is : {} ", gepEvent);
-    		MessageDispatcher.getInstance().sendGEPEvent2Kafka(TOPIC_GEP_USAGE_EVENTS, gepEvent);
-    		LOGGER.info("Successfully dispatched Update Resource Score GEP Event..");
-    	} catch (Exception e) {
-    		LOGGER.error("Error while dispatching Update Resource Score GEP Event ", e);
-    	}
+    if (sessionPathIdTypeModel != null) {
+      latestSessionId =
+          sessionPathIdTypeModel.get(AJEntityReporting.SESSION_ID) != null ? sessionPathIdTypeModel
+              .get(AJEntityReporting.SESSION_ID).toString() : null;
+      pathType =
+          sessionPathIdTypeModel.get(AJEntityReporting.PATH_TYPE) != null ? sessionPathIdTypeModel
+              .get(AJEntityReporting.PATH_TYPE).toString() : null;
+      pathId = sessionPathIdTypeModel.get(AJEntityReporting.PATH_ID) != null ? Long
+          .valueOf(sessionPathIdTypeModel.get(AJEntityReporting.PATH_ID).toString()) : 0L;
+      contextCollectionId =
+          sessionPathIdTypeModel.get(AJEntityReporting.CONTEXT_COLLECTION_ID) != null
+              ? sessionPathIdTypeModel.get(AJEntityReporting.CONTEXT_COLLECTION_ID).toString()
+              : null;
+      contextCollectionType =
+          sessionPathIdTypeModel.get(AJEntityReporting.CONTEXT_COLLECTION_TYPE) != null
+              ? sessionPathIdTypeModel.get(AJEntityReporting.CONTEXT_COLLECTION_TYPE).toString()
+              : null;
+      updated_at = sessionPathIdTypeModel.get(AJEntityReporting.UPDATE_TIMESTAMP).toString();
+      partnerId =
+          sessionPathIdTypeModel.get(AJEntityReporting.PARTNER_ID) != null ? sessionPathIdTypeModel
+              .get(AJEntityReporting.PARTNER_ID).toString() : null;
+      tenantId =
+          sessionPathIdTypeModel.get(AJEntityReporting.TENANT_ID) != null ? sessionPathIdTypeModel
+              .get(AJEntityReporting.TENANT_ID).toString() : null;
     }
-    
-    private JsonObject createResourceScoreUpdateEvent(String collectionType) {    	
-    	JsonObject resEvent = new JsonObject();
-    	JsonObject context = new JsonObject();
-    	JsonObject result = new JsonObject();
 
-    	resEvent.put(GEPConstants.USER_ID, rubricGrading.get(AJEntityRubricGrading.STUDENT_ID));
-    	resEvent.put(GEPConstants.ACTIVITY_TIME, System.currentTimeMillis());
-    	resEvent.put(GEPConstants.EVENT_ID, UUID.randomUUID().toString());
-    	resEvent.put(GEPConstants.EVENT_NAME, GEPConstants.RES_SCORE_UPDATE_EVENT);
-    	resEvent.put(GEPConstants.RESOURCE_ID, rubricGrading.get(AJEntityRubricGrading.RESOURCE_ID));
-    	resEvent.put(GEPConstants.RESOURCE_TYPE, GEPConstants.QUESTION);
-
-    	context.put(GEPConstants.CLASS_ID, rubricGrading.get(AJEntityRubricGrading.CLASS_ID));
-    	context.put(GEPConstants.COURSE_ID, rubricGrading.get(AJEntityRubricGrading.COURSE_ID));
-    	context.put(GEPConstants.UNIT_ID, rubricGrading.get(AJEntityRubricGrading.UNIT_ID));
-    	context.put(GEPConstants.LESSON_ID, rubricGrading.get(AJEntityRubricGrading.LESSON_ID));
-    	context.put(GEPConstants.COLLECTION_ID, rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID));
-    	context.put(GEPConstants.COLLECTION_TYPE, collectionType);
-    	//Currently Rubric grading is supported only for Course Map
-    	context.put(GEPConstants.CONTENT_SOURCE, GEPConstants.COURSE_MAP);    	
-    	context.put(GEPConstants.CONTEXT_COLLECTION_ID, contextCollectionId);
-    	context.put(GEPConstants.CONTEXT_COLLECTION_TYPE, contextCollectionType);
-    	context.put(GEPConstants.PATH_ID, pathId);
-    	context.put(GEPConstants.PATH_TYPE, pathType);    	    	
-    	context.put(GEPConstants.SESSION_ID, rubricGrading.get(AJEntityRubricGrading.SESSION_ID));
-    	resEvent.put(GEPConstants.CONTEXT, context);
-
-    	result.put(GEPConstants.SCORE, rubricGrading.get(AJEntityRubricGrading.STUDENT_SCORE));
-    	result.put(GEPConstants.MAX_SCORE, rubricGrading.get(AJEntityRubricGrading.MAX_SCORE));
-    	
-    	resEvent.put(GEPConstants.RESULT, result);
-
-    	return resEvent;
-    	
+    if ((!StringUtil.isNullOrEmpty(latestSessionId) && latestSessionId.equals(sessionId.toString()))
+        && (rubricGrading.get(AJEntityRubricGrading.STUDENT_SCORE) != null)) {
+      LOGGER.info("Sending Resource Update Score Event to GEP");
+      sendResourceScoreUpdateEventtoGEP(collType.toString());
     }
-    
-    private void sendCollScoreUpdateEventtoGEP(String cType) {
 
-    	JsonObject gepEvent = createCollScoreUpdateEvent(cType);
-    	
-    	try {
-    		LOGGER.debug("The Collection GEP Event is : {} ", gepEvent);
-    		MessageDispatcher.getInstance().sendGEPEvent2Kafka(TOPIC_GEP_USAGE_EVENTS, gepEvent);
-    		LOGGER.info("Successfully dispatched Collection Perf GEP Event..");
-    	} catch (Exception e) {
-    		LOGGER.error("Error while dispatching Collection Perf GEP Event ", e);
-    	}
+    if ((!StringUtil.isNullOrEmpty(latestSessionId) && latestSessionId.equals(sessionId.toString()))
+        && score != null && max_score != null) {
+      LOGGER.debug("Student Id is: " + rubricGrading.get(AJEntityRubricGrading.STUDENT_ID));
+      LOGGER.debug("Latest Session Id is: " + latestSessionId);
+      LOGGER.debug("Collection Id is: " + rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID));
+
+      LOGGER.info("Sending Collection Update Score Event to GEP, RDA and LTI");
+      allGraded = AJEntityReporting.findBySQL(AJEntityReporting.IS_COLLECTION_GRADED,
+          rubricGrading.get(AJEntityRubricGrading.STUDENT_ID),
+          latestSessionId, rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID),
+          EventConstants.COLLECTION_RESOURCE_PLAY, EventConstants.STOP, false);
+      isGraded = false;
+      if (allGraded == null || allGraded.isEmpty()) {
+        sendCollScoreUpdateEventtoGEP(collType.toString());
+        RubricGradingEventDispatcher eventDispatcher = new RubricGradingEventDispatcher(
+            rubricGrading, pathType, pathId, contextCollectionId, contextCollectionType);
+        isGraded = true;
+        eventDispatcher.sendGradingCompleteTeacherEventtoNotifications();
+        eventDispatcher.sendGradingCompleteStudentEventtoNotifications();
+        //We need to fetch the C/A Timespent, since the LTI-SBL event structure needs to be the same irrespective of the eventType
+        //& the assumption is that duplicate events will be overlayed onto each other and so should include ALL the KPIs
+        Object tsObject = Base.firstCell(AJEntityReporting.COMPUTE_TIMESPENT,
+            rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID),
+            latestSessionId);
+        timeSpent = tsObject != null ? Long.valueOf(tsObject.toString()) : 0L;
+        LTIEventDispatcher ltiEventDispatcher = new LTIEventDispatcher(rubricGrading, partnerId,
+            tenantId, timeSpent, updated_at, rawScore, max_score, score, isGraded);
+        ltiEventDispatcher.sendTeacherGradingEventtoLTI();
+      }
+      RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(this.rubricGrading,
+          collType.toString(), pathId, pathType, contextCollectionId, contextCollectionType,
+          isGraded);
+      rdaEventDispatcher.sendCollScoreUpdateEventFromRGHToRDA();
     }
-    
-    private JsonObject createCollScoreUpdateEvent(String collectionType) {    	
-    	JsonObject cpEvent = new JsonObject();
-    	JsonObject context = new JsonObject();
-    	JsonObject result = new JsonObject();
 
-    	cpEvent.put(GEPConstants.USER_ID, rubricGrading.get(AJEntityRubricGrading.STUDENT_ID));
-    	cpEvent.put(GEPConstants.ACTIVITY_TIME, System.currentTimeMillis());
-    	cpEvent.put(GEPConstants.EVENT_ID, UUID.randomUUID().toString());
-    	cpEvent.put(GEPConstants.EVENT_NAME, GEPConstants.COLL_SCORE_UPDATE_EVENT);
-    	cpEvent.put(GEPConstants.COLLECTION_ID, rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID));
-    	cpEvent.put(GEPConstants.COLLECTION_TYPE, collectionType);    	
-    	
-    	context.put(GEPConstants.CONTEXT_COLLECTION_ID, contextCollectionId);
-    	context.put(GEPConstants.CONTEXT_COLLECTION_TYPE, contextCollectionType);
-    	context.put(GEPConstants.PATH_ID, pathId);
-    	context.put(GEPConstants.PATH_TYPE, pathType);
-    	//Currently Rubric grading is supported only for Course Map
-    	context.put(GEPConstants.CONTENT_SOURCE, GEPConstants.COURSE_MAP);
-    	context.put(GEPConstants.CLASS_ID, rubricGrading.get(AJEntityRubricGrading.CLASS_ID));
-    	context.put(GEPConstants.COURSE_ID, rubricGrading.get(AJEntityRubricGrading.COURSE_ID));
-    	context.put(GEPConstants.UNIT_ID, rubricGrading.get(AJEntityRubricGrading.UNIT_ID));
-    	context.put(GEPConstants.LESSON_ID, rubricGrading.get(AJEntityRubricGrading.LESSON_ID));
-    	context.put(GEPConstants.SESSION_ID, rubricGrading.get(AJEntityRubricGrading.SESSION_ID));
+    LOGGER.debug("DONE");
+    return new ExecutionResult<>(MessageResponseFactory.createCreatedResponse(),
+        ExecutionStatus.SUCCESSFUL);
+  }
 
-    	cpEvent.put(GEPConstants.CONTEXT, context);
-    	
-        if (score != null && max_score != null && max_score > 0.0) {
-        	//score = ((score * 100) / max_score);
-        	result.put(GEPConstants.SCORE, score);
-        	result.put(GEPConstants.MAX_SCORE, max_score);
-          } else {
-          	result.putNull(GEPConstants.SCORE);
-          	result.put(GEPConstants.MAX_SCORE, max_score);
-          }        
-        
-        cpEvent.put(GEPConstants.RESULT, result);
-        
-    	return cpEvent;
-    	
+  private static class DefAJEntityRubricGradingEntityBuilder implements
+      EntityBuilder<AJEntityRubricGrading> {
+
+  }
+
+
+  @Override
+  public boolean handlerReadOnly() {
+    return false;
+  }
+
+  //********************************************************
+  //TODO: Move GEP Event Processing to the EventDispatcher
+  //********************************************************
+
+  private void sendResourceScoreUpdateEventtoGEP(String cType) {
+
+    JsonObject gepEvent = createResourceScoreUpdateEvent(cType);
+
+    try {
+      LOGGER.debug("The Collection GEP Event is : {} ", gepEvent);
+      MessageDispatcher.getInstance().sendGEPEvent2Kafka(TOPIC_GEP_USAGE_EVENTS, gepEvent);
+      LOGGER.info("Successfully dispatched Update Resource Score GEP Event..");
+    } catch (Exception e) {
+      LOGGER.error("Error while dispatching Update Resource Score GEP Event ", e);
     }
-     
+  }
+
+  private JsonObject createResourceScoreUpdateEvent(String collectionType) {
+    JsonObject resEvent = new JsonObject();
+    JsonObject context = new JsonObject();
+    JsonObject result = new JsonObject();
+
+    resEvent.put(GEPConstants.USER_ID, rubricGrading.get(AJEntityRubricGrading.STUDENT_ID));
+    resEvent.put(GEPConstants.ACTIVITY_TIME, System.currentTimeMillis());
+    resEvent.put(GEPConstants.EVENT_ID, UUID.randomUUID().toString());
+    resEvent.put(GEPConstants.EVENT_NAME, GEPConstants.RES_SCORE_UPDATE_EVENT);
+    resEvent.put(GEPConstants.RESOURCE_ID, rubricGrading.get(AJEntityRubricGrading.RESOURCE_ID));
+    resEvent.put(GEPConstants.RESOURCE_TYPE, GEPConstants.QUESTION);
+
+    context.put(GEPConstants.CLASS_ID, rubricGrading.get(AJEntityRubricGrading.CLASS_ID));
+    context.put(GEPConstants.COURSE_ID, rubricGrading.get(AJEntityRubricGrading.COURSE_ID));
+    context.put(GEPConstants.UNIT_ID, rubricGrading.get(AJEntityRubricGrading.UNIT_ID));
+    context.put(GEPConstants.LESSON_ID, rubricGrading.get(AJEntityRubricGrading.LESSON_ID));
+    context.put(GEPConstants.COLLECTION_ID, rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID));
+    context.put(GEPConstants.COLLECTION_TYPE, collectionType);
+    //Currently Rubric grading is supported only for Course Map
+    context.put(GEPConstants.CONTENT_SOURCE, GEPConstants.COURSE_MAP);
+    context.put(GEPConstants.CONTEXT_COLLECTION_ID, contextCollectionId);
+    context.put(GEPConstants.CONTEXT_COLLECTION_TYPE, contextCollectionType);
+    context.put(GEPConstants.PATH_ID, pathId);
+    context.put(GEPConstants.PATH_TYPE, pathType);
+    context.put(GEPConstants.SESSION_ID, rubricGrading.get(AJEntityRubricGrading.SESSION_ID));
+    resEvent.put(GEPConstants.CONTEXT, context);
+
+    result.put(GEPConstants.SCORE, rubricGrading.get(AJEntityRubricGrading.STUDENT_SCORE));
+    result.put(GEPConstants.MAX_SCORE, rubricGrading.get(AJEntityRubricGrading.MAX_SCORE));
+
+    resEvent.put(GEPConstants.RESULT, result);
+
+    return resEvent;
+
+  }
+
+  private void sendCollScoreUpdateEventtoGEP(String cType) {
+
+    JsonObject gepEvent = createCollScoreUpdateEvent(cType);
+
+    try {
+      LOGGER.debug("The Collection GEP Event is : {} ", gepEvent);
+      MessageDispatcher.getInstance().sendGEPEvent2Kafka(TOPIC_GEP_USAGE_EVENTS, gepEvent);
+      LOGGER.info("Successfully dispatched Collection Perf GEP Event..");
+    } catch (Exception e) {
+      LOGGER.error("Error while dispatching Collection Perf GEP Event ", e);
+    }
+  }
+
+  private JsonObject createCollScoreUpdateEvent(String collectionType) {
+    JsonObject cpEvent = new JsonObject();
+    JsonObject context = new JsonObject();
+    JsonObject result = new JsonObject();
+
+    cpEvent.put(GEPConstants.USER_ID, rubricGrading.get(AJEntityRubricGrading.STUDENT_ID));
+    cpEvent.put(GEPConstants.ACTIVITY_TIME, System.currentTimeMillis());
+    cpEvent.put(GEPConstants.EVENT_ID, UUID.randomUUID().toString());
+    cpEvent.put(GEPConstants.EVENT_NAME, GEPConstants.COLL_SCORE_UPDATE_EVENT);
+    cpEvent.put(GEPConstants.COLLECTION_ID, rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID));
+    cpEvent.put(GEPConstants.COLLECTION_TYPE, collectionType);
+
+    context.put(GEPConstants.CONTEXT_COLLECTION_ID, contextCollectionId);
+    context.put(GEPConstants.CONTEXT_COLLECTION_TYPE, contextCollectionType);
+    context.put(GEPConstants.PATH_ID, pathId);
+    context.put(GEPConstants.PATH_TYPE, pathType);
+    //Currently Rubric grading is supported only for Course Map
+    context.put(GEPConstants.CONTENT_SOURCE, GEPConstants.COURSE_MAP);
+    context.put(GEPConstants.CLASS_ID, rubricGrading.get(AJEntityRubricGrading.CLASS_ID));
+    context.put(GEPConstants.COURSE_ID, rubricGrading.get(AJEntityRubricGrading.COURSE_ID));
+    context.put(GEPConstants.UNIT_ID, rubricGrading.get(AJEntityRubricGrading.UNIT_ID));
+    context.put(GEPConstants.LESSON_ID, rubricGrading.get(AJEntityRubricGrading.LESSON_ID));
+    context.put(GEPConstants.SESSION_ID, rubricGrading.get(AJEntityRubricGrading.SESSION_ID));
+
+    cpEvent.put(GEPConstants.CONTEXT, context);
+
+    if (score != null && max_score != null && max_score > 0.0) {
+      //score = ((score * 100) / max_score);
+      result.put(GEPConstants.SCORE, score);
+      result.put(GEPConstants.MAX_SCORE, max_score);
+    } else {
+      result.putNull(GEPConstants.SCORE);
+      result.put(GEPConstants.MAX_SCORE, max_score);
+    }
+
+    cpEvent.put(GEPConstants.RESULT, result);
+
+    return cpEvent;
+
+  }
+
 }
