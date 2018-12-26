@@ -183,7 +183,7 @@ public class AJEntityReporting extends Model {
           + "WHERE actor_id = ? AND class_id = ? AND collection_id = ? AND session_id = ? AND event_name = ? AND event_type = ? ";
 
   public static final String UPDATE_SELF_GRADED_EXT_ASSESSMENT =
-      "UPDATE base_reports SET views = ?, score = ?, max_score = ?, updated_at = ?, "
+      "UPDATE base_reports SET views = ?, time_spent = ?, score = ?, max_score = ?, updated_at = ?, "
           + "time_zone = ?, date_in_time_zone = ? WHERE id = ?";
 
   public static final String COMPUTE_TIMESPENT =
