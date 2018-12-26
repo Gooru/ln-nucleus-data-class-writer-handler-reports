@@ -1,12 +1,8 @@
 package org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers;
 
-import com.hazelcast.util.StringUtil;
-import io.vertx.core.json.JsonObject;
 import java.sql.Timestamp;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.Map;
-import java.util.TimeZone;
+
 import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.RDAEventDispatcher;
@@ -14,6 +10,7 @@ import org.gooru.nucleus.handlers.insights.events.processors.repositories.active
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityDailyClassActivity;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityReporting;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.EntityBuilder;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.utils.BaseUtil;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult.ExecutionStatus;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponse;
@@ -22,6 +19,10 @@ import org.javalite.activejdbc.Base;
 import org.javalite.activejdbc.LazyList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.hazelcast.util.StringUtil;
+
+import io.vertx.core.json.JsonObject;
 
 public class StudentSelfReportingHandler implements DBHandler {
 
@@ -47,6 +48,9 @@ public class StudentSelfReportingHandler implements DBHandler {
   private Double finalMaxScore;
   private Long views;
   private Long eventTime;
+  private String collectionType;
+  private String userId;
+  private String extCollectionId;
   String localeDate;
 
   public StudentSelfReportingHandler(ProcessorContext context) {
@@ -61,7 +65,27 @@ public class StudentSelfReportingHandler implements DBHandler {
           MessageResponseFactory.createInvalidRequestResponse("Invalid Data"),
           ExecutionStatus.FAILED);
     }
-
+    collectionType = context.request().getString(AJEntityDailyClassActivity.COLLECTION_TYPE);
+    extCollectionId = context.request().getString(EXT_COLLECTION_ID);
+    userId = context.request().getString(USER_ID);
+    if (StringUtil.isNullOrEmpty(extCollectionId) || StringUtil.isNullOrEmpty(userId) || StringUtil.isNullOrEmpty(collectionType)) {
+        return new ExecutionResult<>(
+            MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload"),
+            ExecutionStatus.FAILED);
+    }
+    if (collectionType.equalsIgnoreCase(EventConstants.EXTERNAL_COLLECTION) 
+        && context.request().getValue(TIME_SPENT) == null) {
+      return new ExecutionResult<>(
+          MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload. Missing time_spent for " +collectionType),
+          ExecutionResult.ExecutionStatus.FAILED);
+    }
+    
+    if ((collectionType.equalsIgnoreCase(EventConstants.EXTERNAL_ASSESSMENT)) 
+        && (context.request().getValue(PERCENT_SCORE) == null && (context.request().getValue(SCORE) == null || context.request().getValue(MAX_SCORE) == null))) {
+      return new ExecutionResult<>(
+          MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload. Required score data missing for " +collectionType),
+          ExecutionResult.ExecutionStatus.FAILED);
+    }
     LOGGER.debug("checkSanity() OK");
     return new ExecutionResult<>(null, ExecutionStatus.CONTINUE_PROCESSING);
   }
@@ -92,18 +116,9 @@ public class StudentSelfReportingHandler implements DBHandler {
     JsonObject req = context.request();
     LazyList<AJEntityReporting> duplicateRow = null;
 
-    String studentId = req.getString(USER_ID_FROM_SESSION);
     req.remove(USER_ID_FROM_SESSION);
-
-    String extCollectionId = req.getString(EXT_COLLECTION_ID);
-    String userId = req.getString(USER_ID);
-
-    if (StringUtil.isNullOrEmpty(extCollectionId) || StringUtil.isNullOrEmpty(userId)) {
-      return new ExecutionResult<>(
-          MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload"),
-          ExecutionStatus.FAILED);
-    }
     long view = 1;
+    long timespent = req.getLong(TIME_SPENT) != null ? req.getLong(TIME_SPENT) : 0;
     baseReports.set(AJEntityReporting.GOORUUID, userId);
     baseReports.set(AJEntityReporting.COLLECTION_OID, extCollectionId);
     baseReports.set(AJEntityDailyClassActivity.VIEWS, view);
@@ -121,11 +136,8 @@ public class StudentSelfReportingHandler implements DBHandler {
         this.finalScore = percentScore;
         this.finalMaxScore = 100.0;
       }
-    } else if (req.getValue(SCORE) == null || req.getValue(MAX_SCORE) == null) {
-      return new ExecutionResult<>(
-          MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload"),
-          ExecutionResult.ExecutionStatus.FAILED);
-    } else {
+    } else if (req.getValue(AJEntityDailyClassActivity.SCORE) != null
+        && req.getValue(AJEntityDailyClassActivity.MAX_SCORE) != null) {
       rawScore = Double.valueOf(req.getValue(SCORE).toString());
       maxScore = Double.valueOf(req.getValue(MAX_SCORE).toString());
       //the value 0 if anotherDouble is numerically equal to this Double;
@@ -179,14 +191,14 @@ public class StudentSelfReportingHandler implements DBHandler {
           ExecutionStatus.FAILED);
     }
 
-    long ts = System.currentTimeMillis();
-    this.eventTime = ts;
-    baseReports.set(AJEntityReporting.CREATE_TIMESTAMP, new Timestamp(ts));
-    baseReports.set(AJEntityReporting.UPDATE_TIMESTAMP, new Timestamp(ts));
+    long eventTime = System.currentTimeMillis();
+    this.eventTime = eventTime;
+    baseReports.set(AJEntityReporting.CREATE_TIMESTAMP, new Timestamp(eventTime));
+    baseReports.set(AJEntityReporting.UPDATE_TIMESTAMP, new Timestamp(eventTime));
 
     if (baseReports.get(AJEntityReporting.TIME_ZONE) != null) {
       String timeZone = baseReports.get(AJEntityReporting.TIME_ZONE).toString();
-      localeDate = UTCToLocale(ts, timeZone);
+      localeDate = BaseUtil.UTCToLocale(eventTime, timeZone);
 
       if (localeDate != null) {
         baseReports.setDateinTZ(localeDate);
@@ -211,7 +223,7 @@ public class StudentSelfReportingHandler implements DBHandler {
 
       if (!result) {
         LOGGER.error(
-            "ERROR.Student self grades for ext assessments cannot be inserted into the DB: " + req);
+            "ERROR.Student self report for ext-asmt/ext-coll cannot be inserted into the DB: " + req);
         if (baseReports.hasErrors()) {
           Map<String, String> map = baseReports.errors();
           JsonObject errors = new JsonObject();
@@ -220,30 +232,30 @@ public class StudentSelfReportingHandler implements DBHandler {
               ExecutionResult.ExecutionStatus.FAILED);
         }
       }
-      LOGGER.info("Student Self grades for External Assessments stored successfully " + req);
+      LOGGER.info("Student Self report for ext-asmt/ext-coll stored successfully " + req);
 
       eventDispatcher.sendSelfReportEventtoNotifications();
       rdaEventDispatcher.sendSelfGradeEventToRDA();
       return new ExecutionResult<>(MessageResponseFactory.createOkayResponse(),
           ExecutionStatus.SUCCESSFUL);
     } else {
-      LOGGER.info("Duplicate record exists. Updating the Self graded score ");
+      LOGGER.info("Duplicate record exists. Updating the Self reported data");
       duplicateRow.forEach(dup -> {
         int id = Integer.valueOf(dup.get(AJEntityDailyClassActivity.ID).toString());
         long views = ((dup.get(AJEntityDailyClassActivity.VIEWS) != null ? Long
             .valueOf(dup.get(AJEntityDailyClassActivity.VIEWS).toString()) : 1) + view);
-        //TODO: Update Timespent, when it is available - The existing TS should be ADDED to the TS available
-        //in the current payload
+        long ts = ((dup.get(AJEntityDailyClassActivity.TIMESPENT) != null ? Long
+            .valueOf(dup.get(AJEntityDailyClassActivity.TIMESPENT).toString()) : 0) + timespent);
         if (percentScore != null) {
-          Base.exec(AJEntityReporting.UPDATE_SELF_GRADED_EXT_ASSESSMENT, views, percentScore, 100,
-              new Timestamp(ts),
+          Base.exec(AJEntityReporting.UPDATE_SELF_GRADED_EXT_ASSESSMENT, views, ts, percentScore, 100,
+              new Timestamp(eventTime),
               baseReports.get(AJEntityReporting.TIME_ZONE),
               baseReports.get(AJEntityReporting.DATE_IN_TIME_ZONE), id);
           this.finalScore = percentScore;
           this.finalMaxScore = 100.0;
         } else {
-          Base.exec(AJEntityReporting.UPDATE_SELF_GRADED_EXT_ASSESSMENT, views, score, maxScore,
-              new Timestamp(ts),
+          Base.exec(AJEntityReporting.UPDATE_SELF_GRADED_EXT_ASSESSMENT, views, ts, score, maxScore,
+              new Timestamp(eventTime),
               baseReports.get(AJEntityReporting.TIME_ZONE),
               baseReports.get(AJEntityReporting.DATE_IN_TIME_ZONE), id);
           this.finalScore = score;
@@ -252,7 +264,7 @@ public class StudentSelfReportingHandler implements DBHandler {
         this.views = views;
       });
 
-      LOGGER.info("Student Self grades for External Assessments stored successfully " + req);
+      LOGGER.info("Student Self report for ext-asmt/ext-coll stored successfully " + req);
       eventDispatcher.sendSelfReportEventtoNotifications();
       rdaEventDispatcher = new RDAEventDispatcher(baseReports, this.views, null,
           req.getLong(TIME_SPENT), this.finalMaxScore, this.finalScore, true, this.eventTime);
@@ -274,27 +286,4 @@ public class StudentSelfReportingHandler implements DBHandler {
     return false;
   }
 
-  private String UTCToLocale(Long strUtcDate, String timeZone) {
-
-    String strLocaleDate = null;
-    try {
-      Long epohTime = strUtcDate;
-      Date utcDate = new Date(epohTime);
-
-      SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
-      simpleDateFormat.setTimeZone(TimeZone.getTimeZone("Etc/UTC"));
-      String strUTCDate = simpleDateFormat.format(utcDate);
-      simpleDateFormat.setTimeZone(TimeZone.getTimeZone(timeZone));
-
-      strLocaleDate = simpleDateFormat.format(utcDate);
-
-      LOGGER.debug("UTC Date String: " + strUTCDate);
-      LOGGER.debug("Locale Date String: " + strLocaleDate);
-
-    } catch (Exception e) {
-      LOGGER.error(e.getMessage());
-    }
-
-    return strLocaleDate;
-  }
 }
