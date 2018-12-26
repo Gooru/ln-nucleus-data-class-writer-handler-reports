@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
+import org.gooru.nucleus.handlers.insights.events.processors.exceptions.MessageResponseWrapperException;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.RDAEventDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.StudentSelfReportingEventDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityDailyClassActivity;
@@ -59,32 +60,19 @@ public class StudentSelfReportingHandler implements DBHandler {
 
   @Override
   public ExecutionResult<MessageResponse> checkSanity() {
-    if (context.request() == null || context.request().isEmpty()) {
-      LOGGER.warn("Invalid Data");
-      return new ExecutionResult<>(
-          MessageResponseFactory.createInvalidRequestResponse("Invalid Data"),
-          ExecutionStatus.FAILED);
-    }
-    collectionType = context.request().getString(AJEntityDailyClassActivity.COLLECTION_TYPE);
-    extCollectionId = context.request().getString(EXT_COLLECTION_ID);
-    userId = context.request().getString(USER_ID);
-    if (StringUtil.isNullOrEmpty(extCollectionId) || StringUtil.isNullOrEmpty(userId) || StringUtil.isNullOrEmpty(collectionType)) {
-        return new ExecutionResult<>(
-            MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload"),
-            ExecutionStatus.FAILED);
-    }
-    if (collectionType.equalsIgnoreCase(EventConstants.EXTERNAL_COLLECTION) 
-        && context.request().getValue(TIME_SPENT) == null) {
-      return new ExecutionResult<>(
-          MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload. Missing time_spent for " +collectionType),
-          ExecutionResult.ExecutionStatus.FAILED);
-    }
-    
-    if ((collectionType.equalsIgnoreCase(EventConstants.EXTERNAL_ASSESSMENT)) 
-        && (context.request().getValue(PERCENT_SCORE) == null && (context.request().getValue(SCORE) == null || context.request().getValue(MAX_SCORE) == null))) {
-      return new ExecutionResult<>(
-          MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload. Required score data missing for " +collectionType),
-          ExecutionResult.ExecutionStatus.FAILED);
+    try {
+        if (context.request() == null || context.request().isEmpty()) {
+          LOGGER.warn("Invalid Data");
+          return new ExecutionResult<>(
+              MessageResponseFactory.createInvalidRequestResponse("Invalid Data"),
+              ExecutionStatus.FAILED);
+        }
+        collectionType = context.request().getString(AJEntityDailyClassActivity.COLLECTION_TYPE);
+        extCollectionId = context.request().getString(EXT_COLLECTION_ID);
+        userId = context.request().getString(USER_ID);
+        validatePayload();
+    } catch(MessageResponseWrapperException mrwe) {
+        return new ExecutionResult<>(mrwe.getMessageResponse(), ExecutionResult.ExecutionStatus.FAILED);
     }
     LOGGER.debug("checkSanity() OK");
     return new ExecutionResult<>(null, ExecutionStatus.CONTINUE_PROCESSING);
@@ -275,7 +263,34 @@ public class StudentSelfReportingHandler implements DBHandler {
     }
   }
 
-
+  private void validatePayload() {
+      if (StringUtil.isNullOrEmpty(extCollectionId) || StringUtil.isNullOrEmpty(userId) || StringUtil.isNullOrEmpty(collectionType)) {
+          throw new MessageResponseWrapperException(
+              MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload"));
+      }
+      if (collectionType.equalsIgnoreCase(EventConstants.EXTERNAL_COLLECTION)) {
+          long ts = 0;
+          if (context.request().getValue(TIME_SPENT) != null) {
+              try {
+                 ts = context.request().getLong(TIME_SPENT);
+              } catch (ClassCastException c) {
+                  throw new MessageResponseWrapperException(
+                      MessageResponseFactory.createInvalidRequestResponse("Invalid time_spent value in Json Payload."));
+              }
+          }
+          if (ts == 0 || context.request().getValue(TIME_SPENT) == null) {
+              throw new MessageResponseWrapperException(
+                  MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload. Missing time_spent for " +collectionType));
+          }
+      }
+      
+      if ((collectionType.equalsIgnoreCase(EventConstants.EXTERNAL_ASSESSMENT)) 
+          && (context.request().getValue(PERCENT_SCORE) == null && (context.request().getValue(SCORE) == null || context.request().getValue(MAX_SCORE) == null))) {
+          throw new MessageResponseWrapperException(
+            MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload. Required score data missing for " +collectionType));
+      }
+  }
+  
   private static class DefAJEntityReportingBuilder implements EntityBuilder<AJEntityReporting> {
 
   }
