@@ -36,11 +36,16 @@
 		
 	},
 	"org.gooru.nucleus.handlers.insights.events.bootstrap.PostProcessingVerticle": {
-		"workerPoolSize" : 40
+		"workerPoolSize": 40
 	},
- 	"org.gooru.nucleus.handlers.insights.events.bootstrap.OfflineStudentReportingVerticle": {
- 		
- 	},
+	"org.gooru.nucleus.handlers.insights.events.bootstrap.OfflineStudentReportingVerticle": {
+		
+	},
+	"org.gooru.nucleus.handlers.insights.events.bootstrap.EBSendVerticle": {
+		"config": {
+			"message.bus.send.timeout.seconds": 10
+		}
+	},
 	"org.gooru.nucleus.handlers.insights.events.bootstrap.MessageConsumerVerticle": {
 		"thead.pool.size": 10,
 		"defaultKafkaConsumerSettings": {
@@ -68,7 +73,7 @@
 		"batch.size": 10,
 		"retries": 2,
 		"linger.ms": 1,
-		"buffer.memory": 33554432,		
+		"buffer.memory": 33554432,
 		"topics": {
 			"lti": "NILE-LTI-EVENT",
 			"notifications": "org.gooru.notifications.writers.topic",

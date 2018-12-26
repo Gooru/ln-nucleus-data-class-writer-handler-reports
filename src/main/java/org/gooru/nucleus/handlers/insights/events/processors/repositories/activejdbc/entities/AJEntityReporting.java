@@ -192,6 +192,9 @@ public class AJEntityReporting extends Model {
           + "WHERE collection_id = ? AND session_id = ? AND event_name = 'collection.resource.play' AND event_type = 'stop' "
           + "ORDER BY resource_id, updated_at desc) tsData GROUP BY session_id";
 
+  public static final String GET_DIAGNOSTIC_ASSESSMENT_QUESTIONS =
+	      "select DISTINCT(resource_id) from base_reports where collection_id = ? and session_id = ?"
+	      + " and actor_id = ? and class_id = ? and resource_type = 'question'";
 
   public static final String RESOURCE_ATTEMPT_STATUS_TYPE = "attempt_status";
   public static final String PGTYPE_TEXT = "text";
