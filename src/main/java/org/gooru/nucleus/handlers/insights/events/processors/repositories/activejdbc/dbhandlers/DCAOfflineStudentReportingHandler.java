@@ -1,8 +1,5 @@
 package org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers;
 
-import com.hazelcast.util.StringUtil;
-import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -11,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.UUID;
-import org.apache.commons.lang3.StringUtils;
+
 import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.GEPEventDispatcher;
@@ -28,6 +25,11 @@ import org.javalite.activejdbc.Base;
 import org.javalite.activejdbc.LazyList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.hazelcast.util.StringUtil;
+
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 
 /**
  * @author renuka@gooru
@@ -76,10 +78,10 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
       userIds = context.request().getJsonArray(STUDENT_ID);
     }
     if (StringUtil
-        .isNullOrEmpty(context.request().getString(AJEntityDailyClassActivity.COLLECTION_OID)) || !(
-        StringUtils.isNotEmpty(userId) || userIds != null)
+        .isNullOrEmptyAfterTrim(context.request().getString(AJEntityDailyClassActivity.COLLECTION_OID)) || (
+        StringUtil.isNullOrEmptyAfterTrim(userId) && userIds == null)
         || StringUtil
-        .isNullOrEmpty(context.request().getString(AJEntityDailyClassActivity.SESSION_ID))) {
+        .isNullOrEmptyAfterTrim(context.request().getString(AJEntityDailyClassActivity.SESSION_ID))) {
       LOGGER.warn("Invalid Json Payload");
       return new ExecutionResult<>(
           MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload"),
@@ -371,7 +373,10 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
         long views = 1;
         int reaction = resource.containsKey(AJEntityDailyClassActivity.REACTION) ? resource
             .getInteger(AJEntityDailyClassActivity.REACTION) : 0;
-        this.totalResTS += resource.getLong(AJEntityDailyClassActivity.TIMESPENT);
+        if (resource.containsKey(AJEntityDailyClassActivity.TIMESPENT)
+            && resource.getLong(AJEntityDailyClassActivity.TIMESPENT) != null) {
+          this.totalResTS += resource.getLong(AJEntityDailyClassActivity.TIMESPENT);
+        }
 
         dcaReport.set(AJEntityDailyClassActivity.VIEWS, views);
         dcaReport.set(AJEntityDailyClassActivity.REACTION, reaction);

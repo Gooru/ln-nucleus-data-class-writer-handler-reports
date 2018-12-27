@@ -1,8 +1,5 @@
 package org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers;
 
-import com.hazelcast.util.StringUtil;
-import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -11,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.UUID;
-import org.apache.commons.lang3.StringUtils;
+
 import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.GEPEventDispatcher;
@@ -28,6 +25,11 @@ import org.javalite.activejdbc.Base;
 import org.javalite.activejdbc.LazyList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.hazelcast.util.StringUtil;
+
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 
 /**
  * @author renuka@gooru
@@ -78,7 +80,7 @@ public class OfflineStudentReportingHandler implements DBHandler {
     }
 
     if (StringUtil.isNullOrEmpty(context.request().getString(AJEntityReporting.COLLECTION_OID))
-        || !(StringUtils.isNotEmpty(userId) || userIds != null) ||
+        || (StringUtil.isNullOrEmptyAfterTrim(userId) && userIds == null) ||
         StringUtil.isNullOrEmpty(context.request().getString(AJEntityReporting.COURSE_GOORU_OID))
         || StringUtil.isNullOrEmpty(context.request().getString(AJEntityReporting.SESSION_ID))) {
       LOGGER.warn("Invalid Json Payload");
@@ -373,8 +375,10 @@ public class OfflineStudentReportingHandler implements DBHandler {
         long views = 1;
         int reaction = resource.containsKey(AJEntityReporting.REACTION) ? resource
             .getInteger(AJEntityReporting.REACTION) : 0;
-        this.totalResTS += resource.getLong(AJEntityReporting.TIMESPENT);
-
+        if (resource.containsKey(AJEntityReporting.TIMESPENT)
+            && resource.getLong(AJEntityReporting.TIMESPENT) != null) {
+          this.totalResTS += resource.getLong(AJEntityReporting.TIMESPENT);
+        }
         baseReport.set(AJEntityReporting.VIEWS, views);
         baseReport.set(AJEntityReporting.REACTION, reaction);
         baseReport.set(AJEntityReporting.GRADING_TYPE, EventConstants.TEACHER);
