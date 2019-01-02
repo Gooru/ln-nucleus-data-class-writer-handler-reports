@@ -1,16 +1,14 @@
 package org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers;
 
-import com.hazelcast.util.StringUtil;
-import io.vertx.core.json.JsonObject;
 import java.sql.Timestamp;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.Map;
-import java.util.TimeZone;
+
 import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
+import org.gooru.nucleus.handlers.insights.events.processors.exceptions.MessageResponseWrapperException;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityDailyClassActivity;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.EntityBuilder;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.utils.BaseUtil;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult.ExecutionStatus;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponse;
@@ -19,6 +17,10 @@ import org.javalite.activejdbc.Base;
 import org.javalite.activejdbc.LazyList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.hazelcast.util.StringUtil;
+
+import io.vertx.core.json.JsonObject;
 
 public class DCAStudentSelfReportingHandler implements DBHandler {
 
@@ -31,6 +33,7 @@ public class DCAStudentSelfReportingHandler implements DBHandler {
   private static final String SCORE = "score";
   private static final String MAX_SCORE = "max_score";
   private static final String EVIDENCE = "evidence";
+  private static final String TIME_SPENT = "time_spent";
   private final ProcessorContext context;
   private AJEntityDailyClassActivity dcaReport;
   private Double score;
@@ -38,6 +41,9 @@ public class DCAStudentSelfReportingHandler implements DBHandler {
   private Double rawScore;
   private Double maxScore;
   String localeDate;
+  private String extCollectionId;
+  private String collectionType;
+  private String userId;
 
   public DCAStudentSelfReportingHandler(ProcessorContext context) {
     this.context = context;
@@ -45,13 +51,20 @@ public class DCAStudentSelfReportingHandler implements DBHandler {
 
   @Override
   public ExecutionResult<MessageResponse> checkSanity() {
-    if (context.request() == null || context.request().isEmpty()) {
-      LOGGER.warn("Invalid Data");
-      return new ExecutionResult<>(
-          MessageResponseFactory.createInvalidRequestResponse("Invalid Data"),
-          ExecutionStatus.FAILED);
+    try {
+        if (context.request() == null || context.request().isEmpty()) {
+          LOGGER.warn("Invalid Data");
+          return new ExecutionResult<>(
+              MessageResponseFactory.createInvalidRequestResponse("Invalid Data"),
+              ExecutionStatus.FAILED);
+        }
+        collectionType = context.request().getString(AJEntityDailyClassActivity.COLLECTION_TYPE);
+        extCollectionId = context.request().getString(EXT_COLLECTION_ID);
+        userId = context.request().getString(USER_ID);
+        validatePayload();
+    } catch(MessageResponseWrapperException mrwe) {
+        return new ExecutionResult<>(mrwe.getMessageResponse(), ExecutionResult.ExecutionStatus.FAILED);
     }
-
     LOGGER.debug("checkSanity() OK");
     return new ExecutionResult<>(null, ExecutionStatus.CONTINUE_PROCESSING);
   }
@@ -84,15 +97,8 @@ public class DCAStudentSelfReportingHandler implements DBHandler {
 
     req.remove(USER_ID_FROM_SESSION);
 
-    String extCollectionId = req.getString(EXT_COLLECTION_ID);
-    String userId = req.getString(USER_ID);
-
-    if (StringUtil.isNullOrEmpty(extCollectionId) || StringUtil.isNullOrEmpty(userId)) {
-      return new ExecutionResult<>(
-          MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload"),
-          ExecutionStatus.FAILED);
-    }
     long view = 1;
+    long timespent = req.getLong(TIME_SPENT) != null ? req.getLong(TIME_SPENT) : 0;
     dcaReport.set(AJEntityDailyClassActivity.GOORUUID, userId);
     dcaReport.set(AJEntityDailyClassActivity.COLLECTION_OID, extCollectionId);
     dcaReport.set(AJEntityDailyClassActivity.VIEWS, view);
@@ -107,11 +113,7 @@ public class DCAStudentSelfReportingHandler implements DBHandler {
         dcaReport.set(AJEntityDailyClassActivity.SCORE, percentScore);
         dcaReport.set(AJEntityDailyClassActivity.MAX_SCORE, 100);
       }
-    } else if (req.getValue(SCORE) == null || req.getValue(SCORE) == null) {
-      return new ExecutionResult<>(
-          MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload"),
-          ExecutionResult.ExecutionStatus.FAILED);
-    } else {
+    } else if (req.getValue(SCORE) != null || req.getValue(MAX_SCORE) != null) {
       rawScore = Double.valueOf(req.getValue(SCORE).toString());
       maxScore = Double.valueOf(req.getValue(MAX_SCORE).toString());
       if ((rawScore.compareTo(100.00) > 0) || (maxScore.compareTo(100.00) > 0)
@@ -150,13 +152,13 @@ public class DCAStudentSelfReportingHandler implements DBHandler {
           ExecutionStatus.FAILED);
     }
 
-    long ts = System.currentTimeMillis();
-    dcaReport.set(AJEntityDailyClassActivity.CREATE_TIMESTAMP, new Timestamp(ts));
-    dcaReport.set(AJEntityDailyClassActivity.UPDATE_TIMESTAMP, new Timestamp(ts));
+    long eventTime = System.currentTimeMillis();
+    dcaReport.set(AJEntityDailyClassActivity.CREATE_TIMESTAMP, new Timestamp(eventTime));
+    dcaReport.set(AJEntityDailyClassActivity.UPDATE_TIMESTAMP, new Timestamp(eventTime));
 
     if (dcaReport.get(AJEntityDailyClassActivity.TIME_ZONE) != null) {
       String timeZone = dcaReport.get(AJEntityDailyClassActivity.TIME_ZONE).toString();
-      localeDate = UTCToLocale(ts, timeZone);
+      localeDate = BaseUtil.UTCToLocale(eventTime, timeZone);
 
       if (localeDate != null) {
         dcaReport.setDateinTZ(localeDate);
@@ -176,7 +178,7 @@ public class DCAStudentSelfReportingHandler implements DBHandler {
 
       if (!result) {
         LOGGER.error(
-            "ERROR.Student DCA self grades for ext assessments cannot be inserted into the DB: "
+            "ERROR.Student DCA self report for ext-asmt/ext-coll cannot be inserted into the DB: "
                 + req);
         if (dcaReport.hasErrors()) {
           Map<String, String> map = dcaReport.errors();
@@ -186,38 +188,65 @@ public class DCAStudentSelfReportingHandler implements DBHandler {
               ExecutionResult.ExecutionStatus.FAILED);
         }
       }
-      LOGGER.info("Student DCA Self grades for External Assessments stored successfully " + req);
+      LOGGER.info("Student DCA Self report for ext-asmt/ext-coll stored successfully " + req);
       return new ExecutionResult<>(MessageResponseFactory.createOkayResponse(),
           ExecutionStatus.SUCCESSFUL);
     } else {
-      LOGGER.info("Duplicate record exists. Updating the Self graded score ");
+      LOGGER.info("Duplicate record exists. Updating the Self reported data ");
       duplicateRow.forEach(dup -> {
         int id = Integer.valueOf(dup.get(AJEntityDailyClassActivity.ID).toString());
         long views = ((dup.get(AJEntityDailyClassActivity.VIEWS) != null ? Long
             .valueOf(dup.get(AJEntityDailyClassActivity.VIEWS).toString()) : 1) + view);
-        //TODO: Update Timespent, when it is available - The existing TS should be ADDED to the TS available
-        //in the current payload
+        long ts = ((dup.get(AJEntityDailyClassActivity.TIMESPENT) != null ? Long.valueOf(dup.get(AJEntityDailyClassActivity.TIMESPENT).toString()) : 0) + timespent);
         if (percentScore != null) {
-          Base.exec(AJEntityDailyClassActivity.UPDATE_SELF_GRADED_EXT_ASSESSMENT, views,
-              percentScore, 100, new Timestamp(ts),
+          Base.exec(AJEntityDailyClassActivity.UPDATE_SELF_GRADED_EXT_ASSESSMENT, views, ts,
+              percentScore, 100, new Timestamp(eventTime),
               dcaReport.get(AJEntityDailyClassActivity.TIME_ZONE),
               dcaReport.get(AJEntityDailyClassActivity.DATE_IN_TIME_ZONE), id);
         } else {
-          Base.exec(AJEntityDailyClassActivity.UPDATE_SELF_GRADED_EXT_ASSESSMENT, views, score,
-              maxScore, new Timestamp(ts),
+          Base.exec(AJEntityDailyClassActivity.UPDATE_SELF_GRADED_EXT_ASSESSMENT, views, ts, score,
+              maxScore, new Timestamp(eventTime),
               dcaReport.get(AJEntityDailyClassActivity.TIME_ZONE),
               dcaReport.get(AJEntityDailyClassActivity.DATE_IN_TIME_ZONE), id);
         }
 
       });
 
-      LOGGER.info("Student DCA Self grades for External Assessments stored successfully " + req);
+      LOGGER.info("Student DCA Self report for ext-asmt/ext-coll stored successfully " + req);
       return new ExecutionResult<>(MessageResponseFactory.createOkayResponse(),
           ExecutionStatus.SUCCESSFUL);
 
     }
   }
 
+  private void validatePayload() {
+      if (StringUtil.isNullOrEmpty(extCollectionId) || StringUtil.isNullOrEmpty(userId) || StringUtil.isNullOrEmpty(collectionType)) {
+          throw new MessageResponseWrapperException(
+              MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload"));
+      }
+      if (collectionType.equalsIgnoreCase(EventConstants.EXTERNAL_COLLECTION)) {
+          long ts = 0;
+          if (context.request().getValue(TIME_SPENT) != null) {
+              try {
+                 ts = context.request().getLong(TIME_SPENT);
+              } catch (ClassCastException c) {
+                  throw new MessageResponseWrapperException(
+                      MessageResponseFactory.createInvalidRequestResponse("Invalid time_spent value in Json Payload."));
+              }
+          }
+          if (ts == 0 || context.request().getValue(TIME_SPENT) == null) {
+              throw new MessageResponseWrapperException(
+                  MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload. Missing time_spent for " +collectionType));
+          }
+      }
+      
+      if ((collectionType.equalsIgnoreCase(EventConstants.EXTERNAL_ASSESSMENT)) 
+          && (context.request().getValue(PERCENT_SCORE) == null && (context.request().getValue(SCORE) == null || context.request().getValue(MAX_SCORE) == null))) {
+          throw new MessageResponseWrapperException(
+            MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload. Required score data missing for " +collectionType));
+      }
+  }
+  
   private static class DefAJEntityReportingBuilder implements
       EntityBuilder<AJEntityDailyClassActivity> {
 
@@ -228,27 +257,4 @@ public class DCAStudentSelfReportingHandler implements DBHandler {
     return false;
   }
 
-  private String UTCToLocale(Long strUtcDate, String timeZone) {
-
-    String strLocaleDate = null;
-    try {
-      Long epohTime = strUtcDate;
-      Date utcDate = new Date(epohTime);
-
-      SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
-      simpleDateFormat.setTimeZone(TimeZone.getTimeZone("Etc/UTC"));
-      String strUTCDate = simpleDateFormat.format(utcDate);
-      simpleDateFormat.setTimeZone(TimeZone.getTimeZone(timeZone));
-
-      strLocaleDate = simpleDateFormat.format(utcDate);
-
-      LOGGER.debug("UTC Date String: " + strUTCDate);
-      LOGGER.debug("Locale Date String: " + strLocaleDate);
-
-    } catch (Exception e) {
-      LOGGER.error(e.getMessage());
-    }
-
-    return strLocaleDate;
-  }
 }
