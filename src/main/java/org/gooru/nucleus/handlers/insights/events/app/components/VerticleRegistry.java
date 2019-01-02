@@ -17,6 +17,7 @@ public class VerticleRegistry implements Iterable<String> {
   private static final String RDA_WRITER_CONSUMER_VERTICLE = "org.gooru.nucleus.handlers.insights.events.bootstrap.RDAMessageConsumerVerticle";
   private static final String STUDENT_OFFLINE_REPORT_VERTICLE = "org.gooru.nucleus.handlers.insights.events.bootstrap.OfflineStudentReportingVerticle";
   private static final String POST_PROCESSING_VERTICLE = "org.gooru.nucleus.handlers.insights.events.bootstrap.PostProcessingVerticle";
+  private static final String EVENT_BUS_SEND_VERTICLE = "org.gooru.nucleus.handlers.insights.events.bootstrap.EBSendVerticle";
 
   private final Iterator<String> internalIterator;
 
@@ -28,6 +29,7 @@ public class VerticleRegistry implements Iterable<String> {
     initializers.add(RDA_WRITER_CONSUMER_VERTICLE);
     initializers.add(STUDENT_OFFLINE_REPORT_VERTICLE);
     initializers.add(POST_PROCESSING_VERTICLE);
+    initializers.add(EVENT_BUS_SEND_VERTICLE);
     internalIterator = initializers.iterator();
   }
 

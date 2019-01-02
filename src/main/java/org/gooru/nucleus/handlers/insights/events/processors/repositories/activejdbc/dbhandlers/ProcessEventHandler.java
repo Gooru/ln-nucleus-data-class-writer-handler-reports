@@ -4,13 +4,18 @@ import com.hazelcast.util.StringUtil;
 import io.vertx.core.json.JsonObject;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.TimeZone;
+
+import org.gooru.nucleus.handlers.insights.events.bootstrap.EBSendVerticle;
 import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.constants.GEPConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.MessageDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.insights.events.processors.events.EventParser;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.DiagnosticEventDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.GradingPendingEventDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.LTIEventDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.RDAEventDispatcher;
@@ -80,6 +85,7 @@ class ProcessEventHandler implements DBHandler {
     LazyList<AJEntityReporting> duplicateRow = null;
     LazyList<AJEntityReporting> scoreTS = null;
     LazyList<AJEntityReporting> allGraded = null;
+    LazyList<AJEntityReporting> questions = null;
 
     baseReport.set("event_name", event.getEventName());
     baseReport.set("event_type", event.getEventType());
@@ -360,7 +366,16 @@ class ProcessEventHandler implements DBHandler {
       LTIEventDispatcher ltiEventDispatcher = new LTIEventDispatcher(baseReport, this.event,
           this.scoreObj, this.maxScore, this.score, this.isGraded);
       ltiEventDispatcher.sendCollPerfEventtoLTI();
-
+      
+      if (event.getContentSource().equalsIgnoreCase(EventConstants.DIAGNOSTIC)) {
+          questions = AJEntityReporting
+                  .findBySQL(AJEntityReporting.GET_DIAGNOSTIC_ASSESSMENT_QUESTIONS, event.getContentGooruId(),
+                		  event.getSessionId(), event.getGooruUUID(), event.getClassGooruId()); 
+          DiagnosticEventDispatcher diagnosticEventDispatcher = new DiagnosticEventDispatcher 
+        		  (event.getContentGooruId(), event.getSessionId(), event.getGooruUUID(), 
+        				  event.getClassGooruId(), score, toList(questions));
+          diagnosticEventDispatcher.dispatchDiagnosticEvent();          
+          }
     }
 
     if ((event.getEventName().equals(EventConstants.COLLECTION_RESOURCE_PLAY)) && event
@@ -372,7 +387,7 @@ class ProcessEventHandler implements DBHandler {
           this.event.getEndTime());
       rdaEventDispatcher.sendCollectionResourcePlayEventToRDA();
     }
-
+    
     return new ExecutionResult<>(MessageResponseFactory.createCreatedResponse(),
         ExecutionStatus.SUCCESSFUL);
 
@@ -409,6 +424,15 @@ class ProcessEventHandler implements DBHandler {
     return strLocaleDate;
   }
 
+  private List<String> toList (LazyList<AJEntityReporting> thisLazyList) {
+	  List<String> thisList = new ArrayList<String>();
+	  
+	  for (AJEntityReporting l: thisLazyList) {
+		  thisList.add(l.get(AJEntityReporting.RESOURCE_ID).toString());
+	  }
+	  return thisList; 
+	  
+  }
   //********************************************************
   //TODO: Move GEP Event Processing to the EventDispatcher 
   //********************************************************

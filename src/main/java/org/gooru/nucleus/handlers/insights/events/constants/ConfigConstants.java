@@ -2,6 +2,8 @@ package org.gooru.nucleus.handlers.insights.events.constants;
 
 public class ConfigConstants {
 
+  public static final String MBUS_TIMEOUT = "message.bus.send.timeout.seconds";
+	
   //Kafka Config Constants
   public static final String CONFIG_KAFKA_CONSUMER = "defaultKafkaConsumerSettings";
   public static final String CONFIG_KAFKA_SERVERS = "bootstrap.servers";
