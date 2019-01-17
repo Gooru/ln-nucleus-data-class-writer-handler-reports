@@ -757,7 +757,7 @@ public class EventConstants {
   public static final String COLLECTION_FORMATS = "course|unit|lesson|collection|assessment";
 
   public static final Pattern COLLECTION_TYPES = Pattern
-      .compile("collection|assessment|assessment/url");
+      .compile("collection|assessment|assessment-external|collection-external");
 
   public static final Pattern RESOURCE_FORMATS_PATTERN = Pattern.compile("resource|questions");
 
@@ -904,7 +904,7 @@ public class EventConstants {
   public static final Pattern C_A_EA_TYPES = Pattern.compile("collection|assessment|assessment-external");
   
   public static final Pattern C_A_TYPES = Pattern.compile("collection|assessment");
-
+    
   private EventConstants() {
     throw new AssertionError();
   }
