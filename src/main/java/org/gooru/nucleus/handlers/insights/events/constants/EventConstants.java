@@ -900,6 +900,8 @@ public class EventConstants {
   public static final String CONDUCTED_ON = "conducted_on";
   
   public static final String DIAGNOSTIC = "diagnostic";
+  
+  public static final Pattern C_A_EA_TYPES = Pattern.compile("collection|assessment|assessment-external");
 
   private EventConstants() {
     throw new AssertionError();
