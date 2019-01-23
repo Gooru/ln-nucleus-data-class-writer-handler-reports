@@ -58,6 +58,7 @@ public class OfflineStudentReportingHandler implements DBHandler {
   private Boolean isGraded;
   private String userId;
   private JsonArray userIds;
+  private String collectionType;
   private SimpleDateFormat DATE_FORMAT_YMD = new SimpleDateFormat("yyyy-MM-dd");
 
   public OfflineStudentReportingHandler(ProcessorContext context) {
@@ -78,15 +79,18 @@ public class OfflineStudentReportingHandler implements DBHandler {
     } catch (Exception e) {
       userIds = context.request().getJsonArray(STUDENT_ID);
     }
+    collectionType = context.request().getString(AJEntityReporting.COLLECTION_TYPE);
 
     if (StringUtil.isNullOrEmpty(context.request().getString(AJEntityReporting.COLLECTION_OID))
-        || (StringUtil.isNullOrEmptyAfterTrim(userId) && userIds == null) ||
-        StringUtil.isNullOrEmpty(context.request().getString(AJEntityReporting.COURSE_GOORU_OID))
-        || StringUtil.isNullOrEmpty(context.request().getString(AJEntityReporting.SESSION_ID))) {
-      LOGGER.warn("Invalid Json Payload");
-      return new ExecutionResult<>(
-          MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload"),
-          ExecutionStatus.FAILED);
+        || StringUtil.isNullOrEmpty(context.request().getString(AJEntityReporting.COURSE_GOORU_OID))
+        || StringUtil.isNullOrEmptyAfterTrim(collectionType) || !EventConstants.COLLECTION_TYPES.matcher(collectionType).matches()
+        || (collectionType.equalsIgnoreCase(EventConstants.EXTERNAL_COLLECTION) && userIds == null)
+        || (EventConstants.C_A_EA_TYPES.matcher(collectionType).matches() 
+        && (StringUtil.isNullOrEmptyAfterTrim(userId) || StringUtil.isNullOrEmptyAfterTrim(context.request().getString(AJEntityReporting.SESSION_ID))))
+        || (EventConstants.C_A_TYPES.matcher(collectionType).matches() && (!context.request().containsKey(RESOURCES) 
+            || (context.request().containsKey(RESOURCES) && (context.request().getValue(RESOURCES) == null || context.request().getJsonArray(RESOURCES).isEmpty()))))) {
+            LOGGER.warn("Invalid Json Payload");
+            return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload"), ExecutionStatus.FAILED);
     }
     LOGGER.debug("checkSanity() OK");
     return new ExecutionResult<>(null, ExecutionStatus.CONTINUE_PROCESSING);
@@ -305,6 +309,10 @@ public class OfflineStudentReportingHandler implements DBHandler {
     requestPayload.remove(STUDENT_ID);
     requestPayload.remove(AJEntityReporting.COLLECTION_OID);
     requestPayload.remove(EVIDENCE);
+    if (requestPayload.getJsonArray(RESOURCES) == null || (requestPayload.getJsonArray(RESOURCES) != null && requestPayload.getJsonArray(RESOURCES) 
+        .isEmpty())) {  
+        requestPayload.remove(RESOURCES);   
+    }
   }
 
   private ExecutionResult<MessageResponse> processResourcePlayData(JsonObject requestPayload,

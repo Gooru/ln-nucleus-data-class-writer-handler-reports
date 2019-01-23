@@ -58,6 +58,7 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
   private String userId;
   private JsonArray userIds;
   private Boolean isGraded;
+  private String collectionType;
   private SimpleDateFormat DATE_FORMAT_YMD = new SimpleDateFormat("yyyy-MM-dd");
 
   public DCAOfflineStudentReportingHandler(ProcessorContext context) {
@@ -77,11 +78,16 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
     } catch (Exception e) {
       userIds = context.request().getJsonArray(STUDENT_ID);
     }
+    collectionType = context.request().getString(AJEntityDailyClassActivity.COLLECTION_TYPE);
+
     if (StringUtil
-        .isNullOrEmptyAfterTrim(context.request().getString(AJEntityDailyClassActivity.COLLECTION_OID)) || (
-        StringUtil.isNullOrEmptyAfterTrim(userId) && userIds == null)
-        || StringUtil
-        .isNullOrEmptyAfterTrim(context.request().getString(AJEntityDailyClassActivity.SESSION_ID))) {
+        .isNullOrEmptyAfterTrim(context.request().getString(AJEntityDailyClassActivity.COLLECTION_OID))
+        || StringUtil.isNullOrEmptyAfterTrim(collectionType) || !EventConstants.COLLECTION_TYPES.matcher(collectionType).matches()
+        || (collectionType.equalsIgnoreCase(EventConstants.EXTERNAL_COLLECTION) && userIds == null)
+        || (EventConstants.C_A_EA_TYPES.matcher(collectionType).matches() 
+        && (StringUtil.isNullOrEmptyAfterTrim(userId) || StringUtil.isNullOrEmptyAfterTrim(context.request().getString(AJEntityDailyClassActivity.SESSION_ID))))
+        || (EventConstants.C_A_TYPES.matcher(collectionType).matches() && (!context.request().containsKey(RESOURCES) 
+            || (context.request().containsKey(RESOURCES) && (context.request().getValue(RESOURCES) == null || context.request().getJsonArray(RESOURCES).isEmpty()))))) {
       LOGGER.warn("Invalid Json Payload");
       return new ExecutionResult<>(
           MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload"),
@@ -302,6 +308,10 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
     requestPayload.remove(STUDENT_ID);
     requestPayload.remove(AJEntityDailyClassActivity.COLLECTION_OID);
     requestPayload.remove(EVIDENCE);
+    if (requestPayload.getJsonArray(RESOURCES) == null || (requestPayload.getJsonArray(RESOURCES) != null && requestPayload.getJsonArray(RESOURCES) 
+        .isEmpty())) {  
+        requestPayload.remove(RESOURCES);   
+    }
   }
 
   private ExecutionResult<MessageResponse> processResourcePlayData(JsonObject requestPayload,
