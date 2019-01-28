@@ -499,9 +499,7 @@ class ProcessEventHandler implements DBHandler {
 
 
   private void sendCRPEventtoGEP() {
-
     try {
-
       JsonObject gepEvent = createCRPEvent();
       JsonObject result = new JsonObject();
 
@@ -510,7 +508,6 @@ class ProcessEventHandler implements DBHandler {
 //					event.getCollectionType().equalsIgnoreCase(EventConstants.EXTERNAL_COLLECTION)) {
 //				
 //			}
-
       if (event.getResourceType().equals(EventConstants.QUESTION)) {
         if (event.getAnswerStatus().equalsIgnoreCase(EventConstants.INCORRECT)
             || event.getAnswerStatus().equalsIgnoreCase(EventConstants.CORRECT)
