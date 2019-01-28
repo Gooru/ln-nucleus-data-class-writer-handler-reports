@@ -3,33 +3,32 @@ package org.gooru.nucleus.handlers.insights.events.processors.repositories;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponse;
 
 /**
- * Created by mukul@gooru
- * Modified by daniel
+ * Created by mukul@gooru Modified by daniel
  */
 public interface BaseReportingRepo {
-	
-	MessageResponse insertBaseReportData();
 
-    MessageResponse insertCompetencyReportsData();
-    
-    MessageResponse insertDCAData();
-    
-    MessageResponse insertDCACompetencyData();
-    
-    MessageResponse createUserTaxonomySubject();
-    
-    MessageResponse processStudentGrades();
-    
-    MessageResponse updateAssessmentScore();
-    
-    MessageResponse updateStudentSelfReportedScore();
+  MessageResponse insertBaseReportData();
 
-    MessageResponse updateStudentSelfReportedScoreOnDCA();
-    
-    MessageResponse insertOfflineStudentData();
+  MessageResponse insertCompetencyReportsData();
 
-    MessageResponse insertDCAOfflineStudentData();
+  MessageResponse insertDCAData();
 
-    MessageResponse updateDCAAssessmentScore();
+  MessageResponse insertDCACompetencyData();
+
+  MessageResponse createUserTaxonomySubject();
+
+  MessageResponse processStudentGrades();
+
+  MessageResponse updateAssessmentScore();
+
+  MessageResponse updateStudentSelfReportedScore();
+
+  MessageResponse updateStudentSelfReportedScoreOnDCA();
+
+  MessageResponse insertOfflineStudentData();
+
+  MessageResponse insertDCAOfflineStudentData();
+
+  MessageResponse updateDCAAssessmentScore();
 
 }

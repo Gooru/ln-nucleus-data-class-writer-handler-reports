@@ -8,7 +8,7 @@ import org.javalite.activejdbc.Model;
  */
 public interface JsonFormatter {
 
-    <T extends Model> String toJson(T model);
+  <T extends Model> String toJson(T model);
 
-    <T extends Model> String toJson(LazyList<T> modelList);
+  <T extends Model> String toJson(LazyList<T> modelList);
 }

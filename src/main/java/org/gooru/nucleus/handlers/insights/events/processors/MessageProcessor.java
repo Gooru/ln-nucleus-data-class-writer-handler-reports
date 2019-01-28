@@ -1,7 +1,9 @@
 package org.gooru.nucleus.handlers.insights.events.processors;
 
+import io.netty.util.internal.StringUtil;
+import io.vertx.core.eventbus.Message;
+import io.vertx.core.json.JsonObject;
 import java.util.ResourceBundle;
-
 import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.events.EventParser;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.RepoBuilder;
@@ -11,13 +13,8 @@ import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageRe
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.netty.util.internal.StringUtil;
-import io.vertx.core.eventbus.Message;
-import io.vertx.core.json.JsonObject;
-
 /**
- * Created by mukul@gooru 
- * Modified by daniel
+ * Created by mukul@gooru Modified by daniel
  */
 
 class MessageProcessor implements Processor {
@@ -60,52 +57,53 @@ class MessageProcessor implements Processor {
       // message.headers().get(MessageConstants.MSG_HEADER_OP);
       final String eventName = event.getEventName();
       switch (eventName) {
-      case EventConstants.COLLECTION_PLAY:
-        //long start = System.currentTimeMillis();
-    	  if (!StringUtil.isNullOrEmpty(event.getContentSource()) 
-    			  && event.getContentSource().equalsIgnoreCase(EventConstants.DAILY_CLASS_ACTIVITY)){
-    		  result = createDCAReport();    		  
-    	  } else {
-    		  result = createBaseReport();
-    		  if(event.getEventType().equalsIgnoreCase(EventConstants.START)){
-    		    result = createUserTaxonomySubject();
-    		  }
-    		  //long end = System.currentTimeMillis();
-    		  //LOGGER.info("collection.play processed time : " + (end-start));
+        case EventConstants.COLLECTION_PLAY:
+          //long start = System.currentTimeMillis();
+          if (!StringUtil.isNullOrEmpty(event.getContentSource())
+              && event.getContentSource().equalsIgnoreCase(EventConstants.DAILY_CLASS_ACTIVITY)) {
+            result = createDCAReport();
+          } else {
+            result = createBaseReport();
+            if (event.getEventType().equalsIgnoreCase(EventConstants.START)) {
+              result = createUserTaxonomySubject();
+            }
+            //long end = System.currentTimeMillis();
+            //LOGGER.info("collection.play processed time : " + (end-start));
 
-    	  }
-        break;
-      case EventConstants.COLLECTION_RESOURCE_PLAY:    	  
-    	  if (!StringUtil.isNullOrEmpty(event.getContentSource()) 
-    			  && event.getContentSource().equalsIgnoreCase(EventConstants.DAILY_CLASS_ACTIVITY)){
-    		  result = createDCAReport();
-    		  LOGGER.debug("Taxonomy IDs :  " + event.getTaxonomyIds());
-  	        if(event.getTaxonomyIds() != null && !event.getTaxonomyIds().isEmpty()){          
-  	          result = createDCACompetencyReport();
-  	        }
-    	  } else {
-    		  result = createBaseReport();    		  
-  	        LOGGER.debug("Taxonomy IDs :  " + event.getTaxonomyIds());
-  	        if(event.getTaxonomyIds() != null && !event.getTaxonomyIds().isEmpty()){          
-  	          result = createCompetencyReport();
-  	        }    		  
-    	  }
-        break;
-      case EventConstants.REACTION_CREATE:
-        if (!StringUtil.isNullOrEmpty(event.getContentSource()) 
-        		&& event.getContentSource().equalsIgnoreCase(EventConstants.DAILY_CLASS_ACTIVITY)) {
-          result = createDCAReport();
-        } else {
-          result = createBaseReport();
-        }
-        break;
-      default:
-        LOGGER.error("Invalid operation type passed in, not able to handle");
-        return MessageResponseFactory.createInvalidRequestResponse(RESOURCE_BUNDLE.getString("invalid.operation"));
+          }
+          break;
+        case EventConstants.COLLECTION_RESOURCE_PLAY:
+          if (!StringUtil.isNullOrEmpty(event.getContentSource())
+              && event.getContentSource().equalsIgnoreCase(EventConstants.DAILY_CLASS_ACTIVITY)) {
+            result = createDCAReport();
+            LOGGER.debug("Taxonomy IDs :  " + event.getTaxonomyIds());
+            if (event.getTaxonomyIds() != null && !event.getTaxonomyIds().isEmpty()) {
+              result = createDCACompetencyReport();
+            }
+          } else {
+            result = createBaseReport();
+            LOGGER.debug("Taxonomy IDs :  " + event.getTaxonomyIds());
+            if (event.getTaxonomyIds() != null && !event.getTaxonomyIds().isEmpty()) {
+              result = createCompetencyReport();
+            }
+          }
+          break;
+        case EventConstants.REACTION_CREATE:
+          if (!StringUtil.isNullOrEmpty(event.getContentSource())
+              && event.getContentSource().equalsIgnoreCase(EventConstants.DAILY_CLASS_ACTIVITY)) {
+            result = createDCAReport();
+          } else {
+            result = createBaseReport();
+          }
+          break;
+        default:
+          LOGGER.error("Invalid operation type passed in, not able to handle");
+          return MessageResponseFactory
+              .createInvalidRequestResponse(RESOURCE_BUNDLE.getString("invalid.operation"));
       }
-      
+
       return result;
-      
+
     } catch (Throwable e) {
       LOGGER.error("Unhandled exception in processing", e);
       return MessageResponseFactory.createInternalErrorResponse();
@@ -120,7 +118,7 @@ class MessageProcessor implements Processor {
       return MessageResponseFactory.createInternalErrorResponse(t.getMessage());
     }
   }
-  
+
   private MessageResponse createUserTaxonomySubject() {
     try {
       return RepoBuilder.buildBaseReportingRepo(context).createUserTaxonomySubject();
@@ -129,36 +127,36 @@ class MessageProcessor implements Processor {
       return MessageResponseFactory.createInternalErrorResponse(t.getMessage());
     }
   }
-  
+
   private MessageResponse createCompetencyReport() {
-	    try {
-	      return RepoBuilder.buildBaseReportingRepo(context).insertCompetencyReportsData();
-	    } catch (Throwable t) {
-	      LOGGER.error("Exception while inserting data for competency report", t.getMessage());
-	      return MessageResponseFactory.createInternalErrorResponse(t.getMessage());
-	    }
-	  }
-  
-  
+    try {
+      return RepoBuilder.buildBaseReportingRepo(context).insertCompetencyReportsData();
+    } catch (Throwable t) {
+      LOGGER.error("Exception while inserting data for competency report", t.getMessage());
+      return MessageResponseFactory.createInternalErrorResponse(t.getMessage());
+    }
+  }
+
+
   private MessageResponse createDCAReport() {
-	    try {
-	      return RepoBuilder.buildBaseReportingRepo(context).insertDCAData();
-	    } catch (Throwable t) {
-	      LOGGER.error("Exception while processing Collection Play Event Data", t.getMessage());
-	      return MessageResponseFactory.createInternalErrorResponse(t.getMessage());
-	    }
-	  }
+    try {
+      return RepoBuilder.buildBaseReportingRepo(context).insertDCAData();
+    } catch (Throwable t) {
+      LOGGER.error("Exception while processing Collection Play Event Data", t.getMessage());
+      return MessageResponseFactory.createInternalErrorResponse(t.getMessage());
+    }
+  }
 
   private MessageResponse createDCACompetencyReport() {
-	    try {
-	      return RepoBuilder.buildBaseReportingRepo(context).insertDCACompetencyData();
-	    } catch (Throwable t) {
-	      LOGGER.error("Exception while inserting data for competency report", t.getMessage());
-	      return MessageResponseFactory.createInternalErrorResponse(t.getMessage());
-	    }
-	  }
+    try {
+      return RepoBuilder.buildBaseReportingRepo(context).insertDCACompetencyData();
+    } catch (Throwable t) {
+      LOGGER.error("Exception while inserting data for competency report", t.getMessage());
+      return MessageResponseFactory.createInternalErrorResponse(t.getMessage());
+    }
+  }
 
-  
+
   private ProcessorContext createContext() {
     try {
       event = new EventParser(request.toString());
@@ -177,8 +175,9 @@ class MessageProcessor implements Processor {
     }
     if (request == null) {
       LOGGER.error("Invalid JSON payload on Message Bus");
-      return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse(RESOURCE_BUNDLE.getString("invalid.payload")),
-              ExecutionResult.ExecutionStatus.FAILED);
+      return new ExecutionResult<>(MessageResponseFactory
+          .createInvalidRequestResponse(RESOURCE_BUNDLE.getString("invalid.payload")),
+          ExecutionResult.ExecutionStatus.FAILED);
     }
     // All is well, continue processing
     return new ExecutionResult<>(null, ExecutionResult.ExecutionStatus.CONTINUE_PROCESSING);

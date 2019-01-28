@@ -1,5 +1,7 @@
 package org.gooru.nucleus.handlers.insights.events.kafka.processors;
 
+import io.netty.util.internal.StringUtil;
+import io.vertx.core.json.JsonObject;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -8,9 +10,6 @@ import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.ProcessorBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import io.netty.util.internal.StringUtil;
-import io.vertx.core.json.JsonObject;
 
 public class KafkaMessageConsumer implements Runnable {
 
@@ -28,15 +27,15 @@ public class KafkaMessageConsumer implements Runnable {
       ConsumerRecords<String, String> records = consumer.poll(200);
       for (ConsumerRecord<String, String> record : records) {
         switch (record.topic().split(ConfigConstants.HYPHEN)[0]) {
-        case ConfigConstants.KAFKA_EVENTLOGS_TOPIC:
-          sendMessage(record.value());
-          break;
-        case ConfigConstants.KAFKA_TEST_TOPIC:
-          LOGGER.info("Test Kafka Consumer : {}", record.value());
-          break;
-        default:
-          // FIXME: Revisit this logic.          
-          sendMessage(record.value());
+          case ConfigConstants.KAFKA_EVENTLOGS_TOPIC:
+            sendMessage(record.value());
+            break;
+          case ConfigConstants.KAFKA_TEST_TOPIC:
+            LOGGER.info("Test Kafka Consumer : {}", record.value());
+            break;
+          default:
+            // FIXME: Revisit this logic.
+            sendMessage(record.value());
         }
       }
     }
@@ -54,9 +53,10 @@ public class KafkaMessageConsumer implements Runnable {
       if (eventObject != null) {
         LOGGER.info("RECEIVED EVENT OBJECT :::: {}", eventObject);
         if (eventObject.containsKey(ConfigConstants._EVENT_NAME)
-                && eventObject.getString(ConfigConstants._EVENT_NAME).equalsIgnoreCase(EventConstants.RESOURCE_RUBRIC_GRADE)) {
+            && eventObject.getString(ConfigConstants._EVENT_NAME)
+            .equalsIgnoreCase(EventConstants.RESOURCE_RUBRIC_GRADE)) {
           ProcessorBuilder.buildRubrics(eventObject).process();
-        } else {          
+        } else {
           ProcessorBuilder.build(eventObject).process();
         }
 
