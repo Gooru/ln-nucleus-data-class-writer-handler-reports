@@ -335,7 +335,10 @@ class ProcessEventHandler implements DBHandler {
 
     if ((event.getEventName().equals(EventConstants.COLLECTION_PLAY)) && event.getEventType()
         .equalsIgnoreCase(EventConstants.START)) {
-      sendCollStartEventtoGEP();
+    	//For Inspect Competencies, there is no in-progress status. Its either "mastered' or nothing 
+    	if (!event.getContentSource().equalsIgnoreCase(EventConstants.COMPETENCY_MASTERY)) {
+    	      sendCollStartEventtoGEP();    		
+    	}
       RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(baseReport, this.views,
           this.reaction, this.timespent, this.maxScore, this.score, this.isGraded,
           this.event.getEndTime());
