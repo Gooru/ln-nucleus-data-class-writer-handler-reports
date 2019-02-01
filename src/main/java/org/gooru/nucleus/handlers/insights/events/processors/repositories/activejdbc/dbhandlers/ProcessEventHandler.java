@@ -335,7 +335,10 @@ class ProcessEventHandler implements DBHandler {
 
     if ((event.getEventName().equals(EventConstants.COLLECTION_PLAY)) && event.getEventType()
         .equalsIgnoreCase(EventConstants.START)) {
-      sendCollStartEventtoGEP();
+    	//For Inspect Competencies, there is no in-progress status. Its either "mastered' or nothing 
+    	if (!event.getContentSource().equalsIgnoreCase(EventConstants.COMPETENCY_MASTERY)) {
+    	      sendCollStartEventtoGEP();    		
+    	}
       RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(baseReport, this.views,
           this.reaction, this.timespent, this.maxScore, this.score, this.isGraded,
           this.event.getEndTime());
@@ -350,7 +353,8 @@ class ProcessEventHandler implements DBHandler {
               event.getSessionId(),
               event.getContentGooruId(), EventConstants.COLLECTION_RESOURCE_PLAY,
               EventConstants.STOP, false);
-      if (allGraded == null || allGraded.isEmpty()) {
+      if (allGraded == null || allGraded.isEmpty() 
+    		  && !event.getContentSource().equalsIgnoreCase(EventConstants.COMPETENCY_MASTERY)) {
         sendCPEventtoGEP();
         this.isGraded = true;
       } else {
@@ -376,6 +380,12 @@ class ProcessEventHandler implements DBHandler {
         				  event.getClassGooruId(), score, toList(questions));
           diagnosticEventDispatcher.dispatchDiagnosticEvent();          
           }
+      //The onus to ensure if this Assessment is a signature Item lies on the upstream systems.
+      //Writer assumes that since the contentSource is "competencyMastery", assessment is a verified signature assessment,
+      //& so if the score is >= 80% then the event should flow to DAP for skyline updation.
+      if (event.getContentSource().equalsIgnoreCase(EventConstants.COMPETENCY_MASTERY) && score >= 80.00) {
+    	  sendCPEventtoGEP();
+      }
     }
 
     if ((event.getEventName().equals(EventConstants.COLLECTION_RESOURCE_PLAY)) && event
