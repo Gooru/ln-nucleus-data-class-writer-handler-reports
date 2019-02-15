@@ -26,12 +26,8 @@ public class DiagnosticAssessmentPlayedHandler implements PostProcessorHandler {
     LOGGER.debug("Creating command");
     command = DiagnosticAssessmentPlayedCommand.build(request);
     LOGGER.debug("Command created: '{}'", command);
-    // Enrich with gutcodes/subject code which are going to be completed
-    LOGGER.debug("Enrich with gut codes and subject code");
-    DiagnosticAssessmentCommandEnricher.build(command).enrich();
-    LOGGER.debug("Command after enrichment: '{}'", command);
-    // Update LPCS* tables with specified values
-    LOGGER.debug("Will update LP tables");
-    new LearnerProfileDao().updateLPCS(command);
+    // Queue record in table and update status
+    LOGGER.debug("Will queue record and update status");
+    new DiagnosticQueueAndStatusUpdaterDao().queueRecordAndUpdateStatus(request, command);
   }
 }

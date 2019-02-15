@@ -21,7 +21,6 @@ class DiagnosticAssessmentPlayedCommand {
   private final Double score;
   private final List<UUID> questions;
   private List<String> gutCodes;
-  private String subjectCode;
 
   DiagnosticAssessmentPlayedCommand(UUID assessmentId, UUID sessionId, UUID userId,
       UUID classId, List<UUID> questions, Double score) {
@@ -102,14 +101,6 @@ class DiagnosticAssessmentPlayedCommand {
     this.gutCodes = gutCodes;
   }
 
-  public String getSubjectCode() {
-    return subjectCode;
-  }
-
-  public void setSubjectCode(String subjectCode) {
-    this.subjectCode = subjectCode;
-  }
-
   public Double getScore() {
     return score;
   }
@@ -125,12 +116,7 @@ class DiagnosticAssessmentPlayedCommand {
         ", score=" + score +
         ", questions=" + questions +
         ", gutCodes=" + gutCodesString +
-        ", subjectCode='" + subjectCode + '\'' +
         '}';
-  }
-
-  public String getProfileSource() {
-    return ProfileSourceGenerator.generateProfileSource(assessmentId);
   }
 
   private static final class Attributes {
