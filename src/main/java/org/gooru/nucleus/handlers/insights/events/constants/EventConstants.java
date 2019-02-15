@@ -906,6 +906,8 @@ public class EventConstants {
   public static final Pattern C_A_EA_TYPES = Pattern.compile("collection|assessment|assessment-external");
   
   public static final Pattern C_A_TYPES = Pattern.compile("collection|assessment");
+  
+  public static final String UNKNOWN = "unknown";
     
   private EventConstants() {
     throw new AssertionError();

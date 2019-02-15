@@ -3,10 +3,12 @@ package org.gooru.nucleus.handlers.insights.events.processors.repositories.activ
 import io.vertx.core.json.JsonObject;
 import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.MessageDispatcher;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityDailyClassActivity;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityReporting;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityRubricGrading;
 import org.gooru.nucleus.handlers.insights.events.rda.processor.collection.CollectionEventConstants;
 import org.gooru.nucleus.handlers.insights.events.rda.processor.resource.ResourceEventConstants;
+import org.javalite.activejdbc.Model;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,6 +21,7 @@ public class RDAEventDispatcher {
   public static final String TOPIC_RDA = "rda";
   private AJEntityReporting baseReports;
   private AJEntityRubricGrading rubricGrading;
+  private AJEntityDailyClassActivity dcaReports;
   private Long views;
   private Long reaction;
   private Long timespent;
@@ -45,14 +48,18 @@ public class RDAEventDispatcher {
     this.activityTime = activityTime;
   }
 
-  public RDAEventDispatcher(AJEntityReporting baseReports, String actorId, Boolean isGraded) {
+  public RDAEventDispatcher(AJEntityReporting baseReports, String actorId, Double score,
+      Double maxScore, Boolean isGraded) {
     this.baseReports = baseReports;
     this.actorId = actorId;
     this.isGraded = isGraded;
+    this.maxScore = maxScore;
+    this.score = score;
   }
 
-  public RDAEventDispatcher(AJEntityRubricGrading rubricGrading, String collectionType, Long pathId,
-      String pathType, String contextCollectionId, String contextCollectionType, Boolean isGraded) {
+  public RDAEventDispatcher(AJEntityRubricGrading rubricGrading, String collectionType,
+      Double score, Double maxScore, Long pathId, String pathType, String contextCollectionId,
+      String contextCollectionType, Boolean isGraded) {
     this.rubricGrading = rubricGrading;
     this.collectionType = collectionType;
     this.pathId = pathId;
@@ -60,6 +67,29 @@ public class RDAEventDispatcher {
     this.isGraded = isGraded;
     this.contextCollectionId = contextCollectionId;
     this.contextCollectionType = contextCollectionType;
+    this.maxScore = maxScore;
+    this.score = score;
+  }
+
+  public RDAEventDispatcher(AJEntityDailyClassActivity dcaReport, Long views, Long reaction,
+      Long timespent, Double maxScore, Double score, Boolean isGraded, long activityTime) {
+    this.dcaReports = dcaReport;
+    this.views = views;
+    this.reaction = reaction;
+    this.timespent = timespent;
+    this.maxScore = maxScore;
+    this.score = score;
+    this.isGraded = isGraded;
+    this.activityTime = activityTime;
+  }
+
+  public RDAEventDispatcher(AJEntityDailyClassActivity dcaReport, String actorId, Double score,
+      Double maxScore, Boolean isGraded) {
+    this.dcaReports = dcaReport;
+    this.actorId = actorId;
+    this.isGraded = isGraded;
+    this.maxScore = maxScore;
+    this.score = score;
   }
 
   public void sendCollectionStartEventToRDA() {
@@ -97,7 +127,7 @@ public class RDAEventDispatcher {
 
   public void sendCollScoreUpdateEventFromSUHToRDA() {
     try {
-      JsonObject rdaEvent = createCollScoreUpdateEventFromBaseReports();
+      JsonObject rdaEvent = createCollScoreUpdateEventFromBRorDCA(baseReports);
       LOGGER.debug("SUH::The Collection RDA Event is : {} ", rdaEvent);
       MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_RDA, rdaEvent);
       LOGGER.info("SUH::Successfully dispatched Collection score update RDA Event..");
@@ -106,8 +136,18 @@ public class RDAEventDispatcher {
     }
   }
 
-  public void sendCollScoreUpdateEventFromRGHToRDA() {
+  public void sendCollScoreUpdateEventFromDCAToRDA() {
+    try {
+      JsonObject rdaEvent = createCollScoreUpdateEventFromBRorDCA(dcaReports);
+      LOGGER.debug("CA::The DCA Collection RDA Event is : {} ", rdaEvent);
+      MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_RDA, rdaEvent);
+      LOGGER.info("CA::Successfully dispatched DCA Collection score update RDA Event..");
+    } catch (Exception e) {
+      LOGGER.error("CA::Error while dispatching DCA Collection score update RDA Event ", e);
+    }
+  }
 
+  public void sendCollScoreUpdateEventFromRGHToRDA() {
     try {
       JsonObject rdaEvent = createCollScoreUpdateEventFromRubricGrading();
       LOGGER.debug("RGH::The Collection RDA Event is : {} ", rdaEvent);
@@ -131,7 +171,7 @@ public class RDAEventDispatcher {
 
   public void sendOfflineStudentReportEventToRDA() {
     try {
-      JsonObject rdaEvent = createOfflineStudentPerfEvent();
+      JsonObject rdaEvent = createOfflineStudentPerfEvent(baseReports);
       LOGGER.debug("PEH::Collection OfflineStudentPerf RDA Event : {} ", rdaEvent);
       MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_RDA, rdaEvent);
       LOGGER.info("PEH::Successfully dispatched Collection OfflineStudentPerf RDA Event..");
@@ -140,12 +180,23 @@ public class RDAEventDispatcher {
     }
   }
 
+  public void sendOfflineStudentReportEventDCAToRDA() {
+    try {
+      JsonObject rdaEvent = createOfflineStudentPerfEvent(dcaReports);
+      LOGGER.debug("PEH::Collection DCAOfflineStudentPerf RDA Event : {} ", rdaEvent);
+      MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_RDA, rdaEvent);
+      LOGGER.info("PEH::Successfully dispatched Collection DCAOfflineStudentPerf RDA Event..");
+    } catch (Exception e) {
+      LOGGER.error("PEH::Error while dispatching Collection DCAOfflineStudentPerf RDA Event ", e);
+    }
+  }
+
   private JsonObject createCollectionStartEvent() {
     JsonObject cpEvent = new JsonObject();
     JsonObject context = new JsonObject();
     cpEvent.put(CollectionEventConstants.EventAttributes.EVENT_NAME,
         CollectionEventConstants.EventAttributes.COLLECTION_START_EVENT);
-    createCollectionContext(cpEvent, context);
+    createCollectionContext(baseReports, cpEvent, context);
 
     JsonObject result = new JsonObject();
     result.put(CollectionEventConstants.EventAttributes.TIMESPENT, 0);
@@ -161,7 +212,7 @@ public class RDAEventDispatcher {
     JsonObject context = new JsonObject();
     cpEvent.put(CollectionEventConstants.EventAttributes.EVENT_NAME,
         CollectionEventConstants.EventAttributes.COLLECTION_PERF_EVENT);
-    createCollectionContext(cpEvent, context);
+    createCollectionContext(baseReports, cpEvent, context);
     JsonObject result = new JsonObject();
     if (views != null) {
       result.put(CollectionEventConstants.EventAttributes.VIEWS, views);
@@ -237,49 +288,49 @@ public class RDAEventDispatcher {
     return resEvent;
   }
 
-  private void createCollectionContext(JsonObject cpEvent, JsonObject context) {
+  private void createCollectionContext(Model reports, JsonObject cpEvent, JsonObject context) {
     cpEvent.put(CollectionEventConstants.EventAttributes.USER_ID,
-        baseReports.get(AJEntityReporting.GOORUUID));
+        reports.get(AJEntityReporting.GOORUUID));
     cpEvent.put(CollectionEventConstants.EventAttributes.ACTIVITY_TIME, this.activityTime);
     cpEvent.put(CollectionEventConstants.EventAttributes.COLLECTION_ID,
-        baseReports.get(AJEntityReporting.COLLECTION_OID));
+        reports.get(AJEntityReporting.COLLECTION_OID));
     cpEvent.put(CollectionEventConstants.EventAttributes.COLLECTION_TYPE,
-        baseReports.get(AJEntityReporting.COLLECTION_TYPE));
+        reports.get(AJEntityReporting.COLLECTION_TYPE));
     context.put(CollectionEventConstants.EventAttributes.CONTEXT_COLLECTION_ID,
-        baseReports.get(AJEntityReporting.CONTEXT_COLLECTION_ID));
+        reports.get(AJEntityReporting.CONTEXT_COLLECTION_ID));
     context.put(CollectionEventConstants.EventAttributes.CONTEXT_COLLECTION_TYPE,
-        baseReports.get(AJEntityReporting.CONTEXT_COLLECTION_TYPE));
+        reports.get(AJEntityReporting.CONTEXT_COLLECTION_TYPE));
     context.put(CollectionEventConstants.EventAttributes.CONTENT_SOURCE,
-        baseReports.get(AJEntityReporting.CONTENT_SOURCE));
+        reports.get(AJEntityReporting.CONTENT_SOURCE));
 
     context.put(CollectionEventConstants.EventAttributes.CLASS_ID,
-        baseReports.get(AJEntityReporting.CLASS_GOORU_OID));
+        reports.get(AJEntityReporting.CLASS_GOORU_OID));
     context.put(CollectionEventConstants.EventAttributes.COURSE_ID,
-        baseReports.get(AJEntityReporting.COURSE_GOORU_OID));
+        reports.get(AJEntityReporting.COURSE_GOORU_OID));
     context.put(CollectionEventConstants.EventAttributes.UNIT_ID,
-        baseReports.get(AJEntityReporting.UNIT_GOORU_OID));
+        reports.get(AJEntityReporting.UNIT_GOORU_OID));
     context.put(CollectionEventConstants.EventAttributes.LESSON_ID,
-        baseReports.get(AJEntityReporting.LESSON_GOORU_OID));
+        reports.get(AJEntityReporting.LESSON_GOORU_OID));
     context.put(CollectionEventConstants.EventAttributes.SESSION_ID,
-        baseReports.get(AJEntityReporting.SESSION_ID));
+        reports.get(AJEntityReporting.SESSION_ID));
     context.put(CollectionEventConstants.EventAttributes.PARTNER_ID,
-        baseReports.get(AJEntityReporting.PARTNER_ID));
+        reports.get(AJEntityReporting.PARTNER_ID));
     context.put(CollectionEventConstants.EventAttributes.QUESTION_COUNT,
-        baseReports.get(AJEntityReporting.QUESTION_COUNT));
+        reports.get(AJEntityReporting.QUESTION_COUNT));
     context.put(CollectionEventConstants.EventAttributes.TENANT_ID,
-        baseReports.get(AJEntityReporting.TENANT_ID));
+        reports.get(AJEntityReporting.TENANT_ID));
 
     context.put(CollectionEventConstants.EventAttributes.PATH_TYPE,
-        baseReports.get(AJEntityReporting.PATH_TYPE));
+        reports.get(AJEntityReporting.PATH_TYPE));
     context.put(CollectionEventConstants.EventAttributes.PATH_ID,
-        baseReports.get(AJEntityReporting.PATH_ID));
+        reports.get(AJEntityReporting.PATH_ID));
     cpEvent.put(CollectionEventConstants.EventAttributes.TIMEZONE,
-        baseReports.get(AJEntityReporting.TIME_ZONE));
+        reports.get(AJEntityReporting.TIME_ZONE));
 
     cpEvent.put(CollectionEventConstants.EventAttributes.CONTEXT, context);
   }
 
-  private JsonObject createCollScoreUpdateEventFromBaseReports() {
+  private JsonObject createCollScoreUpdateEventFromBRorDCA(Model reports) {
     JsonObject cpEvent = new JsonObject();
     JsonObject context = new JsonObject();
     JsonObject result = new JsonObject();
@@ -287,31 +338,31 @@ public class RDAEventDispatcher {
     cpEvent.put(CollectionEventConstants.EventAttributes.USER_ID, actorId);
     cpEvent.put(CollectionEventConstants.EventAttributes.ACTIVITY_TIME, System.currentTimeMillis());
     cpEvent.put(CollectionEventConstants.EventAttributes.COLLECTION_ID,
-        baseReports.get(AJEntityReporting.COLLECTION_OID));
+        reports.get(AJEntityReporting.COLLECTION_OID));
     cpEvent.put(CollectionEventConstants.EventAttributes.COLLECTION_TYPE,
-        baseReports.get(AJEntityReporting.COLLECTION_TYPE));
+        reports.get(AJEntityReporting.COLLECTION_TYPE));
     context.put(CollectionEventConstants.EventAttributes.CONTEXT_COLLECTION_ID,
-        baseReports.get(AJEntityReporting.CONTEXT_COLLECTION_ID));
+        reports.get(AJEntityReporting.CONTEXT_COLLECTION_ID));
     context.put(CollectionEventConstants.EventAttributes.CONTEXT_COLLECTION_TYPE,
-        baseReports.get(AJEntityReporting.CONTEXT_COLLECTION_TYPE));
+        reports.get(AJEntityReporting.CONTEXT_COLLECTION_TYPE));
 
     context.put(CollectionEventConstants.EventAttributes.CLASS_ID,
-        baseReports.get(AJEntityReporting.CLASS_GOORU_OID));
+        reports.get(AJEntityReporting.CLASS_GOORU_OID));
     context.put(CollectionEventConstants.EventAttributes.COURSE_ID,
-        baseReports.get(AJEntityReporting.COURSE_GOORU_OID));
+        reports.get(AJEntityReporting.COURSE_GOORU_OID));
     context.put(CollectionEventConstants.EventAttributes.UNIT_ID,
-        baseReports.get(AJEntityReporting.UNIT_GOORU_OID));
+        reports.get(AJEntityReporting.UNIT_GOORU_OID));
     context.put(CollectionEventConstants.EventAttributes.LESSON_ID,
-        baseReports.get(AJEntityReporting.LESSON_GOORU_OID));
+        reports.get(AJEntityReporting.LESSON_GOORU_OID));
     context.put(CollectionEventConstants.EventAttributes.SESSION_ID,
-        baseReports.get(AJEntityReporting.SESSION_ID));
+        reports.get(AJEntityReporting.SESSION_ID));
     context.put(CollectionEventConstants.EventAttributes.CONTENT_SOURCE,
-        baseReports.get(AJEntityReporting.CONTENT_SOURCE));
+        reports.get(AJEntityReporting.CONTENT_SOURCE));
 
     context.put(CollectionEventConstants.EventAttributes.PATH_TYPE,
-        baseReports.get(AJEntityReporting.PATH_TYPE));
+        reports.get(AJEntityReporting.PATH_TYPE));
     context.put(CollectionEventConstants.EventAttributes.PATH_ID,
-        baseReports.get(AJEntityReporting.PATH_ID));
+        reports.get(AJEntityReporting.PATH_ID));
 
     cpEvent.put(CollectionEventConstants.EventAttributes.CONTEXT, context);
     cpEvent.put(CollectionEventConstants.EventAttributes.EVENT_NAME,
@@ -332,7 +383,6 @@ public class RDAEventDispatcher {
 
   }
 
-
   private JsonObject createCollScoreUpdateEventFromRubricGrading() {
     JsonObject cpEvent = new JsonObject();
     JsonObject context = new JsonObject();
@@ -347,8 +397,8 @@ public class RDAEventDispatcher {
         rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID));
     cpEvent.put(CollectionEventConstants.EventAttributes.COLLECTION_TYPE, collectionType);
 
-    context
-        .put(CollectionEventConstants.EventAttributes.CONTEXT_COLLECTION_ID, contextCollectionId);
+    context.put(CollectionEventConstants.EventAttributes.CONTEXT_COLLECTION_ID,
+        contextCollectionId);
     context.put(CollectionEventConstants.EventAttributes.CONTEXT_COLLECTION_TYPE,
         contextCollectionType);
     context.put(CollectionEventConstants.EventAttributes.PATH_ID, pathId);
@@ -448,12 +498,12 @@ public class RDAEventDispatcher {
 
   }
 
-  private JsonObject createOfflineStudentPerfEvent() {
+  private JsonObject createOfflineStudentPerfEvent(Model reports) {
     JsonObject cpEvent = new JsonObject();
     JsonObject context = new JsonObject();
     cpEvent.put(CollectionEventConstants.EventAttributes.EVENT_NAME,
         CollectionEventConstants.EventAttributes.OFFLINE_STUDENT_COLLECTION_PERF_EVENT);
-    createCollectionContext(cpEvent, context);
+    createCollectionContext(reports, cpEvent, context);
     JsonObject result = new JsonObject();
     if (views != null) {
       result.put(CollectionEventConstants.EventAttributes.VIEWS, views);

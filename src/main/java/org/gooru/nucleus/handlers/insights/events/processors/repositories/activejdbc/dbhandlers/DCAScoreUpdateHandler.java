@@ -1,8 +1,5 @@
 package org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers;
 
-import com.hazelcast.util.StringUtil;
-import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -25,6 +22,9 @@ import org.javalite.activejdbc.Base;
 import org.javalite.activejdbc.LazyList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.hazelcast.util.StringUtil;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 
 
 /**
@@ -232,7 +232,11 @@ public class DCAScoreUpdateHandler implements DBHandler {
         dcaReports.get(AJEntityDailyClassActivity.COLLECTION_OID),
         dcaReports.get(AJEntityDailyClassActivity.SESSION_ID));
     timeSpent = tsObject != null ? Long.valueOf(tsObject.toString()) : 0L;
-
+    
+    // Enable in future, if teacher override flow comes for CA offline data to update score at collection_perf table
+    /*RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(this.dcaReports, this.studentId,
+        this.score, this.max_score, this.isGraded);
+    rdaEventDispatcher.sendCollScoreUpdateEventFromDCAToRDA();*/
     LOGGER.debug("DONE");
     return new ExecutionResult<>(MessageResponseFactory.createOkayResponse(),
         ExecutionStatus.SUCCESSFUL);
