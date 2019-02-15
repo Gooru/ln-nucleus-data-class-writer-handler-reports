@@ -409,6 +409,10 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
             AJEntityDailyClassActivity.getConverterRegistry());
         new DefAJEntityDailyClassActivityBuilder().build(dcaReport, resource,
             AJEntityDailyClassActivity.getConverterRegistry());
+        
+        if (resourceType.equalsIgnoreCase(EventConstants.RESOURCE)) {
+          dcaReport.set(AJEntityDailyClassActivity.QUESTION_TYPE, EventConstants.UNKNOWN);
+        }
 
         if (dcaReport.hasErrors()) {
           LOGGER.warn("errors in creating Class Activity");
