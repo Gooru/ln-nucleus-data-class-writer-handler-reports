@@ -50,10 +50,10 @@ public class DiagnosticQueueAndStatusUpdaterDao {
     int count = coreDb.exec(UPDATE_DIAGNOSTIC_STATUS_DONE, command.getClassId().toString(),
         command.getUserId().toString());
     if (count < 1) {
-      LOGGER.warn("Not able to queue record for ILP for payload: ");
+      LOGGER.warn("Not able to update status for ILP for payload: ");
       LOGGER.warn(payload.toString());
     } else {
-      LOGGER.debug("Queued record for processing: {}", payload.toString());
+      LOGGER.debug("Updated status for ILP request: {}", payload.toString());
     }
   }
 
@@ -62,10 +62,10 @@ public class DiagnosticQueueAndStatusUpdaterDao {
     int count = coreDb.exec(QUEUE_ILP_RECORD, command.getUserId().toString(), payload.toString(),
         command.getClassId().toString());
     if (count < 1) {
-      LOGGER.warn("Not able to update status for ILP for payload: ");
+      LOGGER.warn("Not able to queue record for ILP for payload: ");
       LOGGER.warn(payload.toString());
     } else {
-      LOGGER.debug("Updated status for ILP request: {}", payload.toString());
+      LOGGER.debug("Queued record for processing: {}", payload.toString());
     }
   }
 
@@ -73,6 +73,6 @@ public class DiagnosticQueueAndStatusUpdaterDao {
       "insert into skyline_initial_queue (user_id, class_id, course_id, status, category, payload, created_at, updated_at) "
           + "  select ?::uuid, id, course_id, 0, 0, ?, now(), now() from class where id = ?::uuid";
   private static final String UPDATE_DIAGNOSTIC_STATUS_DONE =
-      "update class_member set diag_asmt_state = 3 where class_id = ?::uuid and user_id = ?::uuid";
+      "update class_member set diag_asmt_state = 3, updated_at = now() where class_id = ?::uuid and user_id = ?::uuid";
 
 }
