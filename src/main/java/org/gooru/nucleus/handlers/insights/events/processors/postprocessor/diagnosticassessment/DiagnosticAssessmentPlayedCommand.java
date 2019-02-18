@@ -4,6 +4,7 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -52,7 +53,7 @@ class DiagnosticAssessmentPlayedCommand {
 
   private static List<UUID> populateQuestions(JsonArray questionsInPayload) {
     if (questionsInPayload == null || questionsInPayload.isEmpty()) {
-      throw new IllegalArgumentException("questions is non nullable, found null in request");
+      return Collections.emptyList();
     }
     List<UUID> questions = new ArrayList<>(questionsInPayload.size());
     for (Object o : questionsInPayload) {
