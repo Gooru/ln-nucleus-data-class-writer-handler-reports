@@ -82,7 +82,6 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
 
     if (StringUtil.isNullOrEmptyAfterTrim(
         context.request().getString(AJEntityDailyClassActivity.COLLECTION_OID))
-        || StringUtil.isNullOrEmptyAfterTrim(context.request().getString(AJEntityReporting.COURSE_GOORU_OID))
         || StringUtil.isNullOrEmptyAfterTrim(collectionType)
         || !EventConstants.COLLECTION_TYPES.matcher(collectionType).matches()
         || (collectionType.equalsIgnoreCase(EventConstants.EXTERNAL_COLLECTION) && userIds == null)
@@ -253,12 +252,17 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
     new DefAJEntityDailyClassActivityBuilder().build(dcaReport, requestPayload,
         AJEntityDailyClassActivity.getConverterRegistry());
 
-    AJEntityCourse course = AJEntityCourse.fetchCourse(UUID.fromString(dcaReport.getString(AJEntityDailyClassActivity.COURSE_GOORU_OID)));
-    if (course == null) {
-      return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse(
-          "Course not found at core: " + dcaReport.getString("course_id")), ExecutionStatus.FAILED);
+    if (!StringUtil.isNullOrEmpty(context.request().getString(AJEntityReporting.COURSE_GOORU_OID))) {
+      AJEntityCourse course = AJEntityCourse.fetchCourse(
+          UUID.fromString(dcaReport.getString(AJEntityDailyClassActivity.COURSE_GOORU_OID)));
+      if (course == null) {
+        return new ExecutionResult<>(
+            MessageResponseFactory.createInvalidRequestResponse(
+                "Course not found at core: " + dcaReport.getString("course_id")),
+            ExecutionStatus.FAILED);
+      }
+      isPremiumCourse = AJEntityCourse.isPremium(course);
     }
-    isPremiumCourse = AJEntityCourse.isPremium(course); 
     
     duplicateRow =
         AJEntityDailyClassActivity.findBySQL(AJEntityDailyClassActivity.FIND_COLLECTION_EVENT,
