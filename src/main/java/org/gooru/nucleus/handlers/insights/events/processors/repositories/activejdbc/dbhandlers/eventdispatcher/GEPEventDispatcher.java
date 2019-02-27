@@ -17,9 +17,7 @@ import org.slf4j.LoggerFactory;
 public class GEPEventDispatcher {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(GEPEventDispatcher.class);
-  //TODO: This Kafka Topic name needs to be picked up from config
-  public static final String TOPIC_GEP = "org.gooru.da.sink.logW.usage.events";
-  //public static final String TOPIC_GEP = "gep";
+  public static final String TOPIC_GEP = "gep";
   private AJEntityReporting baseReports;
   private AJEntityDailyClassActivity dcaReport;
   private long activityTime;
@@ -40,7 +38,7 @@ public class GEPEventDispatcher {
     try {
       JsonObject gepEvent = createCPEvent(dcaReport);
       LOGGER.debug("The Collection GEP Event is : {} ", gepEvent);
-      MessageDispatcher.getInstance().sendGEPEvent2Kafka(TOPIC_GEP, gepEvent);
+      MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_GEP, gepEvent);
       LOGGER.info("Successfully dispatched Collection Perf GEP report..");
     } catch (Exception e) {
       LOGGER.error("Error while dispatching Collection Perf GEP Event ", e);
@@ -51,7 +49,7 @@ public class GEPEventDispatcher {
     try {
       JsonObject gepEvent = createCRPEvent(dcaReport);
       LOGGER.debug("The Collection Resource GEP Event is : {} ", gepEvent);
-      MessageDispatcher.getInstance().sendGEPEvent2Kafka(TOPIC_GEP, gepEvent);
+      MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_GEP, gepEvent);
       LOGGER.info("Successfully dispatched Collection Resource GEP report..");
     } catch (Exception e) {
       LOGGER.error("Error while dispatching Collection Resource GEP Event ", e);
@@ -62,7 +60,7 @@ public class GEPEventDispatcher {
     try {
       JsonObject gepEvent = createCPEvent(baseReports);
       LOGGER.debug("The Collection GEP Event is : {} ", gepEvent);
-      MessageDispatcher.getInstance().sendGEPEvent2Kafka(TOPIC_GEP, gepEvent);
+      MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_GEP, gepEvent);
       LOGGER.info("Successfully dispatched Collection Perf GEP report..");
     } catch (Exception e) {
       LOGGER.error("Error while dispatching Collection Perf GEP Event ", e);
@@ -73,7 +71,7 @@ public class GEPEventDispatcher {
     try {
       JsonObject gepEvent = createCRPEvent(baseReports);
       LOGGER.debug("The Collection Resource GEP Event is : {} ", gepEvent);
-      MessageDispatcher.getInstance().sendGEPEvent2Kafka(TOPIC_GEP, gepEvent);
+      MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_GEP, gepEvent);
       LOGGER.info("Successfully dispatched Collection Resource GEP report..");
     } catch (Exception e) {
       LOGGER.error("Error while dispatching Collection Resource GEP Event ", e);

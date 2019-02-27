@@ -283,7 +283,7 @@ public class RubricGradingHandler implements DBHandler {
         ltiEventDispatcher.sendTeacherGradingEventtoLTI();
       }
       RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(this.rubricGrading,
-          collType.toString(), pathId, pathType, contextCollectionId, contextCollectionType,
+          collType.toString(), score, max_score, pathId, pathType, contextCollectionId, contextCollectionType,
           isGraded);
       rdaEventDispatcher.sendCollScoreUpdateEventFromRGHToRDA();
     }

@@ -236,7 +236,7 @@ public class ScoreUpdateHandler implements DBHandler {
         updated_at, rawScore, max_score, score, isGraded);
     ltiEventDispatcher.sendTeacherOverrideEventtoLTI();
     RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(this.baseReports, this.studentId,
-        this.isGraded);
+        score, max_score, this.isGraded);
     rdaEventDispatcher.sendCollScoreUpdateEventFromSUHToRDA();
 
     LOGGER.debug("DONE");

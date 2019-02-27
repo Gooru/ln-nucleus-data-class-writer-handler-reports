@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.UUID;
-
 import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.GEPEventDispatcher;
@@ -25,9 +24,7 @@ import org.javalite.activejdbc.Base;
 import org.javalite.activejdbc.LazyList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import com.hazelcast.util.StringUtil;
-
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
@@ -396,6 +393,10 @@ public class OfflineStudentReportingHandler implements DBHandler {
             .build(baseReport, requestPayload, AJEntityReporting.getConverterRegistry());
         new DefAJEntityReportingBuilder()
             .build(baseReport, resource, AJEntityReporting.getConverterRegistry());
+        
+        if (resourceType.equalsIgnoreCase(EventConstants.RESOURCE)) {
+          baseReport.set(AJEntityReporting.QUESTION_TYPE, EventConstants.UNKNOWN);
+        }
 
         if (baseReport.hasErrors()) {
           LOGGER.warn("errors in creating Base Report");
