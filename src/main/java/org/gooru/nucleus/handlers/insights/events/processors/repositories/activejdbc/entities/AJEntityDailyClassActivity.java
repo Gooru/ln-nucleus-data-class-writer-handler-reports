@@ -89,7 +89,7 @@ public class AJEntityDailyClassActivity extends Model {
   public static final String FIND_COLLECTION_EVENT =
       "SELECT id, views, time_spent, score, reaction, resource_attempt_status, answer_object "
           + "FROM daily_class_activity "
-          + "WHERE session_id = ? AND collection_id = ? AND event_type = ? AND event_name = ? ";
+          + "WHERE actor_id = ? AND session_id = ? AND collection_id = ? AND event_type = ? AND event_name = ? ";
 
 //    public static final String UPDATE_COLLECTION_EVENT = "UPDATE daily_class_activity SET views = ?, time_spent= ?, score = ?, updated_at = ?, "
 //            + "reaction = ? WHERE id = ?";
@@ -108,7 +108,7 @@ public class AJEntityDailyClassActivity extends Model {
 
   public static final String FIND_RESOURCE_EVENT =
       "SELECT id, views, time_spent, score, reaction, resource_attempt_status, answer_object"
-          + " FROM daily_class_activity WHERE collection_id = ? AND session_id = ? AND resource_id = ? AND event_type = ?";
+          + " FROM daily_class_activity WHERE actor_id = ? AND collection_id = ? AND session_id = ? AND resource_id = ? AND event_type = ?";
 
   public static final String SELECT_DCA_REPORT_ID = "SELECT id FROM daily_class_activity WHERE collection_id = ? AND session_id = ? AND resource_id = ? AND event_type = ? ";
 

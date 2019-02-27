@@ -335,9 +335,11 @@ class ProcessEventHandler implements DBHandler {
 
     if ((event.getEventName().equals(EventConstants.COLLECTION_PLAY)) && event.getEventType()
         .equalsIgnoreCase(EventConstants.START)) {
-    	//For Inspect Competencies, there is no in-progress status. Its either "mastered' or nothing 
-    	if (!event.getContentSource().equalsIgnoreCase(EventConstants.COMPETENCY_MASTERY)) {
+    	//For Inspect Competencies, there is no in-progress status. Its either "mastered" or nothing 
+    	if (event.getContentSource() != null && !event.getContentSource().equalsIgnoreCase(EventConstants.COMPETENCY_MASTERY)) {
     	      sendCollStartEventtoGEP();    		
+    	} else if (event.getContentSource() == null) {
+    		sendCollStartEventtoGEP();
     	}
       RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(baseReport, this.views,
           this.reaction, this.timespent, this.maxScore, this.score, this.isGraded,
@@ -353,9 +355,12 @@ class ProcessEventHandler implements DBHandler {
               event.getSessionId(),
               event.getContentGooruId(), EventConstants.COLLECTION_RESOURCE_PLAY,
               EventConstants.STOP, false);
-      if (allGraded == null || allGraded.isEmpty() 
-    		  && !event.getContentSource().equalsIgnoreCase(EventConstants.COMPETENCY_MASTERY)) {
-        sendCPEventtoGEP();
+      if (allGraded == null || allGraded.isEmpty()) { 
+    	  if (event.getContentSource() != null && !event.getContentSource().equalsIgnoreCase(EventConstants.COMPETENCY_MASTERY)) {
+    		  sendCPEventtoGEP();
+    	  } else if (event.getContentSource() == null) {
+    		  sendCPEventtoGEP();
+    	  }
         this.isGraded = true;
       } else {
         this.isGraded = false;
@@ -371,7 +376,7 @@ class ProcessEventHandler implements DBHandler {
           this.scoreObj, this.maxScore, this.score, this.isGraded);
       ltiEventDispatcher.sendCollPerfEventtoLTI();
       
-      if (event.getContentSource().equalsIgnoreCase(EventConstants.DIAGNOSTIC)) {
+      if (event.getContentSource() != null && event.getContentSource().equalsIgnoreCase(EventConstants.DIAGNOSTIC)) {
           questions = AJEntityReporting
                   .findBySQL(AJEntityReporting.GET_DIAGNOSTIC_ASSESSMENT_QUESTIONS, event.getContentGooruId(),
                 		  event.getSessionId(), event.getGooruUUID(), event.getClassGooruId()); 
@@ -383,7 +388,7 @@ class ProcessEventHandler implements DBHandler {
       //The onus to ensure if this Assessment is a signature Item lies on the upstream systems.
       //Writer assumes that since the contentSource is "competencyMastery", assessment is a verified signature assessment,
       //& so if the score is >= 80% then the event should flow to DAP for skyline updation.
-      if (event.getContentSource().equalsIgnoreCase(EventConstants.COMPETENCY_MASTERY) && score >= 80.00) {
+      if (event.getContentSource() != null && event.getContentSource().equalsIgnoreCase(EventConstants.COMPETENCY_MASTERY) && score >= 80.00) {
     	  sendCPEventtoGEP();
       }
     }
