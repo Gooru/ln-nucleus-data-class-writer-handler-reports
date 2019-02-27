@@ -158,9 +158,10 @@ public class LTIEventDispatcher {
     teacherGradingEvent.put("maxScore", maxScore);
     teacherGradingEvent.put("reaction", 0);
 
-    DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")
+    String ts = updated_at.substring(0, updated_at.indexOf("."));
+    DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
         .withResolverStyle(ResolverStyle.LENIENT);
-    LocalDateTime dt = LocalDateTime.parse(updated_at, dtf);
+    LocalDateTime dt = LocalDateTime.parse(ts, dtf);
     Instant instant = dt.toInstant(ZoneOffset.UTC);
 
     teacherGradingEvent.put("completedTime", instant.toEpochMilli());
@@ -217,9 +218,10 @@ public class LTIEventDispatcher {
     teacherOverrideEvent.put("maxScore", maxScore);
     teacherOverrideEvent.put("reaction", 0);
 
+    String ts = updated_at.substring(0, updated_at.indexOf("."));
     DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")
         .withResolverStyle(ResolverStyle.LENIENT);
-    LocalDateTime dt = LocalDateTime.parse(updated_at, dtf);
+    LocalDateTime dt = LocalDateTime.parse(ts, dtf);
     Instant instant = dt.toInstant(ZoneOffset.UTC);
 
     teacherOverrideEvent.put("completedTime", instant.toEpochMilli());

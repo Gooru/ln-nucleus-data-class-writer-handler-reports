@@ -265,7 +265,7 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
     }
     
     duplicateRow =
-        AJEntityDailyClassActivity.findBySQL(AJEntityDailyClassActivity.FIND_COLLECTION_EVENT,
+        AJEntityDailyClassActivity.findBySQL(AJEntityDailyClassActivity.FIND_COLLECTION_EVENT, userId, 
             dcaReport.get(AJEntityDailyClassActivity.SESSION_ID),
             dcaReport.get(AJEntityDailyClassActivity.COLLECTION_OID), EventConstants.STOP,
             EventConstants.COLLECTION_PLAY);
@@ -358,7 +358,7 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
         AJEntityDailyClassActivity dcaReport = new AJEntityDailyClassActivity();
         JsonObject resource = (JsonObject) res;
         duplicateRow =
-            AJEntityDailyClassActivity.findBySQL(AJEntityDailyClassActivity.FIND_RESOURCE_EVENT,
+            AJEntityDailyClassActivity.findBySQL(AJEntityDailyClassActivity.FIND_RESOURCE_EVENT, userId, 
                 collectionId, requestPayload.getString(AJEntityDailyClassActivity.SESSION_ID),
                 resource.getString(AJEntityDailyClassActivity.RESOURCE_ID), EventConstants.STOP);
 
