@@ -295,7 +295,7 @@ public class OfflineStudentReportingHandler implements DBHandler {
         this.reaction, this.totalResTS, this.finalMaxScore, this.finalScore, this.isGraded, ts);
     rdaEventDispatcher.sendOfflineStudentReportEventToRDA();
     GEPEventDispatcher eventDispatcher = new GEPEventDispatcher(baseReports, this.totalResTS,
-        this.totalResMaxScore, this.totalResScore, System.currentTimeMillis());
+        this.finalMaxScore, this.finalScore, System.currentTimeMillis());
     eventDispatcher.sendCPEventFromBaseReportstoGEP();
   }
 
