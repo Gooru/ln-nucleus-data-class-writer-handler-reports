@@ -14,7 +14,6 @@ import org.gooru.nucleus.handlers.insights.events.processors.repositories.active
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.RDAEventDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityClassAuthorizedUsers;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityDailyClassActivity;
-import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityReporting;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.EntityBuilder;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.core.AJEntityCourse;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.utils.BaseUtil;
@@ -130,8 +129,8 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
     String collectionType = requestPayload.getString(AJEntityDailyClassActivity.COLLECTION_TYPE);
 
     long ts = System.currentTimeMillis();
-    if (requestPayload.getString(AJEntityReporting.TIME_ZONE) != null) {
-      String timeZone = requestPayload.getString(AJEntityReporting.TIME_ZONE);
+    if (requestPayload.getString(AJEntityDailyClassActivity.TIME_ZONE) != null) {
+      String timeZone = requestPayload.getString(AJEntityDailyClassActivity.TIME_ZONE);
       if (requestPayload.getString(EventConstants.CONDUCTED_ON) != null) {
         try {
           DATE_FORMAT_YMD.setTimeZone(TimeZone.getTimeZone("Etc/UTC"));
@@ -242,8 +241,8 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
     dcaReport.set(AJEntityDailyClassActivity.CREATE_TIMESTAMP, new Timestamp(ts));
     dcaReport.set(AJEntityDailyClassActivity.UPDATE_TIMESTAMP, new Timestamp(ts));
     if (collectionType.contains(EventConstants.ASSESSMENT)) {
-      dcaReport.set(AJEntityReporting.GRADING_TYPE, EventConstants.TEACHER);
-      dcaReport.set(AJEntityReporting.IS_GRADED, this.isGraded);
+      dcaReport.set(AJEntityDailyClassActivity.GRADING_TYPE, EventConstants.TEACHER);
+      dcaReport.set(AJEntityDailyClassActivity.IS_GRADED, this.isGraded);
     }
 
     // Remove ALL the values from the Request that needed processing, so
@@ -252,7 +251,7 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
     new DefAJEntityDailyClassActivityBuilder().build(dcaReport, requestPayload,
         AJEntityDailyClassActivity.getConverterRegistry());
 
-    if (!StringUtil.isNullOrEmpty(context.request().getString(AJEntityReporting.COURSE_GOORU_OID))) {
+    if (!StringUtil.isNullOrEmpty(context.request().getString(AJEntityDailyClassActivity.COURSE_GOORU_OID))) {
       AJEntityCourse course = AJEntityCourse.fetchCourse(
           UUID.fromString(dcaReport.getString(AJEntityDailyClassActivity.COURSE_GOORU_OID)));
       if (course == null) {
@@ -285,8 +284,8 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
             this.dcaReport.toMap().keySet().forEach(key -> {
               dcaReport.set(key, this.dcaReport.get(key));
             });
-            dcaReport.set(AJEntityReporting.GOORUUID, user.toString());
-            dcaReport.set(AJEntityReporting.SESSION_ID, UUID.randomUUID().toString());
+            dcaReport.set(AJEntityDailyClassActivity.GOORUUID, user.toString());
+            dcaReport.set(AJEntityDailyClassActivity.SESSION_ID, UUID.randomUUID().toString());
             if (dcaReport.insert()) {
               LOGGER
                   .info("Offline student record (Ext-Coll) inserted successfully into Reports DB");
@@ -320,11 +319,11 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
   private void sendCPEventToGEPAndRDA(AJEntityDailyClassActivity dcaReport, long ts) {
     RDAEventDispatcher rdaEventDispatcher =
         new RDAEventDispatcher(dcaReport, this.views, this.reaction, this.totalResTS,
-            this.totalResMaxScore, this.totalResScore, this.isGraded, ts);
+            this.finalMaxScore, this.finalScore, this.isGraded, ts);
     rdaEventDispatcher.sendOfflineStudentReportEventDCAToRDA();
     if (isPremiumCourse) {
       GEPEventDispatcher eventDispatcher = new GEPEventDispatcher(dcaReport, this.totalResTS,
-          this.totalResMaxScore, this.totalResScore, System.currentTimeMillis());
+          this.finalMaxScore, this.finalScore, System.currentTimeMillis());
       eventDispatcher.sendCPEventFromDCAtoGEP();
     }
   }
@@ -377,10 +376,10 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
           dcaReport.setDateinTZ(localeDate);
         }
 
-        String resourceType = resource.getString(AJEntityReporting.RESOURCE_TYPE);
+        String resourceType = resource.getString(AJEntityDailyClassActivity.RESOURCE_TYPE);
         if (resourceType.equalsIgnoreCase(EventConstants.QUESTION)) {
           this.questionCount += 1;
-          Double score = resource.getDouble(AJEntityReporting.SCORE);
+          Double score = resource.getDouble(AJEntityDailyClassActivity.SCORE);
           if (score != null) {
             String answerStatus = EventConstants.ATTEMPTED;
             if (score == 0) {
@@ -389,7 +388,7 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
               answerStatus = EventConstants.CORRECT;
             }
 
-            Double totalResMaxScore = resource.getDouble(AJEntityReporting.MAX_SCORE);
+            Double totalResMaxScore = resource.getDouble(AJEntityDailyClassActivity.MAX_SCORE);
             if (totalResMaxScore != null) {
               if (this.totalResScore != null) {
                 this.totalResScore += score;
@@ -403,8 +402,8 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
                 this.totalResMaxScore = totalResMaxScore;
               }
             }
-            dcaReport.set(AJEntityReporting.RESOURCE_ATTEMPT_STATUS, answerStatus);
-            dcaReport.setBoolean(AJEntityReporting.IS_GRADED, true);
+            dcaReport.set(AJEntityDailyClassActivity.RESOURCE_ATTEMPT_STATUS, answerStatus);
+            dcaReport.setBoolean(AJEntityDailyClassActivity.IS_GRADED, true);
           }
         }
         long views = 1;
