@@ -172,8 +172,12 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
     }
 
     // Generate and store resource play events
-    processResourcePlayData(requestPayload, collectionId, userId, ts);
-
+    ExecutionResult<MessageResponse> executionResult =
+        processResourcePlayData(requestPayload, collectionId, userId, ts);
+    if (executionResult.hasFailed()) {
+      return executionResult;
+    }
+    
     if (collectionType.equalsIgnoreCase(EventConstants.EXTERNAL_ASSESSMENT)
         || collectionType.equalsIgnoreCase(EventConstants.EXTERNAL_COLLECTION)) {
       Double percentScore = (requestPayload.getValue(PERCENT_SCORE) != null)
@@ -205,10 +209,10 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
         Double score = null;
         if ((rawScore.compareTo(100.00) > 0) || (maxScore.compareTo(100.00) > 0)
             || (rawScore.compareTo(0.00) < 0) || (maxScore.compareTo(0.00) < 0)
-            || (maxScore.compareTo(0.00) == 0)) {
+            || (maxScore.compareTo(0.00) == 0) || rawScore.compareTo(maxScore) > 0) {
           return new ExecutionResult<>(
               MessageResponseFactory
-                  .createInvalidRequestResponse("Numeric Field Overflow - Invalid Fraction Score"),
+                  .createInvalidRequestResponse("Numeric Field Overflow - Invalid Fraction Score/Maxscore"),
               ExecutionResult.ExecutionStatus.FAILED);
         }
         score = (rawScore * 100) / maxScore;
@@ -390,6 +394,15 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
 
             Double totalResMaxScore = resource.getDouble(AJEntityDailyClassActivity.MAX_SCORE);
             if (totalResMaxScore != null) {
+              if ((score.compareTo(100.00) > 0) || (totalResMaxScore.compareTo(100.00) > 0)
+                  || (score.compareTo(totalResMaxScore) > 0) || (score.compareTo(0.00) < 0)
+                  || (totalResMaxScore.compareTo(0.00) < 0)
+                  || (totalResMaxScore.compareTo(0.00) == 0)) {
+                return new ExecutionResult<>(
+                    MessageResponseFactory.createInvalidRequestResponse(
+                        "Numeric Field Overflow - Invalid Score/Maxscore"),
+                    ExecutionResult.ExecutionStatus.FAILED);
+              }
               if (this.totalResScore != null) {
                 this.totalResScore += score;
               } else {
