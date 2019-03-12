@@ -14,7 +14,6 @@ import org.gooru.nucleus.handlers.insights.events.processors.repositories.active
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.RDAEventDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityClassAuthorizedUsers;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityDailyClassActivity;
-import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityReporting;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.EntityBuilder;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.core.AJEntityCourse;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.utils.BaseUtil;
@@ -130,8 +129,8 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
     String collectionType = requestPayload.getString(AJEntityDailyClassActivity.COLLECTION_TYPE);
 
     long ts = System.currentTimeMillis();
-    if (requestPayload.getString(AJEntityReporting.TIME_ZONE) != null) {
-      String timeZone = requestPayload.getString(AJEntityReporting.TIME_ZONE);
+    if (requestPayload.getString(AJEntityDailyClassActivity.TIME_ZONE) != null) {
+      String timeZone = requestPayload.getString(AJEntityDailyClassActivity.TIME_ZONE);
       if (requestPayload.getString(EventConstants.CONDUCTED_ON) != null) {
         try {
           DATE_FORMAT_YMD.setTimeZone(TimeZone.getTimeZone("Etc/UTC"));
@@ -173,8 +172,12 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
     }
 
     // Generate and store resource play events
-    processResourcePlayData(requestPayload, collectionId, userId, ts);
-
+    ExecutionResult<MessageResponse> executionResult =
+        processResourcePlayData(requestPayload, collectionId, userId, ts);
+    if (executionResult.hasFailed()) {
+      return executionResult;
+    }
+    
     if (collectionType.equalsIgnoreCase(EventConstants.EXTERNAL_ASSESSMENT)
         || collectionType.equalsIgnoreCase(EventConstants.EXTERNAL_COLLECTION)) {
       Double percentScore = (requestPayload.getValue(PERCENT_SCORE) != null)
@@ -206,10 +209,10 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
         Double score = null;
         if ((rawScore.compareTo(100.00) > 0) || (maxScore.compareTo(100.00) > 0)
             || (rawScore.compareTo(0.00) < 0) || (maxScore.compareTo(0.00) < 0)
-            || (maxScore.compareTo(0.00) == 0)) {
+            || (maxScore.compareTo(0.00) == 0) || rawScore.compareTo(maxScore) > 0) {
           return new ExecutionResult<>(
               MessageResponseFactory
-                  .createInvalidRequestResponse("Numeric Field Overflow - Invalid Fraction Score"),
+                  .createInvalidRequestResponse("Numeric Field Overflow - Invalid Fraction Score/Maxscore"),
               ExecutionResult.ExecutionStatus.FAILED);
         }
         score = (rawScore * 100) / maxScore;
@@ -242,8 +245,8 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
     dcaReport.set(AJEntityDailyClassActivity.CREATE_TIMESTAMP, new Timestamp(ts));
     dcaReport.set(AJEntityDailyClassActivity.UPDATE_TIMESTAMP, new Timestamp(ts));
     if (collectionType.contains(EventConstants.ASSESSMENT)) {
-      dcaReport.set(AJEntityReporting.GRADING_TYPE, EventConstants.TEACHER);
-      dcaReport.set(AJEntityReporting.IS_GRADED, this.isGraded);
+      dcaReport.set(AJEntityDailyClassActivity.GRADING_TYPE, EventConstants.TEACHER);
+      dcaReport.set(AJEntityDailyClassActivity.IS_GRADED, this.isGraded);
     }
 
     // Remove ALL the values from the Request that needed processing, so
@@ -252,7 +255,7 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
     new DefAJEntityDailyClassActivityBuilder().build(dcaReport, requestPayload,
         AJEntityDailyClassActivity.getConverterRegistry());
 
-    if (!StringUtil.isNullOrEmpty(context.request().getString(AJEntityReporting.COURSE_GOORU_OID))) {
+    if (!StringUtil.isNullOrEmpty(context.request().getString(AJEntityDailyClassActivity.COURSE_GOORU_OID))) {
       AJEntityCourse course = AJEntityCourse.fetchCourse(
           UUID.fromString(dcaReport.getString(AJEntityDailyClassActivity.COURSE_GOORU_OID)));
       if (course == null) {
@@ -265,7 +268,7 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
     }
     
     duplicateRow =
-        AJEntityDailyClassActivity.findBySQL(AJEntityDailyClassActivity.FIND_COLLECTION_EVENT,
+        AJEntityDailyClassActivity.findBySQL(AJEntityDailyClassActivity.FIND_COLLECTION_EVENT, userId, 
             dcaReport.get(AJEntityDailyClassActivity.SESSION_ID),
             dcaReport.get(AJEntityDailyClassActivity.COLLECTION_OID), EventConstants.STOP,
             EventConstants.COLLECTION_PLAY);
@@ -285,8 +288,8 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
             this.dcaReport.toMap().keySet().forEach(key -> {
               dcaReport.set(key, this.dcaReport.get(key));
             });
-            dcaReport.set(AJEntityReporting.GOORUUID, user.toString());
-            dcaReport.set(AJEntityReporting.SESSION_ID, UUID.randomUUID().toString());
+            dcaReport.set(AJEntityDailyClassActivity.GOORUUID, user.toString());
+            dcaReport.set(AJEntityDailyClassActivity.SESSION_ID, UUID.randomUUID().toString());
             if (dcaReport.insert()) {
               LOGGER
                   .info("Offline student record (Ext-Coll) inserted successfully into Reports DB");
@@ -320,11 +323,11 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
   private void sendCPEventToGEPAndRDA(AJEntityDailyClassActivity dcaReport, long ts) {
     RDAEventDispatcher rdaEventDispatcher =
         new RDAEventDispatcher(dcaReport, this.views, this.reaction, this.totalResTS,
-            this.totalResMaxScore, this.totalResScore, this.isGraded, ts);
+            this.finalMaxScore, this.finalScore, this.isGraded, ts);
     rdaEventDispatcher.sendOfflineStudentReportEventDCAToRDA();
     if (isPremiumCourse) {
       GEPEventDispatcher eventDispatcher = new GEPEventDispatcher(dcaReport, this.totalResTS,
-          this.totalResMaxScore, this.totalResScore, System.currentTimeMillis());
+          this.finalMaxScore, this.finalScore, System.currentTimeMillis());
       eventDispatcher.sendCPEventFromDCAtoGEP();
     }
   }
@@ -358,7 +361,7 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
         AJEntityDailyClassActivity dcaReport = new AJEntityDailyClassActivity();
         JsonObject resource = (JsonObject) res;
         duplicateRow =
-            AJEntityDailyClassActivity.findBySQL(AJEntityDailyClassActivity.FIND_RESOURCE_EVENT,
+            AJEntityDailyClassActivity.findBySQL(AJEntityDailyClassActivity.FIND_RESOURCE_EVENT, userId, 
                 collectionId, requestPayload.getString(AJEntityDailyClassActivity.SESSION_ID),
                 resource.getString(AJEntityDailyClassActivity.RESOURCE_ID), EventConstants.STOP);
 
@@ -377,10 +380,10 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
           dcaReport.setDateinTZ(localeDate);
         }
 
-        String resourceType = resource.getString(AJEntityReporting.RESOURCE_TYPE);
+        String resourceType = resource.getString(AJEntityDailyClassActivity.RESOURCE_TYPE);
         if (resourceType.equalsIgnoreCase(EventConstants.QUESTION)) {
           this.questionCount += 1;
-          Double score = resource.getDouble(AJEntityReporting.SCORE);
+          Double score = resource.getDouble(AJEntityDailyClassActivity.SCORE);
           if (score != null) {
             String answerStatus = EventConstants.ATTEMPTED;
             if (score == 0) {
@@ -389,8 +392,17 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
               answerStatus = EventConstants.CORRECT;
             }
 
-            Double totalResMaxScore = resource.getDouble(AJEntityReporting.MAX_SCORE);
+            Double totalResMaxScore = resource.getDouble(AJEntityDailyClassActivity.MAX_SCORE);
             if (totalResMaxScore != null) {
+              if ((score.compareTo(100.00) > 0) || (totalResMaxScore.compareTo(100.00) > 0)
+                  || (score.compareTo(totalResMaxScore) > 0) || (score.compareTo(0.00) < 0)
+                  || (totalResMaxScore.compareTo(0.00) < 0)
+                  || (totalResMaxScore.compareTo(0.00) == 0)) {
+                return new ExecutionResult<>(
+                    MessageResponseFactory.createInvalidRequestResponse(
+                        "Numeric Field Overflow - Invalid Score/Maxscore"),
+                    ExecutionResult.ExecutionStatus.FAILED);
+              }
               if (this.totalResScore != null) {
                 this.totalResScore += score;
               } else {
@@ -403,8 +415,8 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
                 this.totalResMaxScore = totalResMaxScore;
               }
             }
-            dcaReport.set(AJEntityReporting.RESOURCE_ATTEMPT_STATUS, answerStatus);
-            dcaReport.setBoolean(AJEntityReporting.IS_GRADED, true);
+            dcaReport.set(AJEntityDailyClassActivity.RESOURCE_ATTEMPT_STATUS, answerStatus);
+            dcaReport.setBoolean(AJEntityDailyClassActivity.IS_GRADED, true);
           }
         }
         long views = 1;

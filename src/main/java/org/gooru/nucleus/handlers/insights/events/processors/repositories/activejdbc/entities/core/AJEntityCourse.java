@@ -17,9 +17,10 @@ public class AJEntityCourse extends Model {
 
   private static final String VERSION = "version";
   private static final String PREMIUM = "premium";
+  private static final String IS_DELETED =  "is_deleted";
   
   public static Boolean isPremium(AJEntityCourse course) {
-    return (course.getString(VERSION) != null && course.getString(VERSION).equals(PREMIUM));
+    return (course.getString(VERSION) != null && course.getString(VERSION).equals(PREMIUM) && !course.getBoolean(IS_DELETED));
   }
 
   public static AJEntityCourse fetchCourse(UUID courseId) {

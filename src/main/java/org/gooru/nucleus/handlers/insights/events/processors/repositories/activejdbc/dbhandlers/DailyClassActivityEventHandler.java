@@ -127,7 +127,7 @@ public class DailyClassActivityEventHandler implements DBHandler {
 
     if ((event.getEventName().equals(EventConstants.COLLECTION_PLAY))) {
       duplicateRow = AJEntityDailyClassActivity
-          .findBySQL(AJEntityDailyClassActivity.FIND_COLLECTION_EVENT, event.getSessionId(),
+          .findBySQL(AJEntityDailyClassActivity.FIND_COLLECTION_EVENT, event.getGooruUUID(), event.getSessionId(),
               event.getContentGooruId(), event.getEventType(), event.getEventName());
       dcaReport.set("collection_id", event.getContentGooruId());
       dcaReport.set("question_count", event.getQuestionCount());
@@ -174,7 +174,7 @@ public class DailyClassActivityEventHandler implements DBHandler {
 
     if ((event.getEventName().equals(EventConstants.COLLECTION_RESOURCE_PLAY))) {
       duplicateRow = AJEntityDailyClassActivity
-          .findBySQL(AJEntityDailyClassActivity.FIND_RESOURCE_EVENT, event.getParentGooruId(),
+          .findBySQL(AJEntityDailyClassActivity.FIND_RESOURCE_EVENT, event.getGooruUUID(), event.getParentGooruId(),
               event.getSessionId(), event.getContentGooruId(), event.getEventType());
       dcaReport.set("collection_id", event.getParentGooruId());
       dcaReport.set("resource_id", event.getContentGooruId());
