@@ -50,6 +50,7 @@ public class GEPConstants {
   public static final String RESOURCE_PERF_EVENT = "resource.performance";
   public static final String COLL_SCORE_UPDATE_EVENT = "collection.score.update";
   public static final String RES_SCORE_UPDATE_EVENT = "resource.score.update";
+  public static final String ADDITIONAL_CONTEXT = "additionalContext";
 
 
 }
