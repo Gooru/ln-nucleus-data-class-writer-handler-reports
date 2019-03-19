@@ -21,17 +21,20 @@ public class GEPEventDispatcher {
   private AJEntityReporting baseReports;
   private AJEntityDailyClassActivity dcaReport;
   private long activityTime;
+  private String additionalContext;
 
   public GEPEventDispatcher(AJEntityDailyClassActivity dcaReport, Long timespent, Double maxScore,
-      Double score, long activityTime) {
+      Double score, long activityTime, String additionalContext) {
     this.dcaReport = dcaReport;
     this.activityTime = activityTime;
+    this.additionalContext = additionalContext;
   }
 
   public GEPEventDispatcher(AJEntityReporting baseReports, Long timespent, Double maxScore,
-      Double score, long activityTime) {
+      Double score, long activityTime, String additionalContext) {
     this.baseReports = baseReports;
     this.activityTime = activityTime;
+    this.additionalContext = additionalContext;
   }
 
   public void sendCPEventFromDCAtoGEP() {
@@ -114,6 +117,7 @@ public class GEPEventDispatcher {
 
     context.put(GEPConstants.PATH_TYPE, report.getString(AJEntityDailyClassActivity.PATH_TYPE));
     gepCRPEvent.put(GEPConstants.CONTEXT, context);
+    gepCRPEvent.put(GEPConstants.ADDITIONAL_CONTEXT, additionalContext);
 
     JsonObject result = new JsonObject();
     String resourceType = report.getString(AJEntityDailyClassActivity.RESOURCE_TYPE);
@@ -166,6 +170,7 @@ public class GEPEventDispatcher {
 
     context.put(GEPConstants.PATH_TYPE, report.getString(AJEntityDailyClassActivity.PATH_TYPE));
     gepCPEvent.put(GEPConstants.CONTEXT, context);
+    gepCPEvent.put(GEPConstants.ADDITIONAL_CONTEXT, additionalContext);
 
     JsonObject result = new JsonObject();
     String collectionType = report.getString(AJEntityDailyClassActivity.COLLECTION_TYPE);

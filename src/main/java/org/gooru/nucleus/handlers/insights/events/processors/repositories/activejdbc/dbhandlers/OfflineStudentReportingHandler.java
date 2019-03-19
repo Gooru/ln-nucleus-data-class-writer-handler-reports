@@ -56,6 +56,7 @@ public class OfflineStudentReportingHandler implements DBHandler {
   private String userId;
   private JsonArray userIds;
   private String collectionType;
+  private String additionalContext;
   private SimpleDateFormat DATE_FORMAT_YMD = new SimpleDateFormat("yyyy-MM-dd");
 
   public OfflineStudentReportingHandler(ProcessorContext context) {
@@ -162,6 +163,14 @@ public class OfflineStudentReportingHandler implements DBHandler {
         && requestPayload.getInteger(AJEntityReporting.QUESTION_COUNT) != null) {
       this.questionCount = requestPayload.getInteger(AJEntityReporting.QUESTION_COUNT);
     }
+    
+    if (requestPayload.containsKey(EventConstants.ADDITIONAL_CONTEXT)) {
+      //this key will have Base64 Encoded value, check for the existence to send to gep
+      if (!StringUtil.isNullOrEmptyAfterTrim(requestPayload.getString(EventConstants.ADDITIONAL_CONTEXT))) {
+        additionalContext = requestPayload.getString(EventConstants.ADDITIONAL_CONTEXT);
+      }
+      requestPayload.remove(EventConstants.ADDITIONAL_CONTEXT);
+    }
 
     // Generate and store resource play events
     ExecutionResult<MessageResponse> executionResult =
@@ -235,7 +244,7 @@ public class OfflineStudentReportingHandler implements DBHandler {
       baseReports.set(AJEntityReporting.GRADING_TYPE, EventConstants.TEACHER);
       baseReports.set(AJEntityReporting.IS_GRADED, this.isGraded);
     }
-
+    
     //Remove ALL the values from the Request that needed processing, so that the rest of the values from the request can be mapped to model
     removeProcessedFieldsFromPayload(requestPayload);
     new DefAJEntityReportingBuilder()
@@ -299,7 +308,7 @@ public class OfflineStudentReportingHandler implements DBHandler {
         this.reaction, this.totalResTS, this.finalMaxScore, this.finalScore, this.isGraded, ts);
     rdaEventDispatcher.sendOfflineStudentReportEventToRDA();
     GEPEventDispatcher eventDispatcher = new GEPEventDispatcher(baseReports, this.totalResTS,
-        this.finalMaxScore, this.finalScore, System.currentTimeMillis());
+        this.finalMaxScore, this.finalScore, System.currentTimeMillis(), additionalContext);
     eventDispatcher.sendCPEventFromBaseReportstoGEP();
   }
 
@@ -421,7 +430,7 @@ public class OfflineStudentReportingHandler implements DBHandler {
             if (baseReport.insert()) {
               LOGGER.info("Offline Student CRP event inserted successfully in Reports DB");
               GEPEventDispatcher eventDispatcher = new GEPEventDispatcher(baseReport, null, null,
-                  null, System.currentTimeMillis());
+                  null, System.currentTimeMillis(), additionalContext);
               eventDispatcher.sendCRPEventFromBaseReportstoGEP();
             } else {
               LOGGER.error(
