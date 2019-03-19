@@ -57,7 +57,6 @@ public class OfflineStudentReportingHandler implements DBHandler {
   private JsonArray userIds;
   private String collectionType;
   private String additionalContext;
-  private Boolean isMasteryContributingEvent = false;
   private SimpleDateFormat DATE_FORMAT_YMD = new SimpleDateFormat("yyyy-MM-dd");
 
   public OfflineStudentReportingHandler(ProcessorContext context) {
@@ -168,7 +167,6 @@ public class OfflineStudentReportingHandler implements DBHandler {
     if (requestPayload.containsKey(EventConstants.ADDITIONAL_CONTEXT)) {
       //this key will have Base64 Encoded value, check for the existence to send to gep
       if (!StringUtil.isNullOrEmptyAfterTrim(requestPayload.getString(EventConstants.ADDITIONAL_CONTEXT))) {
-        isMasteryContributingEvent = true;
         additionalContext = requestPayload.getString(EventConstants.ADDITIONAL_CONTEXT);
       }
       requestPayload.remove(EventConstants.ADDITIONAL_CONTEXT);
@@ -309,11 +307,9 @@ public class OfflineStudentReportingHandler implements DBHandler {
     RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(baseReports, this.views,
         this.reaction, this.totalResTS, this.finalMaxScore, this.finalScore, this.isGraded, ts);
     rdaEventDispatcher.sendOfflineStudentReportEventToRDA();
-    if (isMasteryContributingEvent) {
-      GEPEventDispatcher eventDispatcher = new GEPEventDispatcher(baseReports, this.totalResTS,
-          this.finalMaxScore, this.finalScore, System.currentTimeMillis(), additionalContext);
-      eventDispatcher.sendCPEventFromBaseReportstoGEP();
-    }
+    GEPEventDispatcher eventDispatcher = new GEPEventDispatcher(baseReports, this.totalResTS,
+        this.finalMaxScore, this.finalScore, System.currentTimeMillis(), additionalContext);
+    eventDispatcher.sendCPEventFromBaseReportstoGEP();
   }
 
   private void removeProcessedFieldsFromPayload(JsonObject requestPayload) {
@@ -433,11 +429,9 @@ public class OfflineStudentReportingHandler implements DBHandler {
           if (duplicateRow == null || duplicateRow.isEmpty()) {
             if (baseReport.insert()) {
               LOGGER.info("Offline Student CRP event inserted successfully in Reports DB");
-              if (isMasteryContributingEvent) {
-                GEPEventDispatcher eventDispatcher = new GEPEventDispatcher(baseReport, null, null,
-                    null, System.currentTimeMillis(), additionalContext);
-                eventDispatcher.sendCRPEventFromBaseReportstoGEP();
-              }
+              GEPEventDispatcher eventDispatcher = new GEPEventDispatcher(baseReport, null, null,
+                  null, System.currentTimeMillis(), additionalContext);
+              eventDispatcher.sendCRPEventFromBaseReportstoGEP();
             } else {
               LOGGER.error(
                   "Error while inserting offline student CRP event into Reports DB: " + context

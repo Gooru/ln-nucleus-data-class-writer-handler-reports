@@ -57,7 +57,6 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
   private Boolean isGraded;
   private String collectionType;
   private SimpleDateFormat DATE_FORMAT_YMD = new SimpleDateFormat("yyyy-MM-dd");
-  private Boolean isMasteryContributingEvent = false;
   private String additionalContext;
 
   public DCAOfflineStudentReportingHandler(ProcessorContext context) {
@@ -173,7 +172,6 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
     if (requestPayload.containsKey(EventConstants.ADDITIONAL_CONTEXT)) {
       //this key will have Base64 Encoded value, check for the existence to send to gep
       if (!StringUtil.isNullOrEmptyAfterTrim(requestPayload.getString(EventConstants.ADDITIONAL_CONTEXT))) {
-        isMasteryContributingEvent = true;
         additionalContext = requestPayload.getString(EventConstants.ADDITIONAL_CONTEXT);
       }
       requestPayload.remove(EventConstants.ADDITIONAL_CONTEXT);
@@ -317,15 +315,12 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
   }
 
   private void sendCPEventToGEPAndRDA(AJEntityDailyClassActivity dcaReport, long ts) {
-    RDAEventDispatcher rdaEventDispatcher =
-        new RDAEventDispatcher(dcaReport, this.views, this.reaction, this.totalResTS,
-            this.finalMaxScore, this.finalScore, this.isGraded, ts);
+    RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(dcaReport, this.views,
+        this.reaction, this.totalResTS, this.finalMaxScore, this.finalScore, this.isGraded, ts);
     rdaEventDispatcher.sendOfflineStudentReportEventDCAToRDA();
-    if (isMasteryContributingEvent) {
-      GEPEventDispatcher eventDispatcher = new GEPEventDispatcher(dcaReport, this.totalResTS,
-          this.finalMaxScore, this.finalScore, System.currentTimeMillis(), additionalContext);
-      eventDispatcher.sendCPEventFromDCAtoGEP();
-    }
+    GEPEventDispatcher eventDispatcher = new GEPEventDispatcher(dcaReport, this.totalResTS,
+        this.finalMaxScore, this.finalScore, System.currentTimeMillis(), additionalContext);
+    eventDispatcher.sendCPEventFromDCAtoGEP();
   }
 
   private void removeProcessedFieldsFromPayload(JsonObject requestPayload) {
@@ -448,11 +443,9 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
             if (dcaReport.insert()) {
               LOGGER.info(
                   "Offline Student collection.resource.play event inserted successfully in Reports DB");
-              if (isMasteryContributingEvent) {
-                GEPEventDispatcher eventDispatcher =
-                    new GEPEventDispatcher(dcaReport, null, null, null, System.currentTimeMillis(), additionalContext);
-                eventDispatcher.sendCRPEventFromDCAtoGEP();
-              }
+              GEPEventDispatcher eventDispatcher = new GEPEventDispatcher(dcaReport, null, null,
+                  null, System.currentTimeMillis(), additionalContext);
+              eventDispatcher.sendCRPEventFromDCAtoGEP();
             } else {
               LOGGER.error("Error while inserting offline student crp event into Reports DB: {}",
                   context.request().toString());
