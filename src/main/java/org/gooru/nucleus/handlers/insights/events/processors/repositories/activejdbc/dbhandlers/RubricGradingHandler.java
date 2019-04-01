@@ -48,6 +48,7 @@ public class RubricGradingHandler implements DBHandler {
   private String pathType;
   private String contextCollectionId;
   private String contextCollectionType;
+  private String additionalContext;
   private Boolean isGraded;
   private String updated_at;
   private String tenantId;
@@ -245,6 +246,9 @@ public class RubricGradingHandler implements DBHandler {
       tenantId =
           sessionPathIdTypeModel.get(AJEntityReporting.TENANT_ID) != null ? sessionPathIdTypeModel
               .get(AJEntityReporting.TENANT_ID).toString() : null;
+			additionalContext = sessionPathIdTypeModel.get(AJEntityReporting.ADDITIONAL_CONTEXT) != null
+					? sessionPathIdTypeModel.get(AJEntityReporting.ADDITIONAL_CONTEXT).toString() : null;       
+              
     }
 
     if ((!StringUtil.isNullOrEmpty(latestSessionId) && latestSessionId.equals(sessionId.toString()))
@@ -393,6 +397,7 @@ public class RubricGradingHandler implements DBHandler {
     context.put(GEPConstants.UNIT_ID, rubricGrading.get(AJEntityRubricGrading.UNIT_ID));
     context.put(GEPConstants.LESSON_ID, rubricGrading.get(AJEntityRubricGrading.LESSON_ID));
     context.put(GEPConstants.SESSION_ID, rubricGrading.get(AJEntityRubricGrading.SESSION_ID));
+    context.put(GEPConstants.ADDITIONAL_CONTEXT, additionalContext);
 
     cpEvent.put(GEPConstants.CONTEXT, context);
 

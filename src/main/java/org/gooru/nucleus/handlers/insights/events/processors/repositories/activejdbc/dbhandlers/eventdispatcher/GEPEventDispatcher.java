@@ -117,7 +117,7 @@ public class GEPEventDispatcher {
 
     context.put(GEPConstants.PATH_TYPE, report.getString(AJEntityDailyClassActivity.PATH_TYPE));
     gepCRPEvent.put(GEPConstants.CONTEXT, context);
-    gepCRPEvent.put(GEPConstants.ADDITIONAL_CONTEXT, additionalContext);
+    //gepCRPEvent.put(GEPConstants.ADDITIONAL_CONTEXT, additionalContext);
 
     JsonObject result = new JsonObject();
     String resourceType = report.getString(AJEntityDailyClassActivity.RESOURCE_TYPE);
@@ -169,8 +169,8 @@ public class GEPEventDispatcher {
     context.put(GEPConstants.CONTENT_SOURCE, report.get(AJEntityDailyClassActivity.CONTENT_SOURCE));
 
     context.put(GEPConstants.PATH_TYPE, report.getString(AJEntityDailyClassActivity.PATH_TYPE));
+    context.put(GEPConstants.ADDITIONAL_CONTEXT, additionalContext);
     gepCPEvent.put(GEPConstants.CONTEXT, context);
-    gepCPEvent.put(GEPConstants.ADDITIONAL_CONTEXT, additionalContext);
 
     JsonObject result = new JsonObject();
     String collectionType = report.getString(AJEntityDailyClassActivity.COLLECTION_TYPE);

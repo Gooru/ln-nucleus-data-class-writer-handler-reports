@@ -582,7 +582,7 @@ class ProcessEventHandler implements DBHandler {
     context.put(GEPConstants.TENANT_ID, event.getTenantId());
     context.put(GEPConstants.CONTENT_SOURCE, event.getContentSource());
     context.put(GEPConstants.PATH_TYPE, event.getPathType());
-
+    context.put(GEPConstants.ADDITIONAL_CONTEXT, event.getAdditionalContext());
     cpEvent.put(GEPConstants.CONTEXT, context);
 
     return cpEvent;
@@ -613,7 +613,8 @@ class ProcessEventHandler implements DBHandler {
 
     context.put(GEPConstants.CONTENT_SOURCE, event.getContentSource());
     context.put(GEPConstants.PATH_TYPE, event.getPathType());
-    cpEvent.put(GEPConstants.CONTEXT, context);
+    context.put(GEPConstants.ADDITIONAL_CONTEXT, event.getAdditionalContext());
+    cpEvent.put(GEPConstants.CONTEXT, context);    
 
     return cpEvent;
   }
@@ -622,6 +623,7 @@ class ProcessEventHandler implements DBHandler {
     JsonObject resEvent = new JsonObject();
     JsonObject context = new JsonObject();
 
+    //AdditionalContext is not being sent to GEP for Collection Resource Play Events
     resEvent.put(GEPConstants.USER_ID, event.getGooruUUID());
     resEvent.put(GEPConstants.ACTIVITY_TIME, event.getEndTime());
     resEvent.put(GEPConstants.EVENT_ID, event.getEventId());
