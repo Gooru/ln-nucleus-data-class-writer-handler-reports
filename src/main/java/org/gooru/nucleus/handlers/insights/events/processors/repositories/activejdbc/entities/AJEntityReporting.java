@@ -68,6 +68,7 @@ public class AJEntityReporting extends Model {
   public static final String CONTENT_SOURCE = "content_source";
   public static final String CONTEXT_COLLECTION_ID = "context_collection_id";
   public static final String CONTEXT_COLLECTION_TYPE = "context_collection_type";
+  public static final String ADDITIONAL_CONTEXT = "additional_context";
 
   public static final String CREATE_TIMESTAMP = "created_at";
   public static final String UPDATE_TIMESTAMP = "updated_at";
