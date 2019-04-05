@@ -1,6 +1,7 @@
 package org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers;
 
 import com.hazelcast.util.StringUtil;
+import io.vertx.core.json.JsonObject;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -8,6 +9,7 @@ import java.util.TimeZone;
 import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.insights.events.processors.events.EventParser;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.GEPEventDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityDailyClassActivity;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult.ExecutionStatus;
@@ -102,7 +104,6 @@ public class DailyClassActivityEventHandler implements DBHandler {
       }
     }
     dcaReport.set("collection_sub_type", event.getCollectionSubType());
-
     dcaReport.set("event_id", event.getEventId());
     dcaReport.set("content_source", event.getContentSource());
 
@@ -216,8 +217,6 @@ public class DailyClassActivityEventHandler implements DBHandler {
       if (duplicateRow == null || duplicateRow.isEmpty()) {
         if (dcaReport.insert()) {
           LOGGER.info("Record inserted successfully");
-          return new ExecutionResult<>(MessageResponseFactory.createCreatedResponse(),
-              ExecutionStatus.SUCCESSFUL);
         } else {
           LOGGER.error("Error while inserting event: " + context.request().toString());
           return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(),
@@ -271,11 +270,77 @@ public class DailyClassActivityEventHandler implements DBHandler {
           ExecutionStatus.FAILED);
     }
 
+    if ((event.getEventName().equals(EventConstants.COLLECTION_PLAY)) && event.getEventType()
+        .equalsIgnoreCase(EventConstants.START)) {
+      sendCPStartEventToGEP(dcaReport);
+    }
+
+    if ((event.getEventName().equals(EventConstants.COLLECTION_PLAY)) && event.getEventType()
+        .equalsIgnoreCase(EventConstants.STOP)) {
+      sendCPStopEventToGEP(dcaReport);
+    }
+
+    if ((event.getEventName().equals(EventConstants.COLLECTION_RESOURCE_PLAY)) && event
+        .getEventType().equalsIgnoreCase(EventConstants.STOP)) {
+      sendCRPEventToGEP(dcaReport);
+    }
+    
     return new ExecutionResult<>(MessageResponseFactory.createCreatedResponse(),
         ExecutionStatus.SUCCESSFUL);
-
   }
 
+  private void sendCPStopEventToGEP(AJEntityDailyClassActivity dcaReport) {  
+    if (maxScoreObj != null && maxScoreObj > 0.0 && scoreObj != null) {
+      GEPEventDispatcher eventDispatcher = new GEPEventDispatcher(dcaReport, (tsObj != null ? tsObj : 0),
+          maxScoreObj, ((scoreObj * 100) / maxScoreObj), System.currentTimeMillis(), event.getAdditionalContext());
+      eventDispatcher.sendCPStopEventFromDCAtoGEP();
+    } else {
+      GEPEventDispatcher eventDispatcher = new GEPEventDispatcher(dcaReport, (tsObj != null ? tsObj : 0),
+          0.0, null, System.currentTimeMillis(), event.getAdditionalContext());
+      eventDispatcher.sendCPStopEventFromDCAtoGEP();
+    }    
+  }
+
+  private void sendCPStartEventToGEP(AJEntityDailyClassActivity dcaReport) {  
+    GEPEventDispatcher eventDispatcher = new GEPEventDispatcher(dcaReport, 0L,
+        null, null, System.currentTimeMillis(), event.getAdditionalContext());
+    eventDispatcher.sendCPStartEventFromDCAtoGEP();
+  }
+  
+  private void sendCRPEventToGEP(AJEntityDailyClassActivity dcaReport) { 
+    
+    JsonObject result = new JsonObject();
+    
+    if (event.getResourceType().equals(EventConstants.QUESTION)) {
+      if (event.getAnswerStatus().equalsIgnoreCase(EventConstants.INCORRECT)
+          || event.getAnswerStatus().equalsIgnoreCase(EventConstants.CORRECT)
+          || event.getAnswerStatus().equalsIgnoreCase(EventConstants.SKIPPED)) {
+        double sco = event.getScore();
+        double max_sco = event.getMaxScore();
+        if (max_sco > 0.0) {
+          result.put(AJEntityDailyClassActivity.SCORE, ((sco * 100) / max_sco));
+          result.put(AJEntityDailyClassActivity.MAX_SCORE, max_sco);
+        } else {
+          //TODO: Should the score be sent as NULL or 0.0
+          result.putNull(AJEntityDailyClassActivity.SCORE);
+          result.put(AJEntityDailyClassActivity.MAX_SCORE, 0.0);
+        }
+      } else if (event.getAnswerStatus().equalsIgnoreCase(EventConstants.ATTEMPTED)) {
+        result.putNull(AJEntityDailyClassActivity.SCORE);
+        result.put(AJEntityDailyClassActivity.MAX_SCORE, 0.0);
+      }
+    } else if (event.getResourceType().equals(EventConstants.RESOURCE)) {
+      result.putNull(AJEntityDailyClassActivity.SCORE);
+      result.putNull(AJEntityDailyClassActivity.MAX_SCORE);
+    }
+
+    result.put(AJEntityDailyClassActivity.TIMESPENT, event.getTimespent());
+    result.put(AJEntityDailyClassActivity.RESOURCE_ATTEMPT_STATUS, event.getAnswerStatus());
+        
+    GEPEventDispatcher eventDispatcher = new GEPEventDispatcher(dcaReport, System.currentTimeMillis(), result);
+    eventDispatcher.sendCRPEventFromDCAtoGEP();
+  }
+  
   @Override
   public boolean handlerReadOnly() {
     return false;

@@ -320,7 +320,7 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
     rdaEventDispatcher.sendOfflineStudentReportEventDCAToRDA();
     GEPEventDispatcher eventDispatcher = new GEPEventDispatcher(dcaReport, this.totalResTS,
         this.finalMaxScore, this.finalScore, System.currentTimeMillis(), additionalContext);
-    eventDispatcher.sendCPEventFromDCAtoGEP();
+    eventDispatcher.sendCPEventFromDCAOfflinetoGEP();
   }
 
   private void removeProcessedFieldsFromPayload(JsonObject requestPayload) {
@@ -445,7 +445,7 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
                   "Offline Student collection.resource.play event inserted successfully in Reports DB");
               GEPEventDispatcher eventDispatcher = new GEPEventDispatcher(dcaReport, null, null,
                   null, System.currentTimeMillis(), additionalContext);
-              eventDispatcher.sendCRPEventFromDCAtoGEP();
+              eventDispatcher.sendCRPEventFromDCAOfflinetoGEP();
             } else {
               LOGGER.error("Error while inserting offline student crp event into Reports DB: {}",
                   context.request().toString());

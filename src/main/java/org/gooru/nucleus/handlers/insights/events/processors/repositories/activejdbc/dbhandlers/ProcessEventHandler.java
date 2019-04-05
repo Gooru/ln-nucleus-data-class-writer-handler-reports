@@ -262,8 +262,10 @@ class ProcessEventHandler implements DBHandler {
         if (baseReport.insert()) {
           LOGGER.info("Record inserted successfully in Reports DB");
         } else {
-          LOGGER.error(
-              "Error while inserting event into Reports DB: " + context.request().toString());
+          LOGGER.error("Error while inserting event into Reports DB: " + context.request().toString());
+          return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(),
+              ExecutionStatus.FAILED);
+          
         }
       } else {
         LOGGER.debug("Found duplicate row in the DB, so updating duplicate row.....");

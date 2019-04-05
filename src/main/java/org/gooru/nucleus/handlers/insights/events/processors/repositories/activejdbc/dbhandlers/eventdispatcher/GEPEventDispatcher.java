@@ -22,14 +22,27 @@ public class GEPEventDispatcher {
   private AJEntityDailyClassActivity dcaReport;
   private long activityTime;
   private String additionalContext;
+  private Double maxScore;
+  private Double score;
+  private Long timespent;
+  private JsonObject resResult;
 
   public GEPEventDispatcher(AJEntityDailyClassActivity dcaReport, Long timespent, Double maxScore,
       Double score, long activityTime, String additionalContext) {
     this.dcaReport = dcaReport;
     this.activityTime = activityTime;
     this.additionalContext = additionalContext;
+    this.maxScore = maxScore;
+    this.score = score;
+    this.timespent = timespent;
   }
-
+  
+  public GEPEventDispatcher(AJEntityDailyClassActivity dcaReport, long activityTime, JsonObject resResult) {
+    this.dcaReport = dcaReport;
+    this.activityTime = activityTime;
+    this.resResult = resResult;
+  }
+  
   public GEPEventDispatcher(AJEntityReporting baseReports, Long timespent, Double maxScore,
       Double score, long activityTime, String additionalContext) {
     this.baseReports = baseReports;
@@ -37,7 +50,8 @@ public class GEPEventDispatcher {
     this.additionalContext = additionalContext;
   }
 
-  public void sendCPEventFromDCAtoGEP() {
+  //DCA Offline
+  public void sendCPEventFromDCAOfflinetoGEP() {
     try {
       JsonObject gepEvent = createCPEvent(dcaReport);
       LOGGER.debug("The Collection GEP Event is : {} ", gepEvent);
@@ -48,7 +62,8 @@ public class GEPEventDispatcher {
     }
   }
 
-  public void sendCRPEventFromDCAtoGEP() {
+  //DCA Offline
+  public void sendCRPEventFromDCAOfflinetoGEP() {
     try {
       JsonObject gepEvent = createCRPEvent(dcaReport);
       LOGGER.debug("The Collection Resource GEP Event is : {} ", gepEvent);
@@ -59,6 +74,40 @@ public class GEPEventDispatcher {
     }
   }
 
+  
+  public void sendCPStopEventFromDCAtoGEP() {
+    try {
+      JsonObject gepEvent = createDCACPStopEvent(dcaReport);
+      LOGGER.debug("The Collection GEP Event is : {} ", gepEvent);
+      MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_GEP, gepEvent);
+      LOGGER.info("Successfully dispatched Collection Perf GEP report..");
+    } catch (Exception e) {
+      LOGGER.error("Error while dispatching Collection Perf GEP Event ", e);
+    }
+  }
+  
+  public void sendCPStartEventFromDCAtoGEP() {
+    try {
+      JsonObject gepEvent = createDCACPStartEvent(dcaReport);
+      LOGGER.debug("The Collection GEP Event is : {} ", gepEvent);
+      MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_GEP, gepEvent);
+      LOGGER.info("Successfully dispatched Collection Perf GEP report..");
+    } catch (Exception e) {
+      LOGGER.error("Error while dispatching Collection Perf GEP Event ", e);
+    }
+  }
+
+  public void sendCRPEventFromDCAtoGEP() {
+    try {
+      JsonObject gepEvent = createDCACRPEvent(dcaReport);
+      LOGGER.debug("The Collection Resource GEP Event is : {} ", gepEvent);
+      MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_GEP, gepEvent);
+      LOGGER.info("Successfully dispatched Collection Resource GEP report..");
+    } catch (Exception e) {
+      LOGGER.error("Error while dispatching Collection Resource GEP Event ", e);
+    }
+  }
+  
   public void sendCPEventFromBaseReportstoGEP() {
     try {
       JsonObject gepEvent = createCPEvent(baseReports);
@@ -81,6 +130,7 @@ public class GEPEventDispatcher {
     }
   }
 
+  //DCA Offline
   private JsonObject createCRPEvent(Model report) {
     JsonObject gepCRPEvent = new JsonObject();
     JsonObject context = new JsonObject();
@@ -136,6 +186,7 @@ public class GEPEventDispatcher {
     return gepCRPEvent;
   }
 
+  //DCA Offline
   private JsonObject createCPEvent(Model report) {
     JsonObject gepCPEvent = new JsonObject();
     JsonObject context = new JsonObject();
@@ -204,5 +255,146 @@ public class GEPEventDispatcher {
     gepCPEvent.put(GEPConstants.RESULT, result);
     return gepCPEvent;
   }
+  
+  private JsonObject createDCACPStopEvent(Model report) {
+    JsonObject gepCPEvent = new JsonObject();
+    JsonObject context = new JsonObject();
 
+    gepCPEvent.put(GEPConstants.USER_ID, report.getString(AJEntityDailyClassActivity.GOORUUID));
+    gepCPEvent.put(GEPConstants.ACTIVITY_TIME, this.activityTime);
+    gepCPEvent.put(GEPConstants.EVENT_ID, UUID.randomUUID().toString());
+    gepCPEvent.put(GEPConstants.EVENT_NAME, GEPConstants.COLLECTION_PERF_EVENT);
+    gepCPEvent.put(GEPConstants.COLLECTION_ID,
+        report.getString(AJEntityDailyClassActivity.COLLECTION_OID));
+    gepCPEvent.put(GEPConstants.COLLECTION_TYPE,
+        report.getString(AJEntityDailyClassActivity.COLLECTION_TYPE));
+    context.put(GEPConstants.CONTEXT_COLLECTION_ID,
+        report.getString(AJEntityDailyClassActivity.CONTEXT_COLLECTION_ID));
+    context.put(GEPConstants.CONTEXT_COLLECTION_TYPE,
+        report.getString(AJEntityDailyClassActivity.CONTEXT_COLLECTION_TYPE));
+
+    context
+        .put(GEPConstants.CLASS_ID, report.getString(AJEntityDailyClassActivity.CLASS_GOORU_OID));
+    context
+        .put(GEPConstants.COURSE_ID, report.getString(AJEntityDailyClassActivity.COURSE_GOORU_OID));
+    context.put(GEPConstants.UNIT_ID, report.getString(AJEntityDailyClassActivity.UNIT_GOORU_OID));
+    context
+        .put(GEPConstants.LESSON_ID, report.getString(AJEntityDailyClassActivity.LESSON_GOORU_OID));
+    context.put(GEPConstants.PATH_ID, report.getString(AJEntityDailyClassActivity.PATH_ID));
+    context.put(GEPConstants.SESSION_ID, report.getString(AJEntityDailyClassActivity.SESSION_ID));
+    context.put(GEPConstants.QUESTION_COUNT,
+        report.getString(AJEntityDailyClassActivity.QUESTION_COUNT));
+    context.put(GEPConstants.PARTNER_ID, report.getString(AJEntityDailyClassActivity.PARTNER_ID));
+    context.put(GEPConstants.TENANT_ID, report.getString(AJEntityDailyClassActivity.TENANT_ID));
+    context.put(GEPConstants.CONTENT_SOURCE, report.get(AJEntityDailyClassActivity.CONTENT_SOURCE));
+
+    context.put(GEPConstants.PATH_TYPE, report.getString(AJEntityDailyClassActivity.PATH_TYPE));
+    context.put(GEPConstants.ADDITIONAL_CONTEXT, additionalContext);
+    gepCPEvent.put(GEPConstants.CONTEXT, context);
+
+    JsonObject result = new JsonObject();
+
+    result.put(GEPConstants.TIMESPENT, this.timespent);
+    result.put(GEPConstants.SCORE, this.score);
+    result.put(GEPConstants.MAX_SCORE, this.maxScore);
+    // This is for future Use. Currently no Reaction is associated the Assessment/Collection
+    result.put(GEPConstants.REACTION, 0);
+    gepCPEvent.put(GEPConstants.RESULT, result);
+    return gepCPEvent;
+  }
+  
+  private JsonObject createDCACPStartEvent(Model report) {
+    JsonObject gepCPEvent = new JsonObject();
+    JsonObject context = new JsonObject();
+
+    gepCPEvent.put(GEPConstants.USER_ID, report.getString(AJEntityDailyClassActivity.GOORUUID));
+    gepCPEvent.put(GEPConstants.ACTIVITY_TIME, this.activityTime);
+    gepCPEvent.put(GEPConstants.EVENT_ID, UUID.randomUUID().toString());
+    gepCPEvent.put(GEPConstants.EVENT_NAME, GEPConstants.COLLECTION_START_EVENT);
+    gepCPEvent.put(GEPConstants.COLLECTION_ID,
+        report.getString(AJEntityDailyClassActivity.COLLECTION_OID));
+    gepCPEvent.put(GEPConstants.COLLECTION_TYPE,
+        report.getString(AJEntityDailyClassActivity.COLLECTION_TYPE));
+    
+    context.put(GEPConstants.CONTEXT_COLLECTION_ID,
+        report.getString(AJEntityDailyClassActivity.CONTEXT_COLLECTION_ID));
+    context.put(GEPConstants.CONTEXT_COLLECTION_TYPE,
+        report.getString(AJEntityDailyClassActivity.CONTEXT_COLLECTION_TYPE));
+    context
+        .put(GEPConstants.CLASS_ID, report.getString(AJEntityDailyClassActivity.CLASS_GOORU_OID));
+    context
+        .put(GEPConstants.COURSE_ID, report.getString(AJEntityDailyClassActivity.COURSE_GOORU_OID));
+    context.put(GEPConstants.UNIT_ID, report.getString(AJEntityDailyClassActivity.UNIT_GOORU_OID));
+    context
+        .put(GEPConstants.LESSON_ID, report.getString(AJEntityDailyClassActivity.LESSON_GOORU_OID));
+    context.put(GEPConstants.PATH_ID, report.getString(AJEntityDailyClassActivity.PATH_ID));
+    context.put(GEPConstants.SESSION_ID, report.getString(AJEntityDailyClassActivity.SESSION_ID));
+    context.put(GEPConstants.QUESTION_COUNT,
+        report.getString(AJEntityDailyClassActivity.QUESTION_COUNT));
+    context.put(GEPConstants.PARTNER_ID, report.getString(AJEntityDailyClassActivity.PARTNER_ID));
+    context.put(GEPConstants.TENANT_ID, report.getString(AJEntityDailyClassActivity.TENANT_ID));
+    context.put(GEPConstants.CONTENT_SOURCE, report.get(AJEntityDailyClassActivity.CONTENT_SOURCE));
+
+    context.put(GEPConstants.PATH_TYPE, report.getString(AJEntityDailyClassActivity.PATH_TYPE));
+    context.put(GEPConstants.ADDITIONAL_CONTEXT, additionalContext);
+    gepCPEvent.put(GEPConstants.CONTEXT, context);
+
+    JsonObject result = new JsonObject();
+    result.putNull(GEPConstants.SCORE);
+    result.putNull(GEPConstants.MAX_SCORE);
+    result.put(GEPConstants.TIMESPENT, 0.0);
+    gepCPEvent.put(GEPConstants.RESULT, result);
+    
+    return gepCPEvent;
+  }
+
+  private JsonObject createDCACRPEvent(Model report) {
+    JsonObject gepCRPEvent = new JsonObject();
+    JsonObject context = new JsonObject();
+
+    gepCRPEvent.put(GEPConstants.USER_ID, report.getString(AJEntityDailyClassActivity.GOORUUID));
+    gepCRPEvent.put(GEPConstants.ACTIVITY_TIME, this.activityTime);
+    gepCRPEvent.put(GEPConstants.EVENT_ID, UUID.randomUUID().toString());
+    gepCRPEvent.put(GEPConstants.EVENT_NAME, GEPConstants.RESOURCE_PERF_EVENT);
+    gepCRPEvent
+        .put(GEPConstants.RESOURCE_ID, report.getString(AJEntityDailyClassActivity.RESOURCE_ID));
+    gepCRPEvent.put(GEPConstants.RESOURCE_TYPE,
+        report.getString(AJEntityDailyClassActivity.RESOURCE_TYPE));
+
+    context.put(GEPConstants.COLLECTION_ID,
+        report.getString(AJEntityDailyClassActivity.COLLECTION_OID));
+    context.put(GEPConstants.COLLECTION_TYPE,
+        report.getString(AJEntityDailyClassActivity.COLLECTION_TYPE));
+    context.put(GEPConstants.CONTEXT_COLLECTION_ID,
+        report.getString(AJEntityDailyClassActivity.CONTEXT_COLLECTION_ID));
+    context.put(GEPConstants.CONTEXT_COLLECTION_TYPE,
+        report.getString(AJEntityDailyClassActivity.CONTEXT_COLLECTION_TYPE));
+    context
+        .put(GEPConstants.CLASS_ID, report.getString(AJEntityDailyClassActivity.CLASS_GOORU_OID));
+    context
+        .put(GEPConstants.COURSE_ID, report.getString(AJEntityDailyClassActivity.COURSE_GOORU_OID));
+    context.put(GEPConstants.UNIT_ID, report.getString(AJEntityDailyClassActivity.UNIT_GOORU_OID));
+    context
+        .put(GEPConstants.LESSON_ID, report.getString(AJEntityDailyClassActivity.LESSON_GOORU_OID));
+    context.put(GEPConstants.PATH_ID, report.getString(AJEntityDailyClassActivity.PATH_ID));
+    context.put(GEPConstants.SESSION_ID, report.getString(AJEntityDailyClassActivity.SESSION_ID));
+    context.put(GEPConstants.PARTNER_ID, report.getString(AJEntityDailyClassActivity.PARTNER_ID));
+    context.put(GEPConstants.TENANT_ID, report.getString(AJEntityDailyClassActivity.TENANT_ID));
+    context.put(GEPConstants.CONTENT_SOURCE, report.get(AJEntityDailyClassActivity.CONTENT_SOURCE));
+
+    context.put(GEPConstants.PATH_TYPE, report.getString(AJEntityDailyClassActivity.PATH_TYPE));
+    gepCRPEvent.put(GEPConstants.CONTEXT, context);
+    //gepCRPEvent.put(GEPConstants.ADDITIONAL_CONTEXT, additionalContext);
+
+    JsonObject result = new JsonObject();
+    
+    result.put(GEPConstants.SCORE, resResult.getDouble(AJEntityDailyClassActivity.SCORE));
+    result.put(GEPConstants.MAX_SCORE, resResult.getDouble(AJEntityDailyClassActivity.MAX_SCORE));
+    result.put(GEPConstants.TIMESPENT, resResult.getLong(AJEntityDailyClassActivity.TIMESPENT));
+    result.put(GEPConstants.ANSWER_STATUS,
+        resResult.getString(AJEntityDailyClassActivity.RESOURCE_ATTEMPT_STATUS));
+    gepCRPEvent.put(GEPConstants.RESULT, result);
+
+    return gepCRPEvent;
+  }
 }
