@@ -15,7 +15,6 @@ import org.gooru.nucleus.handlers.insights.events.processors.repositories.active
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityClassAuthorizedUsers;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityDailyClassActivity;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.EntityBuilder;
-import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.core.AJEntityCourse;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.utils.BaseUtil;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult.ExecutionStatus;
@@ -58,7 +57,7 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
   private Boolean isGraded;
   private String collectionType;
   private SimpleDateFormat DATE_FORMAT_YMD = new SimpleDateFormat("yyyy-MM-dd");
-  private Boolean isPremiumCourse = false;
+  private String additionalContext;
 
   public DCAOfflineStudentReportingHandler(ProcessorContext context) {
     this.context = context;
@@ -170,6 +169,13 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
         && requestPayload.getInteger(AJEntityDailyClassActivity.QUESTION_COUNT) != null) {
       this.questionCount = requestPayload.getInteger(AJEntityDailyClassActivity.QUESTION_COUNT);
     }
+    if (requestPayload.containsKey(EventConstants.ADDITIONAL_CONTEXT)) {
+      //this key will have Base64 Encoded value, check for the existence to send to gep
+      if (!StringUtil.isNullOrEmptyAfterTrim(requestPayload.getString(EventConstants.ADDITIONAL_CONTEXT))) {
+        additionalContext = requestPayload.getString(EventConstants.ADDITIONAL_CONTEXT);
+      }
+      requestPayload.remove(EventConstants.ADDITIONAL_CONTEXT);
+    }
 
     // Generate and store resource play events
     ExecutionResult<MessageResponse> executionResult =
@@ -254,18 +260,6 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
     removeProcessedFieldsFromPayload(requestPayload);
     new DefAJEntityDailyClassActivityBuilder().build(dcaReport, requestPayload,
         AJEntityDailyClassActivity.getConverterRegistry());
-
-    if (!StringUtil.isNullOrEmpty(context.request().getString(AJEntityDailyClassActivity.COURSE_GOORU_OID))) {
-      AJEntityCourse course = AJEntityCourse.fetchCourse(
-          UUID.fromString(dcaReport.getString(AJEntityDailyClassActivity.COURSE_GOORU_OID)));
-      if (course == null) {
-        return new ExecutionResult<>(
-            MessageResponseFactory.createInvalidRequestResponse(
-                "Course not found at core: " + dcaReport.getString("course_id")),
-            ExecutionStatus.FAILED);
-      }
-      isPremiumCourse = AJEntityCourse.isPremium(course);
-    }
     
     duplicateRow =
         AJEntityDailyClassActivity.findBySQL(AJEntityDailyClassActivity.FIND_COLLECTION_EVENT, userId, 
@@ -321,15 +315,12 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
   }
 
   private void sendCPEventToGEPAndRDA(AJEntityDailyClassActivity dcaReport, long ts) {
-    RDAEventDispatcher rdaEventDispatcher =
-        new RDAEventDispatcher(dcaReport, this.views, this.reaction, this.totalResTS,
-            this.finalMaxScore, this.finalScore, this.isGraded, ts);
+    RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(dcaReport, this.views,
+        this.reaction, this.totalResTS, this.finalMaxScore, this.finalScore, this.isGraded, ts);
     rdaEventDispatcher.sendOfflineStudentReportEventDCAToRDA();
-    if (isPremiumCourse) {
-      GEPEventDispatcher eventDispatcher = new GEPEventDispatcher(dcaReport, this.totalResTS,
-          this.finalMaxScore, this.finalScore, System.currentTimeMillis());
-      eventDispatcher.sendCPEventFromDCAtoGEP();
-    }
+    GEPEventDispatcher eventDispatcher = new GEPEventDispatcher(dcaReport, this.totalResTS,
+        this.finalMaxScore, this.finalScore, System.currentTimeMillis(), additionalContext);
+    eventDispatcher.sendCPEventFromDCAOfflinetoGEP();
   }
 
   private void removeProcessedFieldsFromPayload(JsonObject requestPayload) {
@@ -452,11 +443,9 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
             if (dcaReport.insert()) {
               LOGGER.info(
                   "Offline Student collection.resource.play event inserted successfully in Reports DB");
-              if (isPremiumCourse) {
-                GEPEventDispatcher eventDispatcher =
-                    new GEPEventDispatcher(dcaReport, null, null, null, System.currentTimeMillis());
-                eventDispatcher.sendCRPEventFromDCAtoGEP();
-              }
+              GEPEventDispatcher eventDispatcher = new GEPEventDispatcher(dcaReport, null, null,
+                  null, System.currentTimeMillis(), additionalContext);
+              eventDispatcher.sendCRPEventFromDCAOfflinetoGEP();
             } else {
               LOGGER.error("Error while inserting offline student crp event into Reports DB: {}",
                   context.request().toString());
