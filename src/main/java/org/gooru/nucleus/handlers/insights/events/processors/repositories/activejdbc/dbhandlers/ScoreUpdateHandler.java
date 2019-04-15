@@ -187,15 +187,11 @@ public class ScoreUpdateHandler implements DBHandler {
       contextCollectionType =
           pathIdTypeModel.get(AJEntityReporting.CONTEXT_COLLECTION_TYPE) != null ? pathIdTypeModel
               .get(AJEntityReporting.CONTEXT_COLLECTION_TYPE).toString() : null;
-      additionalContext =
-          pathIdTypeModel.get(AJEntityReporting.CONTEXT_COLLECTION_TYPE) != null ? pathIdTypeModel
-              .get(AJEntityReporting.CONTEXT_COLLECTION_TYPE).toString() : null;
       //Set these values into the baseReports Model for data injection into GEP/Notification Events
       baseReports.set(AJEntityReporting.PATH_TYPE, pathType);
       baseReports.set(AJEntityReporting.PATH_ID, pathId);
       baseReports.set(AJEntityReporting.CONTEXT_COLLECTION_ID, contextCollectionId);
       baseReports.set(AJEntityReporting.CONTEXT_COLLECTION_TYPE, contextCollectionType);
-      baseReports.set(AJEntityReporting.ADDITIONAL_CONTEXT, additionalContext);
       updated_at = pathIdTypeModel.get(AJEntityReporting.UPDATE_TIMESTAMP).toString();
       partnerId = pathIdTypeModel.get(AJEntityReporting.PARTNER_ID) != null ? pathIdTypeModel
           .get(AJEntityReporting.PARTNER_ID).toString() : null;
@@ -353,8 +349,7 @@ public class ScoreUpdateHandler implements DBHandler {
         baseReports.get(AJEntityReporting.CONTEXT_COLLECTION_ID));
     context.put(GEPConstants.CONTEXT_COLLECTION_TYPE,
         baseReports.get(AJEntityReporting.CONTEXT_COLLECTION_TYPE));
-    context.put(GEPConstants.ADDITIONAL_CONTEXT,
-            baseReports.get(AJEntityReporting.ADDITIONAL_CONTEXT));
+    context.putNull(GEPConstants.ADDITIONAL_CONTEXT);
 
     cpEvent.put(GEPConstants.CONTEXT, context);
 

@@ -245,9 +245,7 @@ public class RubricGradingHandler implements DBHandler {
               .get(AJEntityReporting.PARTNER_ID).toString() : null;
       tenantId =
           sessionPathIdTypeModel.get(AJEntityReporting.TENANT_ID) != null ? sessionPathIdTypeModel
-              .get(AJEntityReporting.TENANT_ID).toString() : null;
-			additionalContext = sessionPathIdTypeModel.get(AJEntityReporting.ADDITIONAL_CONTEXT) != null
-					? sessionPathIdTypeModel.get(AJEntityReporting.ADDITIONAL_CONTEXT).toString() : null;       
+              .get(AJEntityReporting.TENANT_ID).toString() : null;       
               
     }
 
@@ -397,7 +395,7 @@ public class RubricGradingHandler implements DBHandler {
     context.put(GEPConstants.UNIT_ID, rubricGrading.get(AJEntityRubricGrading.UNIT_ID));
     context.put(GEPConstants.LESSON_ID, rubricGrading.get(AJEntityRubricGrading.LESSON_ID));
     context.put(GEPConstants.SESSION_ID, rubricGrading.get(AJEntityRubricGrading.SESSION_ID));
-    context.put(GEPConstants.ADDITIONAL_CONTEXT, additionalContext);
+    context.putNull(GEPConstants.ADDITIONAL_CONTEXT);
 
     cpEvent.put(GEPConstants.CONTEXT, context);
 
