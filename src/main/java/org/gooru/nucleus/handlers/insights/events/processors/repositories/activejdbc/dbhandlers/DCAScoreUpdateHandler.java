@@ -56,6 +56,7 @@ public class DCAScoreUpdateHandler implements DBHandler {
   private String updated_at;
   private String tenantId;
   private String partnerId;
+  private String additionalContext;
 
   public DCAScoreUpdateHandler(ProcessorContext context) {
     this.context = context;
@@ -101,7 +102,6 @@ public class DCAScoreUpdateHandler implements DBHandler {
 
   @Override
   public ExecutionResult<MessageResponse> executeRequest() {
-
     dcaReports = new AJEntityDailyClassActivity();
     LazyList<AJEntityDailyClassActivity> allGraded = null;
     JsonObject req = context.request();
@@ -114,6 +114,8 @@ public class DCAScoreUpdateHandler implements DBHandler {
         .mapToObj(index -> (JsonObject) resources.getValue(index))
         .collect(Collectors.toList());
     req.remove(RESOURCES);
+    additionalContext = req.getString(AJEntityDailyClassActivity.ADDITIONAL_CONTEXT);
+    req.remove(AJEntityDailyClassActivity.ADDITIONAL_CONTEXT);
 
     new DefAJEntityDailyClassActivityBuilder()
         .build(dcaReports, req, AJEntityDailyClassActivity.getConverterRegistry());
@@ -358,6 +360,7 @@ public class DCAScoreUpdateHandler implements DBHandler {
         dcaReports.get(AJEntityDailyClassActivity.CONTEXT_COLLECTION_ID));
     context.put(GEPConstants.CONTEXT_COLLECTION_TYPE,
         dcaReports.get(AJEntityDailyClassActivity.CONTEXT_COLLECTION_TYPE));
+    context.put(GEPConstants.ADDITIONAL_CONTEXT, additionalContext);
 
     cpEvent.put(GEPConstants.CONTEXT, context);
 
