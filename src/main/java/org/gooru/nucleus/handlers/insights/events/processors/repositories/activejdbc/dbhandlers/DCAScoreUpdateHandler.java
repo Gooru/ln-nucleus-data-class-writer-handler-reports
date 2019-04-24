@@ -9,6 +9,7 @@ import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.constants.GEPConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.MessageDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.RDAEventDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.TeacherScoreOverideEventDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityClassAuthorizedUsers;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityDailyClassActivity;
@@ -121,16 +122,22 @@ public class DCAScoreUpdateHandler implements DBHandler {
         .build(dcaReports, req, AJEntityDailyClassActivity.getConverterRegistry());
 
     dcaReports.set(AJEntityDailyClassActivity.GOORUUID, studentId);
-    //Since this NOT a Free-Response Question, the Max_Score can be safely assumed to be 1.0. So no need to update the same.
     jObj.forEach(attr -> {
-      String ans_status = attr.getString(AJEntityDailyClassActivity.RESOURCE_ATTEMPT_STATUS);
-      Base.exec(AJEntityDailyClassActivity.UPDATE_QUESTION_SCORE_U,
-          ans_status.equalsIgnoreCase(CORRECT) ? 1.0 : 0.0,
-          true, attr.getString(AJEntityDailyClassActivity.RESOURCE_ATTEMPT_STATUS), studentId,
-          dcaReports.get(AJEntityDailyClassActivity.CLASS_GOORU_OID),
-          dcaReports.get(AJEntityDailyClassActivity.SESSION_ID),
-          dcaReports.get(AJEntityDailyClassActivity.COLLECTION_OID),
-          attr.getString(AJEntityDailyClassActivity.RESOURCE_ID));
+      Double score = attr.getValue(AJEntityDailyClassActivity.SCORE) != null ? Double.valueOf(attr.getValue(AJEntityDailyClassActivity.SCORE).toString()) : null;
+      Double maxScore = attr.getValue(AJEntityDailyClassActivity.MAX_SCORE) != null ? Double.valueOf(attr.getValue(AJEntityDailyClassActivity.MAX_SCORE).toString()) : null;
+
+      if (score != null && maxScore != null && maxScore > 0.0 && score <= maxScore) {
+        Base.exec(AJEntityDailyClassActivity.UPDATE_QUESTION_SCORE_U, score, maxScore, true,
+            attr.getString(AJEntityDailyClassActivity.RESOURCE_ATTEMPT_STATUS), studentId,
+            dcaReports.get(AJEntityDailyClassActivity.CLASS_GOORU_OID),
+            dcaReports.get(AJEntityDailyClassActivity.SESSION_ID),
+            dcaReports.get(AJEntityDailyClassActivity.COLLECTION_OID),
+            attr.getString(AJEntityDailyClassActivity.RESOURCE_ID));
+
+        // Send Score Update Events to GEP
+        sendResourceScoreUpdateEventtoGEP(score, maxScore,
+            attr.getString(AJEntityDailyClassActivity.RESOURCE_ID));
+      }
     });
 
     LOGGER.debug("Computing total score...");
@@ -204,14 +211,7 @@ public class DCAScoreUpdateHandler implements DBHandler {
       dcaReports.set(AJEntityDailyClassActivity.CONTEXT_COLLECTION_ID, null);
       dcaReports.set(AJEntityDailyClassActivity.CONTEXT_COLLECTION_TYPE, null);
     }
-
-    //Send Score Update Events to GEP
-    jObj.forEach(attr -> {
-      String ans_status = attr.getString(AJEntityDailyClassActivity.RESOURCE_ATTEMPT_STATUS);
-      sendResourceScoreUpdateEventtoGEP(ans_status,
-          attr.getString(AJEntityDailyClassActivity.RESOURCE_ID));
-    });
-
+    
     TeacherScoreOverideEventDispatcher eventDispatcher = new TeacherScoreOverideEventDispatcher(
         dcaReports);
     eventDispatcher.sendDCATeacherScoreUpdateEventtoNotifications();
@@ -235,10 +235,9 @@ public class DCAScoreUpdateHandler implements DBHandler {
         dcaReports.get(AJEntityDailyClassActivity.SESSION_ID));
     timeSpent = tsObject != null ? Long.valueOf(tsObject.toString()) : 0L;
     
-    // Enable in future, if teacher override flow comes for CA offline data to update score at collection_perf table
-    /*RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(this.dcaReports, this.studentId,
+    RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(this.dcaReports, this.studentId,
         this.score, this.max_score, this.isGraded);
-    rdaEventDispatcher.sendCollScoreUpdateEventFromDCAToRDA();*/
+    rdaEventDispatcher.sendCollScoreUpdateEventFromDCAToRDA();
     LOGGER.debug("DONE");
     return new ExecutionResult<>(MessageResponseFactory.createOkayResponse(),
         ExecutionStatus.SUCCESSFUL);
@@ -259,13 +258,12 @@ public class DCAScoreUpdateHandler implements DBHandler {
   //TODO: Move GEP Event Processing to the EventDispatcher
   //********************************************************
 
-  private void sendResourceScoreUpdateEventtoGEP(String ansStatus, String resId) {
+  private void sendResourceScoreUpdateEventtoGEP(Double score, Double maxScore, String resId) {
     JsonObject result = new JsonObject();
     JsonObject gepEvent = createResourceScoreUpdateEvent(resId);
-
-    result.put(GEPConstants.SCORE, ansStatus.equalsIgnoreCase(CORRECT) ? 1.0 : 0.0);
-    result.put(GEPConstants.MAX_SCORE, 1.0);
-
+    
+    result.put(GEPConstants.SCORE, score);
+    result.put(GEPConstants.MAX_SCORE, maxScore);
     gepEvent.put(GEPConstants.RESULT, result);
 
     try {
