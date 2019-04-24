@@ -122,7 +122,8 @@ public class DCAScoreUpdateHandler implements DBHandler {
         .build(dcaReports, req, AJEntityDailyClassActivity.getConverterRegistry());
 
     dcaReports.set(AJEntityDailyClassActivity.GOORUUID, studentId);
-    jObj.forEach(attr -> {
+    boolean hasValidScoreUpdateData = false;
+    for (JsonObject attr : jObj) {
       Double score = attr.getValue(AJEntityDailyClassActivity.SCORE) != null ? Double.valueOf(attr.getValue(AJEntityDailyClassActivity.SCORE).toString()) : null;
       Double maxScore = attr.getValue(AJEntityDailyClassActivity.MAX_SCORE) != null ? Double.valueOf(attr.getValue(AJEntityDailyClassActivity.MAX_SCORE).toString()) : null;
 
@@ -137,9 +138,19 @@ public class DCAScoreUpdateHandler implements DBHandler {
         // Send Score Update Events to GEP
         sendResourceScoreUpdateEventtoGEP(score, maxScore,
             attr.getString(AJEntityDailyClassActivity.RESOURCE_ID));
+        if (!hasValidScoreUpdateData) {
+          hasValidScoreUpdateData = true;
+        }
       }
-    });
+    }
 
+    if(!hasValidScoreUpdateData) {
+      LOGGER.debug("Invalid score/maxscore given for Score Update");
+      return new ExecutionResult<>(
+          MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload"),
+          ExecutionStatus.FAILED);
+    }
+    
     LOGGER.debug("Computing total score...");
     LazyList<AJEntityDailyClassActivity> scoreTS = AJEntityDailyClassActivity
         .findBySQL(AJEntityDailyClassActivity.COMPUTE_ASSESSMENT_SCORE_POST_GRADING_U,
