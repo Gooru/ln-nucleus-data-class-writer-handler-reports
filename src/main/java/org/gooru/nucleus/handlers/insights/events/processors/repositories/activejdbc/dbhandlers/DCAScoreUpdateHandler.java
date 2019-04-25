@@ -122,33 +122,30 @@ public class DCAScoreUpdateHandler implements DBHandler {
         .build(dcaReports, req, AJEntityDailyClassActivity.getConverterRegistry());
 
     dcaReports.set(AJEntityDailyClassActivity.GOORUUID, studentId);
-    boolean hasValidScoreUpdateData = false;
+    for (JsonObject attr : jObj) {
+      Double score = attr.getValue(AJEntityDailyClassActivity.SCORE) != null ? Double.valueOf(attr.getValue(AJEntityDailyClassActivity.SCORE).toString()) : null;
+      Double maxScore = attr.getValue(AJEntityDailyClassActivity.MAX_SCORE) != null ? Double.valueOf(attr.getValue(AJEntityDailyClassActivity.MAX_SCORE).toString()) : null;
+      if (!(score != null && maxScore != null && maxScore > 0.0 && score <= maxScore)) {
+        LOGGER.debug("Invalid score/maxscore given for Score Update");
+        return new ExecutionResult<>(
+            MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload"),
+            ExecutionStatus.FAILED);
+      }
+    }
+    
     for (JsonObject attr : jObj) {
       Double score = attr.getValue(AJEntityDailyClassActivity.SCORE) != null ? Double.valueOf(attr.getValue(AJEntityDailyClassActivity.SCORE).toString()) : null;
       Double maxScore = attr.getValue(AJEntityDailyClassActivity.MAX_SCORE) != null ? Double.valueOf(attr.getValue(AJEntityDailyClassActivity.MAX_SCORE).toString()) : null;
 
-      if (score != null && maxScore != null && maxScore > 0.0 && score <= maxScore) {
-        Base.exec(AJEntityDailyClassActivity.UPDATE_QUESTION_SCORE_U, score, maxScore, true,
-            attr.getString(AJEntityDailyClassActivity.RESOURCE_ATTEMPT_STATUS), studentId,
-            dcaReports.get(AJEntityDailyClassActivity.CLASS_GOORU_OID),
-            dcaReports.get(AJEntityDailyClassActivity.SESSION_ID),
-            dcaReports.get(AJEntityDailyClassActivity.COLLECTION_OID),
-            attr.getString(AJEntityDailyClassActivity.RESOURCE_ID));
+      Base.exec(AJEntityDailyClassActivity.UPDATE_QUESTION_SCORE_U, score, maxScore, true,
+          studentId, dcaReports.get(AJEntityDailyClassActivity.CLASS_GOORU_OID),
+          dcaReports.get(AJEntityDailyClassActivity.SESSION_ID),
+          dcaReports.get(AJEntityDailyClassActivity.COLLECTION_OID),
+          attr.getString(AJEntityDailyClassActivity.RESOURCE_ID));
 
-        // Send Score Update Events to GEP
-        sendResourceScoreUpdateEventtoGEP(score, maxScore,
-            attr.getString(AJEntityDailyClassActivity.RESOURCE_ID));
-        if (!hasValidScoreUpdateData) {
-          hasValidScoreUpdateData = true;
-        }
-      }
-    }
-
-    if(!hasValidScoreUpdateData) {
-      LOGGER.debug("Invalid score/maxscore given for Score Update");
-      return new ExecutionResult<>(
-          MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload"),
-          ExecutionStatus.FAILED);
+      // Send Score Update Events to GEP
+      sendResourceScoreUpdateEventtoGEP(score, maxScore,
+          attr.getString(AJEntityDailyClassActivity.RESOURCE_ID));
     }
     
     LOGGER.debug("Computing total score...");

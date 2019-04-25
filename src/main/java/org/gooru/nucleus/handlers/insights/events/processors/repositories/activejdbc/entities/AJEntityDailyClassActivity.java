@@ -127,7 +127,7 @@ public class AJEntityDailyClassActivity extends Model {
           + "AND session_id =  ? AND collection_id = ? AND event_name = 'collection.play' AND event_type = 'stop'";
 
   public static final String UPDATE_QUESTION_SCORE_U =
-      "UPDATE daily_class_activity SET score = ?, max_score = ?, is_graded = ?, resource_attempt_status = ? "
+      "UPDATE daily_class_activity SET score = ?, max_score = ?, is_graded = ? "
           + "WHERE actor_id = ? AND class_id = ? AND session_id = ? AND collection_id = ? AND resource_id = ? AND event_name = 'collection.resource.play' "
           + "AND event_type = 'stop'";
 
