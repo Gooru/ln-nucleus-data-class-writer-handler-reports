@@ -1,5 +1,6 @@
 package org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers;
 
+import static org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.validators.ValidationUtils.validateScoreAndMaxScore;
 import java.sql.Timestamp;
 import java.util.Map;
 
@@ -12,6 +13,7 @@ import org.gooru.nucleus.handlers.insights.events.processors.repositories.active
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityReporting;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.EntityBuilder;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.utils.BaseUtil;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.validators.ValidationUtils;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult.ExecutionStatus;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponse;
@@ -131,8 +133,7 @@ public class StudentSelfReportingHandler implements DBHandler {
       //the value 0 if anotherDouble is numerically equal to this Double;
       //a value less than 0 if this Double is numerically less than anotherDouble;
       //and a value greater than 0 if this Double is numerically greater than anotherDouble.
-      if ((rawScore.compareTo(0.00) < 0) || (maxScore.compareTo(0.00) < 0)
-          || (maxScore.compareTo(0.00) == 0) || (score.compareTo(maxScore) > 0)) {
+      if (!validateScoreAndMaxScore(rawScore, maxScore)) {
         return new ExecutionResult<>(MessageResponseFactory
             .createInvalidRequestResponse("Numeric Field Overflow - Invalid Fraction Score"),
             ExecutionResult.ExecutionStatus.FAILED);

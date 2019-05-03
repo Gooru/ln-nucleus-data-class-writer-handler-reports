@@ -1,5 +1,6 @@
 package org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers;
 
+import static org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.validators.ValidationUtils.validateScoreAndMaxScore;
 import java.sql.Timestamp;
 import java.util.Map;
 
@@ -116,8 +117,7 @@ public class DCAStudentSelfReportingHandler implements DBHandler {
     } else if (req.getValue(SCORE) != null || req.getValue(MAX_SCORE) != null) {
       rawScore = Double.valueOf(req.getValue(SCORE).toString());
       maxScore = Double.valueOf(req.getValue(MAX_SCORE).toString());
-      if ((rawScore.compareTo(0.00) < 0) || (maxScore.compareTo(0.00) < 0)
-          || (maxScore.compareTo(0.00) == 0) || (score.compareTo(maxScore) > 0)) {
+      if (!validateScoreAndMaxScore(rawScore, maxScore)) {
         return new ExecutionResult<>(MessageResponseFactory
             .createInvalidRequestResponse("Numeric Field Overflow - Invalid Fraction Score"),
             ExecutionResult.ExecutionStatus.FAILED);
