@@ -206,9 +206,8 @@ public class OfflineStudentReportingHandler implements DBHandler {
         Double maxScore = Double
             .valueOf(requestPayload.getValue(AJEntityReporting.MAX_SCORE).toString());
         Double score = null;
-        if ((rawScore.compareTo(100.00) > 0) || (maxScore.compareTo(100.00) > 0) || (
-            rawScore.compareTo(0.00) < 0) || (maxScore.compareTo(0.00) < 0) || (
-            maxScore.compareTo(0.00) == 0) || rawScore.compareTo(maxScore) > 0) {
+        if ((rawScore.compareTo(0.00) < 0) || (maxScore.compareTo(0.00) < 0)
+            || (maxScore.compareTo(0.00) == 0) || rawScore.compareTo(maxScore) > 0) {
           return new ExecutionResult<>(MessageResponseFactory
               .createInvalidRequestResponse("Numeric Field Overflow - Invalid Fraction Score/Maxscore"),
               ExecutionResult.ExecutionStatus.FAILED);
@@ -372,8 +371,7 @@ public class OfflineStudentReportingHandler implements DBHandler {
 
             Double totalResMaxScore = resource.getDouble(AJEntityReporting.MAX_SCORE);
             if (totalResMaxScore != null) {
-              if ((score.compareTo(100.00) > 0) || (totalResMaxScore.compareTo(100.00) > 0)
-                  || (score.compareTo(totalResMaxScore) > 0) || (score.compareTo(0.00) < 0)
+              if ((score.compareTo(totalResMaxScore) > 0) || (score.compareTo(0.00) < 0)
                   || (totalResMaxScore.compareTo(0.00) < 0)
                   || (totalResMaxScore.compareTo(0.00) == 0)) {
                 return new ExecutionResult<>(

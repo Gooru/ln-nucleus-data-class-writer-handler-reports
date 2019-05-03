@@ -116,9 +116,8 @@ public class DCAStudentSelfReportingHandler implements DBHandler {
     } else if (req.getValue(SCORE) != null || req.getValue(MAX_SCORE) != null) {
       rawScore = Double.valueOf(req.getValue(SCORE).toString());
       maxScore = Double.valueOf(req.getValue(MAX_SCORE).toString());
-      if ((rawScore.compareTo(100.00) > 0) || (maxScore.compareTo(100.00) > 0)
-          || (rawScore.compareTo(0.00) < 0) || (maxScore.compareTo(0.00) < 0)
-          || (maxScore.compareTo(0.00) == 0)) {
+      if ((rawScore.compareTo(0.00) < 0) || (maxScore.compareTo(0.00) < 0)
+          || (maxScore.compareTo(0.00) == 0) || (score.compareTo(maxScore) > 0)) {
         return new ExecutionResult<>(MessageResponseFactory
             .createInvalidRequestResponse("Numeric Field Overflow - Invalid Fraction Score"),
             ExecutionResult.ExecutionStatus.FAILED);

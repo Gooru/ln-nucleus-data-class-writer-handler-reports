@@ -213,8 +213,7 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
         Double maxScore = Double
             .valueOf(requestPayload.getValue(AJEntityDailyClassActivity.MAX_SCORE).toString());
         Double score = null;
-        if ((rawScore.compareTo(100.00) > 0) || (maxScore.compareTo(100.00) > 0)
-            || (rawScore.compareTo(0.00) < 0) || (maxScore.compareTo(0.00) < 0)
+        if ((rawScore.compareTo(0.00) < 0) || (maxScore.compareTo(0.00) < 0)
             || (maxScore.compareTo(0.00) == 0) || rawScore.compareTo(maxScore) > 0) {
           return new ExecutionResult<>(
               MessageResponseFactory
@@ -385,8 +384,7 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
 
             Double totalResMaxScore = resource.getDouble(AJEntityDailyClassActivity.MAX_SCORE);
             if (totalResMaxScore != null) {
-              if ((score.compareTo(100.00) > 0) || (totalResMaxScore.compareTo(100.00) > 0)
-                  || (score.compareTo(totalResMaxScore) > 0) || (score.compareTo(0.00) < 0)
+              if ((score.compareTo(totalResMaxScore) > 0) || (score.compareTo(0.00) < 0)
                   || (totalResMaxScore.compareTo(0.00) < 0)
                   || (totalResMaxScore.compareTo(0.00) == 0)) {
                 return new ExecutionResult<>(

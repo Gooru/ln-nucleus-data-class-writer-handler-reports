@@ -131,9 +131,8 @@ public class StudentSelfReportingHandler implements DBHandler {
       //the value 0 if anotherDouble is numerically equal to this Double;
       //a value less than 0 if this Double is numerically less than anotherDouble;
       //and a value greater than 0 if this Double is numerically greater than anotherDouble.
-      if ((rawScore.compareTo(100.00) > 0) || (maxScore.compareTo(100.00) > 0)
-          || (rawScore.compareTo(0.00) < 0) || (maxScore.compareTo(0.00) < 0)
-          || (maxScore.compareTo(0.00) == 0)) {
+      if ((rawScore.compareTo(0.00) < 0) || (maxScore.compareTo(0.00) < 0)
+          || (maxScore.compareTo(0.00) == 0) || (score.compareTo(maxScore) > 0)) {
         return new ExecutionResult<>(MessageResponseFactory
             .createInvalidRequestResponse("Numeric Field Overflow - Invalid Fraction Score"),
             ExecutionResult.ExecutionStatus.FAILED);
