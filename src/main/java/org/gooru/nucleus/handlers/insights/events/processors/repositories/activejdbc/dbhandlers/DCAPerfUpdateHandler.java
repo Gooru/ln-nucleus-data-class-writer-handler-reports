@@ -222,10 +222,10 @@ public class DCAPerfUpdateHandler implements DBHandler {
     Long ts = 0L;
 
     // Since we are in the Collection Update flow, it is expected that minimally we have received
-    // collection.play.start event. If NOT we error out.
+    // some event related to this collection. If NOT we error out.
     AJEntityDailyClassActivity resEventModel = AJEntityDailyClassActivity.findFirst(
         "actor_id = ? AND class_id = ? AND collection_id = ? AND date_in_time_zone = ? "
-            + "AND event_name = 'collection.play' AND event_type = 'start' ORDER by updated_at DESC",
+            + " ORDER by updated_at DESC",
         dcaModel.get(AJEntityDailyClassActivity.GOORUUID),
         dcaModel.get(AJEntityDailyClassActivity.CLASS_GOORU_OID),
         dcaModel.get(AJEntityDailyClassActivity.COLLECTION_OID), activityDate);
@@ -262,6 +262,7 @@ public class DCAPerfUpdateHandler implements DBHandler {
           resource.getString(AJEntityDailyClassActivity.RESOURCE_ID));
       String resourceType = resource.getString(AJEntityDailyClassActivity.RESOURCE_TYPE);
       dcaModel.set(AJEntityDailyClassActivity.RESOURCE_TYPE, resourceType);
+      dcaModel.set(AJEntityDailyClassActivity.SESSION_ID, sessionId);
       
       AJEntityDailyClassActivity duplicateResEvent = AJEntityDailyClassActivity.findFirst(
           "actor_id = ? AND class_id = ? AND collection_id = ? AND resource_id = ? AND session_id = ? AND "
@@ -404,6 +405,7 @@ public class DCAPerfUpdateHandler implements DBHandler {
     new DefAJEntityDailyClassActivityBuilder().build(dcaModel, req,
         AJEntityDailyClassActivity.getConverterRegistry());
     dcaModel.set(AJEntityDailyClassActivity.GOORUUID, studentId);
+    dcaModel.set(AJEntityDailyClassActivity.SESSION_ID, sessionId);
     dcaModel.setDateinTZ(activityDate.toString());
 
     AJEntityDailyClassActivity duplicateCPEvent = AJEntityDailyClassActivity.findFirst(
