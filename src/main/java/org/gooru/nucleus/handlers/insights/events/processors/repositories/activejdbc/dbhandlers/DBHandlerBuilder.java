@@ -89,5 +89,8 @@ public final class DBHandlerBuilder {
   public static DBHandler buildOfflineStudentPerfRDAHandler(RDAProcessorContext context) {
     return new OfflineStudentPerfEventRDAHandler(context);
   }
-
+  
+  public static DBHandler buildDCAPerfUpdateHandler(ProcessorContext context) {
+    return new DCAPerfUpdateHandler(context);
+  }
 }

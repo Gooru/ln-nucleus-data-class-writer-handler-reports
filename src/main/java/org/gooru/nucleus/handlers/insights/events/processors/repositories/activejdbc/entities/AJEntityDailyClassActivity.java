@@ -147,6 +147,20 @@ public class AJEntityDailyClassActivity extends Model {
           + "FROM  (SELECT DISTINCT ON (resource_id) time_spent as resource_timespent, session_id FROM daily_class_activity "
           + "WHERE collection_id = ? AND session_id = ? AND event_name = 'collection.resource.play' AND event_type = 'stop' "
           + "ORDER BY resource_id, updated_at desc) tsData GROUP BY session_id";
+  
+  // **************************************************************************************************************************
+  // PERF UPDATE HANDLER
+  public static final String UPDATE_RESOURCE_TS_SCORE =
+      "UPDATE daily_class_activity SET time_spent= ?, max_score = ?, score = ? WHERE id = ?";
+
+  public static final String UPDATE_RESOURCE_TS =
+      "UPDATE daily_class_activity SET time_spent= ? WHERE id = ?";
+
+  public static final String UPDATE_OVERALL_COLLECTION_PERF =
+      "UPDATE daily_class_activity SET time_spent= ?, max_score = ?, score = ? WHERE id = ?";
+
+  public static final String UPDATE_OVERALL_COLLECTION_TS =
+      "UPDATE daily_class_activity SET time_spent= ? WHERE id = ?";
 
   public static final String RESOURCE_ATTEMPT_STATUS_TYPE = "attempt_status";
   public static final String PGTYPE_TEXT = "text";
