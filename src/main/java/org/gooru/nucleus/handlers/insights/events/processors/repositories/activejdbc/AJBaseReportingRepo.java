@@ -88,4 +88,11 @@ class AJBaseReportingRepo implements BaseReportingRepo {
     return TransactionExecutor
         .executeTransaction(DBHandlerBuilder.buildDCAOfflineStudentReportingHandler(context));
   }
+  
+  //DCA Perf Update
+  @Override
+  public MessageResponse updateDCAPerf() {
+    return TransactionExecutor
+        .executeTransaction(DBHandlerBuilder.buildDCAPerfUpdateHandler(context));
+  }
 }
