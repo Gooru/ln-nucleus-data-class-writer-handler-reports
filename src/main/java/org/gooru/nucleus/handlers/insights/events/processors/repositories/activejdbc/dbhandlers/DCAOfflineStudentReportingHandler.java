@@ -83,7 +83,7 @@ public class DCAOfflineStudentReportingHandler implements DBHandler {
         context.request().getString(AJEntityDailyClassActivity.COLLECTION_OID))
         || StringUtil.isNullOrEmptyAfterTrim(collectionType)
         || !EventConstants.COLLECTION_TYPES.matcher(collectionType).matches()
-        || (collectionType.equalsIgnoreCase(EventConstants.EXTERNAL_COLLECTION) && userIds == null)
+        || (collectionType.equalsIgnoreCase(EventConstants.EXTERNAL_COLLECTION) && (userIds == null || userIds.isEmpty()))
         || (EventConstants.C_A_EA_TYPES.matcher(collectionType).matches()
             && (StringUtil.isNullOrEmptyAfterTrim(userId) || StringUtil.isNullOrEmptyAfterTrim(
                 context.request().getString(AJEntityDailyClassActivity.SESSION_ID))))
