@@ -31,4 +31,6 @@ public interface BaseReportingRepo {
 
   MessageResponse updateDCAAssessmentScore();
 
+  //TODO: *
+  MessageResponse processStudentDCAGrades();
 }

@@ -113,7 +113,7 @@ public class AJEntityDailyClassActivity extends Model {
 
   public static final String SELECT_DCA_REPORT_ID = "SELECT id FROM daily_class_activity WHERE collection_id = ? AND session_id = ? AND resource_id = ? AND event_type = ? ";
 
-  //Student Self Grading
+  //Student Grading of External Assessment
   public static final String CHECK_IF_EXT_ASSESSMENT_SELF_GRADED =
       "SELECT id, views, time_spent, score, reaction FROM daily_class_activity "
           + "WHERE actor_id = ? AND class_id = ? AND collection_id = ? AND session_id = ? AND event_name = ? AND event_type = ? ";
@@ -147,6 +147,27 @@ public class AJEntityDailyClassActivity extends Model {
           + "FROM  (SELECT DISTINCT ON (resource_id) time_spent as resource_timespent, session_id FROM daily_class_activity "
           + "WHERE collection_id = ? AND session_id = ? AND event_name = 'collection.resource.play' AND event_type = 'stop' "
           + "ORDER BY resource_id, updated_at desc) tsData GROUP BY session_id";
+  
+  //Rubric Grading of FRQ Questions at DCA *****************************************************************************************************
+  //Case when the same Assessments spills-over to the next date than the activity assigned date, then the resource date_in_time_zone
+  //will be different than the Assessment completed (collection.play) date_in_time_zone. (ideally however this should not happen, 
+  //for each date the activity is scheduled, we should have a new session of play)
+  //TO TEST: Currently, Students can play Activities scheduled ONLY FOR TODAY. Play of previous date's activities is disabled. (if this 
+  //is not the case then date_in_time_zone param in the below queries may need to revisited)
+  public static final String UPDATE_QUESTION_SCORE = "UPDATE daily_class_activity SET score = ?, max_score = ?, is_graded = ? WHERE "
+      + "actor_id = ? AND collection_id =? AND session_id = ? AND resource_id = ?";
+  public static final String UPDATE_ASSESSMENT_SCORE =
+      "UPDATE daily_class_activity SET score = ?, max_score = ? WHERE actor_id = ? AND collection_id =? AND session_id = ? "
+          + "AND event_name = 'collection.play' AND event_type = 'stop'";
+  public static final String COMPUTE_ASSESSMENT_SCORE_POST_GRADING =
+      "SELECT SUM(questionData.question_score) AS score, "
+          + "SUM(questionData.max_score) AS max_score FROM  "
+          + "(SELECT DISTINCT ON (resource_id)  score AS question_score, max_score, "
+          + "session_id FROM daily_class_activity WHERE actor_id = ? AND collection_id = ? AND session_id = ? AND "
+          + "event_name = 'collection.resource.play' AND event_type = 'stop' AND resource_type = 'question' "
+          + "ORDER BY resource_id, updated_at desc) questionData GROUP BY session_id";
+
+
 
   public static final String RESOURCE_ATTEMPT_STATUS_TYPE = "attempt_status";
   public static final String PGTYPE_TEXT = "text";

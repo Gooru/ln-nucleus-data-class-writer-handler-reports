@@ -88,4 +88,11 @@ class AJBaseReportingRepo implements BaseReportingRepo {
     return TransactionExecutor
         .executeTransaction(DBHandlerBuilder.buildDCAOfflineStudentReportingHandler(context));
   }
+  
+  //TODO: *
+  @Override
+  public MessageResponse processStudentDCAGrades() {
+    return TransactionExecutor
+        .executeTransaction(DBHandlerBuilder.buildDCARubricGradingHandler(context));
+  }
 }

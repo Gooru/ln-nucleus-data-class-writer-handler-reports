@@ -39,22 +39,27 @@ public class RubricsMessageProcessor implements Processor {
 
   @Override
   public MessageResponse process() {
-    MessageResponse result;
+    MessageResponse result = null;
     try {
       // Validate the message itself
       ExecutionResult<MessageResponse> validateResult = validateAndInitialize();
       if (validateResult.isCompleted()) {
         return validateResult.result();
       }
-
       context = createContext();
-
+      //TODO: TOTALLY UPDATE THIS BLOCK
+      //CURRENTLY UPDATING THIS CODE TO TEST MY DCA GRADING LOGIC
+      //INFRA UPDATES WILL FOLLOW LATER
       final String eventName = messageJobj.getString(EventConstants._EVENT_NAME);
       LOGGER.debug(eventName);
       switch (eventName) {
         //case MessageConstants.MSG_OP_STUDENTS_GRADES_WRITE:
         case EventConstants.RESOURCE_RUBRIC_GRADE:
-          result = procStudentGrades();
+          if (messageJobj.getString("content_source").equalsIgnoreCase(EventConstants.DCA)) {
+            result = procStudentDCAGrades();
+          } else if (messageJobj.getString("content_source").equalsIgnoreCase(EventConstants.COURSEMAP)) {
+            result = procStudentGrades();            
+          }          
           break;
         default:
           LOGGER.error("Invalid operation type passed in, not able to handle");
@@ -72,14 +77,22 @@ public class RubricsMessageProcessor implements Processor {
   private MessageResponse procStudentGrades() {
     try {
       return RepoBuilder.buildBaseReportingRepo(context).processStudentGrades();
+    } catch (Throwable t) {
+      LOGGER.error("Exception while getting Students Grades for a Question", t);
+      return MessageResponseFactory.createInternalErrorResponse(t.getMessage());
+    }
+  }
+
+
+  private MessageResponse procStudentDCAGrades() {
+    try {
+      return RepoBuilder.buildBaseReportingRepo(context).processStudentDCAGrades();
 
     } catch (Throwable t) {
       LOGGER.error("Exception while getting Students Grades for a Question", t);
       return MessageResponseFactory.createInternalErrorResponse(t.getMessage());
     }
-
   }
-
 
   //TODO: This method needs to be updated
   private ProcessorContext createContext() {

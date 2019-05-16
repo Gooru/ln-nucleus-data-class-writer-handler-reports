@@ -90,4 +90,8 @@ public final class DBHandlerBuilder {
     return new OfflineStudentPerfEventRDAHandler(context);
   }
 
+  //TODO: *
+  public static DBHandler buildDCARubricGradingHandler(ProcessorContext context) {
+    return new DCARubricGradingHandler(context);
+  }
 }
