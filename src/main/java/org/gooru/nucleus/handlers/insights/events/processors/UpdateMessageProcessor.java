@@ -48,7 +48,22 @@ public class UpdateMessageProcessor implements Processor {
             result = updateAssessmentScore();
             break;
           case EventConstants.DCA:
-            result = updateDCAAssessmentScore();
+            if (context.request().getString(AJEntityReporting.COLLECTION_TYPE)
+                .equalsIgnoreCase(EventConstants.COLLECTION)) {
+              result = updateDCAPerf();
+            } else if (context.request().getString(AJEntityReporting.COLLECTION_TYPE)
+                .equalsIgnoreCase(EventConstants.ASSESSMENT)){
+              result = updateDCAAssessmentScore();              
+//            }else if (context.request().getString(AJEntityReporting.COLLECTION_TYPE)
+//                .equalsIgnoreCase(EventConstants.EXTERNAL_COLLECTION)) {
+//              result = updateDCAPerf();
+//            } else if (context.request().getString(AJEntityReporting.COLLECTION_TYPE)
+//                .equalsIgnoreCase(EventConstants.EXTERNAL_ASSESSMENT)){
+//              result = updateDCAAssessmentScore();              
+            } else {
+              return MessageResponseFactory
+                  .createInvalidRequestResponse(RESOURCE_BUNDLE.getString("invalid.operation"));
+            }
             break;
           default:
             LOGGER.error("Invalid content source passed in, not able to handle");
@@ -81,6 +96,15 @@ public class UpdateMessageProcessor implements Processor {
   private MessageResponse updateDCAAssessmentScore() {
     try {
       return RepoBuilder.buildBaseReportingRepo(context).updateDCAAssessmentScore();
+    } catch (Throwable t) {
+      LOGGER.error("Exception while processing Collection Play Event Data", t.getMessage());
+      return MessageResponseFactory.createInternalErrorResponse(t.getMessage());
+    }
+  }
+  
+  private MessageResponse updateDCAPerf() {
+    try {
+      return RepoBuilder.buildBaseReportingRepo(context).updateDCAPerf();
     } catch (Throwable t) {
       LOGGER.error("Exception while processing Collection Play Event Data", t.getMessage());
       return MessageResponseFactory.createInternalErrorResponse(t.getMessage());

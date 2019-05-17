@@ -167,7 +167,19 @@ public class AJEntityDailyClassActivity extends Model {
           + "event_name = 'collection.resource.play' AND event_type = 'stop' AND resource_type = 'question' "
           + "ORDER BY resource_id, updated_at desc) questionData GROUP BY session_id";
 
+  // **************************************************************************************************************************
+  // PERF UPDATE HANDLER
+  public static final String UPDATE_RESOURCE_TS_SCORE =
+      "UPDATE daily_class_activity SET time_spent= ?, max_score = ?, score = ? WHERE id = ?";
 
+  public static final String UPDATE_RESOURCE_TS =
+      "UPDATE daily_class_activity SET time_spent= ? WHERE id = ?";
+
+  public static final String UPDATE_OVERALL_COLLECTION_PERF =
+      "UPDATE daily_class_activity SET time_spent= ?, max_score = ?, score = ? WHERE id = ?";
+
+  public static final String UPDATE_OVERALL_COLLECTION_TS =
+      "UPDATE daily_class_activity SET time_spent= ? WHERE id = ?";
 
   public static final String RESOURCE_ATTEMPT_STATUS_TYPE = "attempt_status";
   public static final String PGTYPE_TEXT = "text";
