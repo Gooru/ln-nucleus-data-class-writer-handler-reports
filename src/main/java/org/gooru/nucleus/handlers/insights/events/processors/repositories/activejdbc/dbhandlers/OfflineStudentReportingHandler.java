@@ -1,5 +1,6 @@
 package org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers;
 
+import static org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.validators.ValidationUtils.validateScoreAndMaxScore;
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -82,7 +83,7 @@ public class OfflineStudentReportingHandler implements DBHandler {
     if (StringUtil.isNullOrEmpty(context.request().getString(AJEntityReporting.COLLECTION_OID))
         || StringUtil.isNullOrEmpty(context.request().getString(AJEntityReporting.COURSE_GOORU_OID))
         || StringUtil.isNullOrEmptyAfterTrim(collectionType) || !EventConstants.COLLECTION_TYPES.matcher(collectionType).matches()
-        || (collectionType.equalsIgnoreCase(EventConstants.EXTERNAL_COLLECTION) && userIds == null)
+        || (collectionType.equalsIgnoreCase(EventConstants.EXTERNAL_COLLECTION) && (userIds == null || userIds.isEmpty()))
         || (EventConstants.C_A_EA_TYPES.matcher(collectionType).matches() 
         && (StringUtil.isNullOrEmptyAfterTrim(userId) || StringUtil.isNullOrEmptyAfterTrim(context.request().getString(AJEntityReporting.SESSION_ID))))
         || (EventConstants.C_A_TYPES.matcher(collectionType).matches() && (!context.request().containsKey(RESOURCES) 
@@ -206,9 +207,7 @@ public class OfflineStudentReportingHandler implements DBHandler {
         Double maxScore = Double
             .valueOf(requestPayload.getValue(AJEntityReporting.MAX_SCORE).toString());
         Double score = null;
-        if ((rawScore.compareTo(100.00) > 0) || (maxScore.compareTo(100.00) > 0) || (
-            rawScore.compareTo(0.00) < 0) || (maxScore.compareTo(0.00) < 0) || (
-            maxScore.compareTo(0.00) == 0) || rawScore.compareTo(maxScore) > 0) {
+        if (!validateScoreAndMaxScore(rawScore, maxScore)) {
           return new ExecutionResult<>(MessageResponseFactory
               .createInvalidRequestResponse("Numeric Field Overflow - Invalid Fraction Score/Maxscore"),
               ExecutionResult.ExecutionStatus.FAILED);
@@ -372,10 +371,7 @@ public class OfflineStudentReportingHandler implements DBHandler {
 
             Double totalResMaxScore = resource.getDouble(AJEntityReporting.MAX_SCORE);
             if (totalResMaxScore != null) {
-              if ((score.compareTo(100.00) > 0) || (totalResMaxScore.compareTo(100.00) > 0)
-                  || (score.compareTo(totalResMaxScore) > 0) || (score.compareTo(0.00) < 0)
-                  || (totalResMaxScore.compareTo(0.00) < 0)
-                  || (totalResMaxScore.compareTo(0.00) == 0)) {
+              if (!validateScoreAndMaxScore(score, totalResMaxScore)) {
                 return new ExecutionResult<>(
                     MessageResponseFactory.createInvalidRequestResponse(
                         "Numeric Field Overflow - Invalid Score/Maxscore"),
