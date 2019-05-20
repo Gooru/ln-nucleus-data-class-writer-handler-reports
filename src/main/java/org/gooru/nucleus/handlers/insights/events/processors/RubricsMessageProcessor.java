@@ -54,12 +54,17 @@ public class RubricsMessageProcessor implements Processor {
       LOGGER.debug(eventName);
       switch (eventName) {
         //case MessageConstants.MSG_OP_STUDENTS_GRADES_WRITE:
-        case EventConstants.RESOURCE_RUBRIC_GRADE:
-          if (messageJobj.getString("content_source").equalsIgnoreCase(EventConstants.DCA)) {
+        case EventConstants.RESOURCE_RUBRIC_GRADE:          
+          if (messageJobj.containsKey("content_source") && 
+              messageJobj.getString("content_source").equalsIgnoreCase(EventConstants.DCA)) {
             result = procStudentDCAGrades();
-          } else if (messageJobj.getString("content_source").equalsIgnoreCase(EventConstants.COURSEMAP)) {
+          } else if (messageJobj.containsKey("content_source") && 
+              messageJobj.getString("content_source").equalsIgnoreCase(EventConstants.COURSEMAP)) {
             result = procStudentGrades();            
-          }          
+          } else {
+            //Default to CourseMap 
+            result = procStudentGrades();   
+          }
           break;
         default:
           LOGGER.error("Invalid operation type passed in, not able to handle");

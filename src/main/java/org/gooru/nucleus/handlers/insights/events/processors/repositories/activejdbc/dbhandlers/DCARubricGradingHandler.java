@@ -1,5 +1,6 @@
 package org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers;
 
+import java.sql.Date;
 import java.sql.Timestamp;
 import java.util.Base64;
 import java.util.List;
@@ -50,6 +51,7 @@ public class DCARubricGradingHandler implements DBHandler {
   private Boolean isGraded;
   private String additionalContext = null;
   private String additionalContextEncoded = null;
+  private Date activityDate;
 //  private String updated_at;
 //  private String tenantId;
 //  private String partnerId;
@@ -99,6 +101,14 @@ public class DCARubricGradingHandler implements DBHandler {
     //we need to decide if this also needs to be stored at the rubrics table
     additionalContextEncoded = req.getString(ADDITIONAL_CONTEXT);
     req.remove(ADDITIONAL_CONTEXT);
+    //TODO * activity_date maybe redundant post dca_content_id is posted by FE
+    String date = req.getString("activity_date");
+    if (!StringUtil.isNullOrEmpty(date)) {
+      this.activityDate = Date.valueOf(date);
+    }
+    //We will not store activity_date in the Rubrics Table as of now.
+    //Based on the offline design this may change.  
+    req.remove("activity_date");
     LazyList<AJEntityRubricGrading> duplicateRow = null;
 
     new DefAJEntityDCARubricGradingEntityBuilder()
