@@ -1,0 +1,17 @@
+package org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.oa;
+
+import org.gooru.nucleus.handlers.insights.events.processors.oa.OAContext;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.DBHandler;
+
+
+/**
+ * @author mukul@gooru
+ */
+public final class OADBHandlerBuilder {
+  
+  //TODO: *
+  public static DBHandler buildOAEventHandler(OAContext context) {
+    return new OADCAEventHandler(context);
+  }
+
+}

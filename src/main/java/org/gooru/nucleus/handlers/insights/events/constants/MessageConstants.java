@@ -21,6 +21,13 @@ public final class MessageConstants {
   public static final String MSG_HTTP_HEADERS = "http.headers";
   public static final String MSG_MESSAGE = "message";
 
+  //Offline Activities
+  public static final String MSG_OP_OA_DCA_EVENT = "oa.dca.event";
+  public static final String MSG_OP_OA_EVIDENES = "oa.evidences";
+  public static final String MSG_OP_OA_TASK_SELF_GRADING = "oa.task.self.grading";
+  public static final String MSG_OP_OA_TEACHER_GRADING = "oa.teacher.grading";
+  
+  
   // Containers for different responses
   public static final String RESP_CONTAINER_MBUS = "mb.container";
   public static final String RESP_CONTAINER_EVENT = "mb.event";

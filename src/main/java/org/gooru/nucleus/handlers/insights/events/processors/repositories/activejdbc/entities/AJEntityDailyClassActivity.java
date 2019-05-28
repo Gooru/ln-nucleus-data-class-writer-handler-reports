@@ -180,6 +180,17 @@ public class AJEntityDailyClassActivity extends Model {
 
   public static final String UPDATE_OVERALL_COLLECTION_TS =
       "UPDATE daily_class_activity SET time_spent= ? WHERE id = ?";
+  
+  // **************************************************************************************************************************
+  // OFFLINE ACTIVITIES
+  
+  public static final String FIND_OA_RECORD_FOR_THIS_STUDENT =
+      "SELECT id FROM daily_class_activity "
+          + "WHERE actor_id = ? AND collection_id = ? AND collection_type = ? AND event_type = ? AND event_name = ? ";
+
+  public static final String UPDATE_OA_RECORD_FOR_THIS_STUDENT =
+      "UPDATE daily_class_activity SET time_spent = ?, score = ?, "
+          + "max_score = ?, updated_at = ? WHERE id = ?";
 
   public static final String RESOURCE_ATTEMPT_STATUS_TYPE = "attempt_status";
   public static final String PGTYPE_TEXT = "text";

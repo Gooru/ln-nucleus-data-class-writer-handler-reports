@@ -2,6 +2,7 @@ package org.gooru.nucleus.handlers.insights.events.processors;
 
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.json.JsonObject;
+import org.gooru.nucleus.handlers.insights.events.processors.oa.OAProcessor;
 import org.gooru.nucleus.handlers.insights.events.processors.postprocessor.PostProcessor;
 
 public final class ProcessorBuilder {
@@ -33,4 +34,9 @@ public final class ProcessorBuilder {
   public static Processor buildPostProcessor(Message<JsonObject> message) {
     return new PostProcessor(message);
   }
+  
+  public static Processor buildOAProcessor(Message<Object> message) {
+    return new OAProcessor(message);
+  }
+  
 }
