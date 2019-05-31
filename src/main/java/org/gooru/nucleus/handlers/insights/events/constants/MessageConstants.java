@@ -22,9 +22,10 @@ public final class MessageConstants {
   public static final String MSG_MESSAGE = "message";
 
   //Offline Activities
-  public static final String MSG_OP_OA_DCA_EVENT = "oa.dca.event";
-  public static final String MSG_OP_OA_EVIDENES = "oa.evidences";
+  public static final String MSG_OP_OA_COMPLETE = "oa.complete";
+  public static final String MSG_OP_OA_SUBMISSIONS = "oa.submissions";
   public static final String MSG_OP_OA_TASK_SELF_GRADING = "oa.task.self.grading";
+  public static final String MSG_OP_OA_SELF_GRADING = "oa.self.grading";
   public static final String MSG_OP_OA_TEACHER_GRADING = "oa.teacher.grading";
   
   
@@ -42,6 +43,8 @@ public final class MessageConstants {
   public static final String COLLECTION = "collection";
   public static final String ASSESSMENT = "assessment";
   public static final String CLASS = "class";
+  public static final String TASKS = "tasks";
+  public static final String SUBMISSIONS = "submissions";
 
   public static final String SUBJECT = "subject";
   public static final String DOMAIN = "domain";

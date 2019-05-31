@@ -1,0 +1,162 @@
+package org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.oa;
+
+import java.sql.Timestamp;
+import java.util.Map;
+import java.util.UUID;
+import org.gooru.nucleus.handlers.insights.events.processors.oa.OAContext;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.DBHandler;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityOASelfGrading;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.EntityBuilder;
+import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult;
+import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponse;
+import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponseFactory;
+import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult.ExecutionStatus;
+import org.javalite.activejdbc.Base;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import com.hazelcast.util.StringUtil;
+import io.vertx.core.json.JsonObject;
+
+/**
+ * @author mukul@gooru
+ */
+public class OASelfGradingHandler implements DBHandler {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(OADCAEventHandler.class);
+  public static final String COLLECTION_TYPE = "collection_type";
+  private final OAContext context;
+  private String classId;
+  private String oaId;
+  private Long oaDcaId;
+  private String studentId;
+  private JsonObject req;
+  private AJEntityOASelfGrading oaSelfGrading;
+
+  public OASelfGradingHandler(OAContext context) {
+    this.context = context;
+  }
+
+  @Override
+  public ExecutionResult<MessageResponse> checkSanity() {
+    req = context.request();
+    classId = context.request().getString(AJEntityOASelfGrading.CLASS_ID);
+    oaId = context.request().getString(AJEntityOASelfGrading.OA_ID);
+    oaDcaId = context.request().getLong(AJEntityOASelfGrading.OA_DCA_ID);
+    studentId = context.request().getString(AJEntityOASelfGrading.STUDENT_ID);
+
+    if (context.request() != null || !context.request().isEmpty()) {
+      if (StringUtil.isNullOrEmpty(classId) || StringUtil.isNullOrEmpty(oaId)
+          || StringUtil.isNullOrEmpty(studentId) || (oaDcaId == null)) {
+        LOGGER.warn("Invalid Json Payload");
+        return new ExecutionResult<>(
+            MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload"),
+            ExecutionStatus.FAILED);
+      }
+    } else {
+      LOGGER.warn("Invalid Request Payload");
+      return new ExecutionResult<>(
+          MessageResponseFactory.createInvalidRequestResponse("Invalid Request Payload"),
+          ExecutionStatus.FAILED);
+    }
+
+    LOGGER.debug("checkSanity() OK");
+    return new ExecutionResult<>(null, ExecutionStatus.CONTINUE_PROCESSING);
+  }
+
+  @SuppressWarnings("rawtypes")
+  @Override
+  public ExecutionResult<MessageResponse> validateRequest() {
+    // Student validation
+//    if (context.request().getString("userIdFromSession") != null) {
+//      if (!context.request().getString("userIdFromSession")
+//          .equals(studentId)) {
+//        return new
+//            ExecutionResult<>(MessageResponseFactory.createForbiddenResponse
+//            ("Auth Failure"), ExecutionStatus.FAILED);
+//      }
+//    } else if (StringUtil.isNullOrEmpty(context.request().getString("userIdFromSession"))) {
+//      return new
+//          ExecutionResult<>(MessageResponseFactory.createForbiddenResponse
+//          ("Auth Failure"), ExecutionStatus.FAILED);
+//    }
+    LOGGER.debug("validateRequest() OK");
+    return new ExecutionResult<>(null, ExecutionStatus.CONTINUE_PROCESSING);
+  }
+
+  @Override
+  public ExecutionResult<MessageResponse> executeRequest() {
+    oaSelfGrading = new AJEntityOASelfGrading();
+    prune();
+
+    new DefAJEntityOATaskSelfGradingEntityBuilder().build(oaSelfGrading, req,
+        AJEntityOASelfGrading.getConverterRegistry());
+
+    if (!insertOrUpdateRecord(oaSelfGrading)) {
+      return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(),
+          ExecutionStatus.FAILED);    }
+
+    LOGGER.debug("executeRequest() OK");
+    return new ExecutionResult<>(MessageResponseFactory.createOkayResponse(),
+        ExecutionStatus.SUCCESSFUL);
+
+  }
+
+
+  private static class DefAJEntityOATaskSelfGradingEntityBuilder
+      implements EntityBuilder<AJEntityOASelfGrading> {
+
+  }
+
+  private void prune() {
+    req.remove(COLLECTION_TYPE);
+    req.remove("userIdFromSession");
+  }
+
+  private boolean insertOrUpdateRecord(AJEntityOASelfGrading oaSelfGrading) {
+    AJEntityOASelfGrading duplicateRow = null;
+    duplicateRow = AJEntityOASelfGrading.findFirst("student_id = ? AND oa_id = ? AND oa_dca_id = ? AND class_id = ?", 
+        UUID.fromString(studentId), UUID.fromString(oaId), oaDcaId, UUID.fromString(classId));
+    
+    if (duplicateRow == null && oaSelfGrading.isValid()) {
+      boolean result = oaSelfGrading.insert();
+      if (!result) {
+        LOGGER.error("Self Grades cannot be inserted for student {} & OA {} ", studentId, oaId);
+        if (oaSelfGrading.hasErrors()) {
+          Map<String, String> map = oaSelfGrading.errors();
+          JsonObject errors = new JsonObject();
+          map.forEach(errors::put);          
+        }
+        return false;
+      } else {
+        LOGGER.info("Self Grades inserted for student {} & OA {} ", studentId, oaId);
+        return true;
+      }
+    } else if (duplicateRow != null && oaSelfGrading.isValid()){
+      long id = Long.valueOf(duplicateRow.get("id").toString());
+      int res = Base.exec(AJEntityOASelfGrading.UPDATE_OA_SELF_GRADE_FOR_THIS_STUDENT,
+          oaSelfGrading.get(AJEntityOASelfGrading.TIMESPENT),
+          oaSelfGrading.get(AJEntityOASelfGrading.STUDENT_SCORE),
+          oaSelfGrading.get(AJEntityOASelfGrading.MAX_SCORE),
+          oaSelfGrading.get(AJEntityOASelfGrading.CATEGORY_GRADE),
+          oaSelfGrading.get(AJEntityOASelfGrading.OVERALL_COMMENT),
+          oaSelfGrading.get(AJEntityOASelfGrading.CONTENT_SOURCE),
+          new Timestamp(System.currentTimeMillis()), id);
+      if (res > 0) {
+        LOGGER.info("Self Grades updated for student {} & OA {} ", studentId, oaId);
+        return true;
+      } else {
+        LOGGER.error("Self Grades cannot be updated for student {} & OA {} ", studentId, oaId);
+        return false;
+      }  
+    } else { //catchAll
+      return false;
+    }
+  }
+
+  @Override
+  public boolean handlerReadOnly() {
+    return false;
+  }
+
+
+}

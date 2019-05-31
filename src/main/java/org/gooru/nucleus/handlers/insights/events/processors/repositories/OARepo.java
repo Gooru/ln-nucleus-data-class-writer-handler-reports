@@ -9,4 +9,8 @@ public interface OARepo {
 
   MessageResponse processOAEvent();
 
+  MessageResponse processOASelfGrades();
+  
+  MessageResponse storeSubmissionDetails();
+
 }

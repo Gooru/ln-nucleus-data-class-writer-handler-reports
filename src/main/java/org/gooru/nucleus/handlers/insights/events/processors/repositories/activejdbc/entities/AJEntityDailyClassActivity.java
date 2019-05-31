@@ -66,6 +66,7 @@ public class AJEntityDailyClassActivity extends Model {
   public static final String CONTEXT_COLLECTION_ID = "context_collection_id";
   public static final String CONTEXT_COLLECTION_TYPE = "context_collection_type";
   public static final String ADDITIONAL_CONTEXT = "additional_context";
+  public static final String DCA_CONTENT_ID = "dca_content_id";
 
   public static final String CREATE_TIMESTAMP = "created_at";
   public static final String UPDATE_TIMESTAMP = "updated_at";
@@ -182,8 +183,7 @@ public class AJEntityDailyClassActivity extends Model {
       "UPDATE daily_class_activity SET time_spent= ? WHERE id = ?";
   
   // **************************************************************************************************************************
-  // OFFLINE ACTIVITIES
-  
+  // OFFLINE ACTIVITIES  
   public static final String FIND_OA_RECORD_FOR_THIS_STUDENT =
       "SELECT id FROM daily_class_activity "
           + "WHERE actor_id = ? AND collection_id = ? AND collection_type = ? AND event_type = ? AND event_name = ? ";

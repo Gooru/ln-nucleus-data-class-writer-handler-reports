@@ -36,8 +36,14 @@ public class OAProcessor implements Processor {
     if (validateResult.continueProcessing()) {
       context = createContext();
       switch (msgop) {
-        case MessageConstants.MSG_OP_OA_DCA_EVENT:
+        case MessageConstants.MSG_OP_OA_COMPLETE:
           result = createOAEvent();  
+          break;
+        case MessageConstants.MSG_OP_OA_SELF_GRADING:
+          result = processSelfGrades();  
+          break;
+        case MessageConstants.MSG_OP_OA_SUBMISSIONS:
+          result = storeSubmissionDetails();  
           break;
         default:
           LOGGER.warn("Invalid op: '{}'", String.valueOf(msgop));
@@ -54,7 +60,25 @@ public class OAProcessor implements Processor {
     try {
       return RepoBuilder.buildOARepo(context).processOAEvent();
     } catch (Throwable t) {
-      LOGGER.error("Exception while processing Collection Play Event Data", t.getMessage());
+      LOGGER.error("Exception while processing OA Complete Request", t.getMessage());
+      return MessageResponseFactory.createInternalErrorResponse(t.getMessage());
+    }
+  }
+  
+  private MessageResponse processSelfGrades() {
+    try {
+      return RepoBuilder.buildOARepo(context).processOASelfGrades();
+    } catch (Throwable t) {
+      LOGGER.error("Exception while processing OA Self-Grading Request", t.getMessage());
+      return MessageResponseFactory.createInternalErrorResponse(t.getMessage());
+    }
+  }
+  
+  private MessageResponse storeSubmissionDetails() {
+    try {
+      return RepoBuilder.buildOARepo(context).storeSubmissionDetails();
+    } catch (Throwable t) {
+      LOGGER.error("Exception while processing Student Submissions", t.getMessage());
       return MessageResponseFactory.createInternalErrorResponse(t.getMessage());
     }
   }

@@ -6,15 +6,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.oa.OAContext;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.DBHandler;
-import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityClassAuthorizedUsers;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityDailyClassActivity;
-import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityOASelfGrading;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityOASubmissions;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityOATaskPerformance;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.utils.BaseUtil;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponse;
@@ -26,19 +23,18 @@ import org.slf4j.LoggerFactory;
 import com.hazelcast.util.StringUtil;
 import io.vertx.core.json.JsonObject;
 
+
 /**
  * @author mukul@gooru
  */
-public class OADCAEventHandler implements DBHandler {
+public class OATaskDCAUpsertHandler  implements DBHandler {
   
   private static final Logger LOGGER =
-      LoggerFactory.getLogger(OADCAEventHandler.class);
-  private static final String UTC = "Etc/UTC";
+      LoggerFactory.getLogger(OATaskDCAUpsertHandler.class);
   private final OAContext context;
   private String classId;
   private String oaId;
-  private Long oaDcaId;
-//  private String timeZone;
+  private String timeZone;
   private String localeDate;
   private long ts;
   private long pathId = 0L;
@@ -46,7 +42,7 @@ public class OADCAEventHandler implements DBHandler {
   List<String> selfGradedList = new ArrayList<>();
   List<String> oaStudentsList = new ArrayList<>();  
 
-  public OADCAEventHandler(OAContext context) {
+  public OATaskDCAUpsertHandler(OAContext context) {
     this.context = context;
   }
 
@@ -54,10 +50,10 @@ public class OADCAEventHandler implements DBHandler {
   public ExecutionResult<MessageResponse> checkSanity() {    
     classId = context.request().getString(AJEntityDailyClassActivity.CLASS_GOORU_OID);
     oaId = context.request().getString(AJEntityOASubmissions.OA_ID);
-    oaDcaId = context.request().getLong(AJEntityOASubmissions.OA_DCA_ID);
-//    timeZone = context.request().getString(AJEntityDailyClassActivity.TIME_ZONE);    
+    timeZone = context.request().getString(AJEntityDailyClassActivity.TIME_ZONE);    
         
-    if (StringUtil.isNullOrEmpty(classId) || StringUtil.isNullOrEmpty(oaId)) {
+    if (StringUtil.isNullOrEmpty(classId) || StringUtil.isNullOrEmpty(oaId) 
+        || StringUtil.isNullOrEmpty(timeZone)) {
       LOGGER.warn("Invalid Json Payload");
       return new ExecutionResult<>(
           MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload"),
@@ -71,8 +67,17 @@ public class OADCAEventHandler implements DBHandler {
   @SuppressWarnings("rawtypes")
   @Override
   public ExecutionResult<MessageResponse> validateRequest() {
-
-    //API Set to INTERNAL - bypass validation
+//    if (context.request().getString("userIdFromSession") != null) {
+//      List<Map> owner = Base.findAll(AJEntityClassAuthorizedUsers.SELECT_CLASS_OWNER,
+//          context.request().getString("class_id"),
+//          context.request().getString("userIdFromSession"));
+//      if (owner.isEmpty()) {
+//        LOGGER.warn("User is not a teacher or collaborator");
+//        return new ExecutionResult<>(
+//            MessageResponseFactory.createForbiddenResponse("User is not a teacher/collaborator"),
+//            ExecutionStatus.FAILED);
+//      }
+//    }
     LOGGER.debug("validateRequest() OK");
     return new ExecutionResult<>(null, ExecutionStatus.CONTINUE_PROCESSING);
   }
@@ -82,28 +87,28 @@ public class OADCAEventHandler implements DBHandler {
   public ExecutionResult<MessageResponse> executeRequest() {
     ts = System.currentTimeMillis();
     List oaStudents = 
-        Base.firstColumn(AJEntityOASubmissions.GET_STUDENTS_FOR_OA, UUID.fromString(classId), UUID.fromString(oaId), oaDcaId);
+        Base.firstColumn(AJEntityOASubmissions.GET_STUDENTS_FOR_OA, UUID.fromString(classId), UUID.fromString(oaId));
     //TODO: Handle case when User has been assigned an OA, but he has not turned in any evidences
     for (Object s : oaStudents) { 
       oaStudentsList.add(s.toString());     
     }
     
-    List<Map> oaPerfList = Base.findAll(AJEntityOASelfGrading.GET_OA_PERFORMANCE, 
-        UUID.fromString(oaId), oaDcaId, listToPostgresArrayString(oaStudentsList), UUID.fromString(classId));
-    if (!oaPerfList.isEmpty()) {
-      for (Map m : oaPerfList ) {
+    List<Map> taskPerfList = Base.findAll(AJEntityOATaskPerformance.GET_OA_PERFORMANCE, 
+        UUID.fromString(oaId), listToPostgresArrayString(oaStudentsList));
+    if (!taskPerfList.isEmpty()) {
+      for (Map m : taskPerfList ) {
         AJEntityDailyClassActivity dca = setDCAModel();
-        String studentId = m.get(AJEntityOASelfGrading.STUDENT_ID).toString();
+        String studentId = m.get(AJEntityOATaskPerformance.STUDENT_ID).toString();
         selfGradedList.add(studentId);
         dca.set(AJEntityDailyClassActivity.GOORUUID, studentId);       
-        dca.set(AJEntityDailyClassActivity.TIMESPENT, m.get(AJEntityOASelfGrading.TIMESPENT) != null
-            ? Long.valueOf(m.get(AJEntityOASelfGrading.TIMESPENT).toString())
+        dca.set(AJEntityDailyClassActivity.TIMESPENT, m.get(AJEntityOATaskPerformance.TIMESPENT) != null
+            ? Long.valueOf(m.get(AJEntityDailyClassActivity.TIMESPENT).toString())
                 : 0L);
-        dca.set(AJEntityDailyClassActivity.SCORE, m.get(AJEntityOASelfGrading.STUDENT_SCORE) != null
-            ? Double.valueOf(m.get(AJEntityOASelfGrading.STUDENT_SCORE).toString())
+        dca.set(AJEntityDailyClassActivity.SCORE, m.get(AJEntityOATaskPerformance.STUDENT_SCORE) != null
+            ? Double.valueOf(m.get(AJEntityOATaskPerformance.STUDENT_SCORE).toString())
                 : null);
-        dca.set(AJEntityDailyClassActivity.MAX_SCORE, m.get(AJEntityOASelfGrading.MAX_SCORE) != null
-            ? Double.valueOf(m.get(AJEntityOASelfGrading.MAX_SCORE).toString())
+        dca.set(AJEntityDailyClassActivity.MAX_SCORE, m.get(AJEntityOATaskPerformance.MAX_SCORE) != null
+            ? Double.valueOf(m.get(AJEntityOATaskPerformance.MAX_SCORE).toString())
                 : null);
         //If a record already exists for this student, then we UPDATE the Perf & TS else we Insert
         if (!insertOrUpdateRecord(studentId, dca)) {
@@ -145,7 +150,6 @@ public class OADCAEventHandler implements DBHandler {
     dcaModel.set(AJEntityDailyClassActivity.IS_GRADED, false);
     dcaModel.set(AJEntityDailyClassActivity.CLASS_GOORU_OID, classId);
     dcaModel.set(AJEntityDailyClassActivity.COLLECTION_OID, oaId);
-    dcaModel.set(AJEntityDailyClassActivity.DCA_CONTENT_ID, oaDcaId);
     dcaModel.set(AJEntityDailyClassActivity.COLLECTION_TYPE, EventConstants.OFFLINE_ACTIVITY);
     dcaModel.set(AJEntityDailyClassActivity.RESOURCE_TYPE, EventConstants.NA);
     dcaModel.set(AJEntityDailyClassActivity.QUESTION_TYPE, EventConstants.NA);
@@ -156,7 +160,7 @@ public class OADCAEventHandler implements DBHandler {
     dcaModel.set(AJEntityDailyClassActivity.GRADING_TYPE, EventConstants.STUDENT); 
     dcaModel.set(AJEntityDailyClassActivity.SESSION_ID, UUID.randomUUID().toString());
     dcaModel.set(AJEntityDailyClassActivity.CONTENT_SOURCE, EventConstants.DCA);
-    dcaModel.set(AJEntityDailyClassActivity.TIME_ZONE, UTC);
+    dcaModel.set(AJEntityDailyClassActivity.TIME_ZONE, timeZone);
     dcaModel.set(AJEntityDailyClassActivity.RESOURCE_ATTEMPT_STATUS, EventConstants.ATTEMPTED);
     setDateInTimeZone();
     if (localeDate != null) {
@@ -173,10 +177,9 @@ public class OADCAEventHandler implements DBHandler {
   
   private boolean insertOrUpdateRecord(String studentId, AJEntityDailyClassActivity dca) {
     AJEntityDailyClassActivity duplicateRow = null;
-    duplicateRow = AJEntityDailyClassActivity.findFirst("actor_id = ? AND collection_id = ? "
-        + "AND dca_content_id = ? AND collection_type = 'offline-activity' "
+    duplicateRow = AJEntityDailyClassActivity.findFirst("actor_id = ? AND collection_id = ? AND collection_type = 'offline-activity' "
         + "AND event_name = 'collection.play' "
-        + "AND event_type = 'stop'", studentId, oaId, oaDcaId);
+        + "AND event_type = 'stop'", studentId, oaId);
     
     if (duplicateRow == null && dca.isValid()) {
       boolean result = dca.insert();
@@ -218,7 +221,7 @@ public class OADCAEventHandler implements DBHandler {
   }
   
   private void setDateInTimeZone() {
-    localeDate = BaseUtil.UTCDate(ts);
+    localeDate = BaseUtil.UTCToLocale(ts, timeZone);
   }
   
   private String listToPostgresArrayString(List<String> input) {
