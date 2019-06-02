@@ -2,6 +2,7 @@ package org.gooru.nucleus.handlers.insights.events.processors;
 
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.json.JsonObject;
+import org.gooru.nucleus.handlers.insights.events.processors.grading.GradingProcessor;
 import org.gooru.nucleus.handlers.insights.events.processors.oa.OAProcessor;
 import org.gooru.nucleus.handlers.insights.events.processors.postprocessor.PostProcessor;
 
@@ -37,6 +38,10 @@ public final class ProcessorBuilder {
   
   public static Processor buildOAProcessor(Message<Object> message) {
     return new OAProcessor(message);
+  }
+  
+  public static Processor buildGradingProcessor(Message<Object> message) {
+    return new GradingProcessor(message);
   }
   
 }

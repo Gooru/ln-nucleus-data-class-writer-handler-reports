@@ -9,7 +9,6 @@ import org.gooru.nucleus.handlers.insights.events.processors.repositories.active
  */
 public final class OADBHandlerBuilder {
   
-  //TODO: *
   public static DBHandler buildOAEventHandler(OAContext context) {
     return new OADCAEventHandler(context);
   }

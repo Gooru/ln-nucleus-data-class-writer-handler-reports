@@ -99,6 +99,7 @@ public class OASubmissionsHandler implements DBHandler {
         AJEntityOASubmissions oaSubmissions = setOASubmissionsModel();        
         JsonObject submission = (JsonObject) sub;
         oaSubmissions.set(AJEntityOASubmissions.TASK_ID, Long.valueOf(submission.getString(AJEntityOASubmissions.TASK_ID)));
+        oaSubmissions.set(AJEntityOASubmissions.SUBMISSION_TEXT, submission.getString(AJEntityOASubmissions.SUBMISSION_TEXT));
         oaSubmissions.set(AJEntityOASubmissions.SUBMISSION_INFO, submission.getString(AJEntityOASubmissions.SUBMISSION_INFO));
         oaSubmissions.set(AJEntityOASubmissions.SUBMISSION_TYPE, submission.getString(AJEntityOASubmissions.SUBMISSION_TYPE));
         oaSubmissions.set(AJEntityOASubmissions.SUBMISSION_SUBTYPE, submission.getString(AJEntityOASubmissions.SUBMISSION_SUBTYPE));

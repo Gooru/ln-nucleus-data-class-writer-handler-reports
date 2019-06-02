@@ -28,6 +28,8 @@ public final class MessageConstants {
   public static final String MSG_OP_OA_SELF_GRADING = "oa.self.grading";
   public static final String MSG_OP_OA_TEACHER_GRADING = "oa.teacher.grading";
   
+  //Grading
+  public static final String MSG_OP_RUBRIC_GRADING = "rubric.grading";
   
   // Containers for different responses
   public static final String RESP_CONTAINER_MBUS = "mb.container";
@@ -45,7 +47,15 @@ public final class MessageConstants {
   public static final String CLASS = "class";
   public static final String TASKS = "tasks";
   public static final String SUBMISSIONS = "submissions";
-
+  
+  //Grading
+  public static final String GRADER = "grader";
+  public static final String GRADER_SELF = "self";
+  public static final String GRADER_TEACHER = "teacher";
+  public static final String GRADER_PEER = "peer";  
+  public static final String CONTENT_SOURCE = "content_source";
+  public static final String COLLECTION_TYPE = "collection_type";
+  
   public static final String SUBJECT = "subject";
   public static final String DOMAIN = "domain";
   public static final String STANDARDS = "standard";

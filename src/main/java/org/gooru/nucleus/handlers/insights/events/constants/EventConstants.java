@@ -914,6 +914,8 @@ public class EventConstants {
   public static final String STUDENT = "student";
   
   public static final String OFFLINE_ACTIVITY = "offline-activity";
+  
+  public static final String SELF = "self";
     
   private EventConstants() {
     throw new AssertionError();

@@ -169,6 +169,15 @@ public class AJEntityDailyClassActivity extends Model {
           + "ORDER BY resource_id, updated_at desc) questionData GROUP BY session_id";
 
   // **************************************************************************************************************************
+  //Offline Activity Teacher grading
+  //OA Score update is based on dca_content_id and not session_id (& activity_date). dca_content_id is introduced in the 
+  //daily_class_activity table during the OA Grading Code changes. Further down the line, dca_content_id should be used
+  //in existing APIs also as applicable. (to substitute for the combination of session_id & activity_date)
+  public static final String UPDATE_OA_SCORE =
+      "UPDATE daily_class_activity SET score = ?, max_score = ?, is_graded = ? WHERE actor_id = ? AND collection_id =? AND dca_content_id = ? "
+          + "AND event_name = 'collection.play' AND event_type = 'stop'";
+  
+  //************************************************************************************************************************
   // PERF UPDATE HANDLER
   public static final String UPDATE_RESOURCE_TS_SCORE =
       "UPDATE daily_class_activity SET time_spent= ?, max_score = ?, score = ? WHERE id = ?";

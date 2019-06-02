@@ -9,17 +9,21 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.eventbus.EventBus;
 
-public class OAVerticle extends AbstractVerticle {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(OAVerticle.class);
+/**
+ * @author mukul@gooru
+ */
+public class GradingVerticle extends AbstractVerticle {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(GradingVerticle.class);
 
   @Override
   public void start(Future<Void> voidFuture) throws Exception {
     final EventBus eb = vertx.eventBus();
-    eb.consumer(MessagebusEndpoints.MBEP_OFFLINE_ACTIVITY, message -> {
-      LOGGER.debug("Received message at Offline Activity Verticle: {}", message.body());
+    eb.consumer(MessagebusEndpoints.MBEP_RUBRIC_GRADING, message -> {
+      LOGGER.debug("Received message at Grading Verticle: {}", message.body());
       vertx.executeBlocking(future -> {
-        MessageResponse result = ProcessorBuilder.buildOAProcessor(message).process();
+        MessageResponse result = ProcessorBuilder.buildGradingProcessor(message).process();
         future.complete(result);
       }, res -> {
         MessageResponse result = (MessageResponse) res.result();
@@ -29,10 +33,10 @@ public class OAVerticle extends AbstractVerticle {
     }).completionHandler(result -> {
       if (result.succeeded()) {
         voidFuture.complete();
-        LOGGER.info("OA endpoint ready to listen");
+        LOGGER.info("Grading endpoint ready to listen");
       } else {
         LOGGER
-            .error("Error registering OA Verticle. Halting the Class Reporting machinery");
+            .error("Error registering Grading Verticle. Halting the Class Reporting machinery");
         voidFuture.fail(result.cause());
         Runtime.getRuntime().halt(1);
       }

@@ -67,6 +67,8 @@ public class AJEntityRubricGrading extends Model {
   public static final String OVERALL_COMMENT = "overall_comment";
   public static final String GRADER = "grader";
   public static final String GRADER_ID = "grader_id";
+  public static final String DCA_CONTENT_ID = "dca_content_id";
+  
 
   public static final String CREATED_AT = "created_at";
   public static final String UPDATED_AT = "updated_at";
@@ -95,6 +97,10 @@ public class AJEntityRubricGrading extends Model {
 
   
   public static final String UPDATE_QUESTION_GRADES =
+      "UPDATE student_rubric_grading SET student_score = ?, max_score = ?, "
+          + "overall_comment = ?, category_score = ?, updated_at = ? WHERE id = ?";
+  
+  public static final String UPDATE_COLLECTION_GRADES =
       "UPDATE student_rubric_grading SET student_score = ?, max_score = ?, "
           + "overall_comment = ?, category_score = ?, updated_at = ? WHERE id = ?";
 
