@@ -153,7 +153,7 @@ public class OADCAEventHandler implements DBHandler {
     dcaModel.set(AJEntityDailyClassActivity.EVENTTYPE, EventConstants.STOP);
     dcaModel.set(AJEntityDailyClassActivity.CREATE_TIMESTAMP, new Timestamp(ts));
     dcaModel.set(AJEntityDailyClassActivity.UPDATE_TIMESTAMP, new Timestamp(ts));
-    dcaModel.set(AJEntityDailyClassActivity.GRADING_TYPE, EventConstants.SELF); 
+    dcaModel.set(AJEntityDailyClassActivity.GRADING_TYPE, EventConstants.TEACHER); 
     dcaModel.set(AJEntityDailyClassActivity.SESSION_ID, UUID.randomUUID().toString());
     dcaModel.set(AJEntityDailyClassActivity.CONTENT_SOURCE, EventConstants.DCA);
     dcaModel.set(AJEntityDailyClassActivity.TIME_ZONE, UTC);

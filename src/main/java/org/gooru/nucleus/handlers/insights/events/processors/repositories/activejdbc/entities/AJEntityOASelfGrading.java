@@ -28,14 +28,14 @@ public class AJEntityOASelfGrading extends Model {
   public static final String MAX_SCORE = "max_score";
   public static final String TIMESPENT = "time_spent";  
   public static final String OVERALL_COMMENT = "overall_comment";
-  public static final String CATEGORY_GRADE = "category_grade";
+  public static final String CATEGORY_SCORE = "category_score";
   public static final String CONTENT_SOURCE = "content_source";
   public static final String CREATED_AT = "created_at";
   public static final String UPDATED_AT = "updated_at";  
  
   public static final String UPDATE_OA_SELF_GRADE_FOR_THIS_STUDENT =
       "UPDATE offline_activity_self_grades SET time_spent = ?, student_score = ?, "
-          + "max_score = ?, category_grade = ?, overall_comment = ?, content_source = ?, updated_at = ? WHERE id = ?";
+          + "max_score = ?, category_score = ?, overall_comment = ?, content_source = ?, updated_at = ? WHERE id = ?";
   
   public static final String GET_OA_PERFORMANCE =
       "select student_id, student_score, max_score, time_spent "
@@ -53,7 +53,7 @@ public class AJEntityOASelfGrading extends Model {
     converterMap.put(STUDENT_ID, (fieldValue -> FieldConverter.convertFieldToUuid((String) fieldValue)));
     converterMap.put(OA_ID, (fieldValue -> FieldConverter.convertFieldToUuid((String) fieldValue)));
     converterMap.put(CLASS_ID, (fieldValue -> FieldConverter.convertFieldToUuid((String) fieldValue)));
-    converterMap.put(CATEGORY_GRADE, (FieldConverter::convertFieldToJson));
+    converterMap.put(CATEGORY_SCORE, (FieldConverter::convertFieldToJson));
     converterMap.put(OVERALL_COMMENT,
         (fieldValue -> FieldConverter.convertEmptyStringToNull((String) fieldValue)));
 

@@ -150,7 +150,7 @@ public class DCAOATeacherGradingHandler implements DBHandler {
       int res = Base.exec(AJEntityRubricGrading.UPDATE_COLLECTION_GRADES,
           rubricGrading.get(AJEntityOASelfGrading.STUDENT_SCORE),
           rubricGrading.get(AJEntityOASelfGrading.MAX_SCORE),
-          rubricGrading.get(AJEntityOASelfGrading.CATEGORY_GRADE),
+          rubricGrading.get(AJEntityOASelfGrading.CATEGORY_SCORE),
           rubricGrading.get(AJEntityOASelfGrading.OVERALL_COMMENT),
           new Timestamp(System.currentTimeMillis()), id);
       if (res > 0) {

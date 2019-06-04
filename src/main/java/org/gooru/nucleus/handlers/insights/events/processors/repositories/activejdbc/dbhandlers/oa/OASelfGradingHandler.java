@@ -24,6 +24,8 @@ public class OASelfGradingHandler implements DBHandler {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(OADCAEventHandler.class);
   public static final String COLLECTION_TYPE = "collection_type";
+  public static final String COLLECTION_ID = "collection_id";
+  public static final String DCA_CONTENT_ID = "dca_content_id";
   private final OAContext context;
   private String classId;
   private String oaId;
@@ -40,8 +42,8 @@ public class OASelfGradingHandler implements DBHandler {
   public ExecutionResult<MessageResponse> checkSanity() {
     req = context.request();
     classId = context.request().getString(AJEntityOASelfGrading.CLASS_ID);
-    oaId = context.request().getString(AJEntityOASelfGrading.OA_ID);
-    oaDcaId = context.request().getLong(AJEntityOASelfGrading.OA_DCA_ID);
+    oaId = context.request().getString(COLLECTION_ID);
+    oaDcaId = context.request().getLong(DCA_CONTENT_ID);
     studentId = context.request().getString(AJEntityOASelfGrading.STUDENT_ID);
 
     if (context.request() != null || !context.request().isEmpty()) {
@@ -90,6 +92,7 @@ public class OASelfGradingHandler implements DBHandler {
 
     new DefAJEntityOATaskSelfGradingEntityBuilder().build(oaSelfGrading, req,
         AJEntityOASelfGrading.getConverterRegistry());
+    mapOAAttributes();
 
     if (!insertOrUpdateRecord(oaSelfGrading)) {
       return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(),
@@ -109,9 +112,16 @@ public class OASelfGradingHandler implements DBHandler {
 
   private void prune() {
     req.remove(COLLECTION_TYPE);
+    req.remove(COLLECTION_ID);
+    req.remove(DCA_CONTENT_ID);
     req.remove("userIdFromSession");
   }
 
+  private void mapOAAttributes() {    
+   oaSelfGrading.set(AJEntityOASelfGrading.OA_ID, oaId);
+   oaSelfGrading.set(AJEntityOASelfGrading.OA_DCA_ID, oaDcaId);
+  }
+  
   private boolean insertOrUpdateRecord(AJEntityOASelfGrading oaSelfGrading) {
     AJEntityOASelfGrading duplicateRow = null;
     duplicateRow = AJEntityOASelfGrading.findFirst("student_id = ? AND oa_id = ? AND oa_dca_id = ? AND class_id = ?", 
@@ -137,7 +147,7 @@ public class OASelfGradingHandler implements DBHandler {
           oaSelfGrading.get(AJEntityOASelfGrading.TIMESPENT),
           oaSelfGrading.get(AJEntityOASelfGrading.STUDENT_SCORE),
           oaSelfGrading.get(AJEntityOASelfGrading.MAX_SCORE),
-          oaSelfGrading.get(AJEntityOASelfGrading.CATEGORY_GRADE),
+          oaSelfGrading.get(AJEntityOASelfGrading.CATEGORY_SCORE),
           oaSelfGrading.get(AJEntityOASelfGrading.OVERALL_COMMENT),
           oaSelfGrading.get(AJEntityOASelfGrading.CONTENT_SOURCE),
           new Timestamp(System.currentTimeMillis()), id);
