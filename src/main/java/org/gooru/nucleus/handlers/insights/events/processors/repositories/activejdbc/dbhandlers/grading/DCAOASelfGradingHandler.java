@@ -118,7 +118,7 @@ public class DCAOASelfGradingHandler implements DBHandler {
   }
 
   private void mapOAAttributes() {    
-   oaSelfGrading.set(AJEntityOASelfGrading.OA_ID, oaId);
+   oaSelfGrading.set(AJEntityOASelfGrading.OA_ID, UUID.fromString(oaId));
    oaSelfGrading.set(AJEntityOASelfGrading.OA_DCA_ID, oaDcaId);
   }
   private boolean insertOrUpdateRecord(AJEntityOASelfGrading oaSelfGrading) {
