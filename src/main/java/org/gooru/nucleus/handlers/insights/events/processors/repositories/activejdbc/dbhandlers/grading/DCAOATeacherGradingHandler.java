@@ -149,9 +149,9 @@ public class DCAOATeacherGradingHandler implements DBHandler {
       long id = Long.valueOf(duplicateRow.get("id").toString());
       int res = Base.exec(AJEntityRubricGrading.UPDATE_COLLECTION_GRADES,
           rubricGrading.get(AJEntityOASelfGrading.STUDENT_SCORE),
-          rubricGrading.get(AJEntityOASelfGrading.MAX_SCORE),
-          rubricGrading.get(AJEntityOASelfGrading.CATEGORY_SCORE),
+          rubricGrading.get(AJEntityOASelfGrading.MAX_SCORE),          
           rubricGrading.get(AJEntityOASelfGrading.OVERALL_COMMENT),
+          rubricGrading.get(AJEntityOASelfGrading.CATEGORY_SCORE),
           new Timestamp(System.currentTimeMillis()), id);
       if (res > 0) {
         LOGGER.info("Teacher Grades updated for student {} & OA {} ", studentId, dcaContentId);
