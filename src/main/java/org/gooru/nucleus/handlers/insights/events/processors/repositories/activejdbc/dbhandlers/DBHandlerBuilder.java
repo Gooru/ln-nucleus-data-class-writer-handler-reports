@@ -5,6 +5,7 @@ import org.gooru.nucleus.handlers.insights.events.processors.RDAProcessorContext
 import org.gooru.nucleus.handlers.insights.events.rda.processor.collection.CollectionScoreUpdateEventRDAHandler;
 import org.gooru.nucleus.handlers.insights.events.rda.processor.collection.CollectionStartEventRDAHandler;
 import org.gooru.nucleus.handlers.insights.events.rda.processor.collection.CollectionStopEventRDAHandler;
+import org.gooru.nucleus.handlers.insights.events.rda.processor.collection.OATeacherGradeEventRDAHandler;
 import org.gooru.nucleus.handlers.insights.events.rda.processor.collection.OfflineStudentPerfEventRDAHandler;
 import org.gooru.nucleus.handlers.insights.events.rda.processor.collection.StudentSelfGradeEventRDAHandler;
 import org.gooru.nucleus.handlers.insights.events.rda.processor.resource.ResourceStopEventRDAHandler;
@@ -97,5 +98,9 @@ public final class DBHandlerBuilder {
   
   public static DBHandler buildDCAPerfUpdateHandler(ProcessorContext context) {
     return new DCAPerfUpdateHandler(context);
+  }
+  
+  public static DBHandler buildOATeacherGradeRDAHandler(RDAProcessorContext context) {
+    return new OATeacherGradeEventRDAHandler(context);
   }
 }

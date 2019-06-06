@@ -1,17 +1,22 @@
 package org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.grading;
 
+import static org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.validators.ValidationUtils.*;
 import java.sql.Timestamp;
 import java.util.Map;
+import java.util.UUID;
+import org.gooru.nucleus.handlers.insights.events.constants.GEPConstants;
+import org.gooru.nucleus.handlers.insights.events.processors.MessageDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.grading.GradingContext;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.DBHandler;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.RDAEventDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityDailyClassActivity;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityOASelfGrading;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityRubricGrading;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.EntityBuilder;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult;
+import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult.ExecutionStatus;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponse;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponseFactory;
-import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult.ExecutionStatus;
 import org.javalite.activejdbc.Base;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +30,8 @@ import io.vertx.core.json.JsonObject;
 public class DCAOATeacherGradingHandler implements DBHandler {
   
   private static final Logger LOGGER = LoggerFactory.getLogger(DCAOATeacherGradingHandler.class);
+  public static final String TOPIC_GEP = "gep";
+  public static final String OA_TYPE = "offline-activity";
   private AJEntityRubricGrading rubricGrading;
   private final GradingContext context;
   private JsonObject req;
@@ -33,7 +40,7 @@ public class DCAOATeacherGradingHandler implements DBHandler {
   private Long dcaContentId;
   private String collectionId;
   private Double score;
-  private Double max_score;
+  private Double maxScore;
   
   public DCAOATeacherGradingHandler(GradingContext context) {
     this.context = context;
@@ -41,13 +48,9 @@ public class DCAOATeacherGradingHandler implements DBHandler {
 
   @Override
   public ExecutionResult<MessageResponse> checkSanity() {
-    req = context.request();
-    classId = context.request().getString(AJEntityRubricGrading.CLASS_ID);
-    dcaContentId = context.request().getLong(AJEntityRubricGrading.DCA_CONTENT_ID);
-    studentId = context.request().getString(AJEntityRubricGrading.STUDENT_ID);
-    collectionId = context.request().getString(AJEntityRubricGrading.COLLECTION_ID);
-
+    
     if (context.request() != null || !context.request().isEmpty()) {
+      initializeRequestParams();
       if (StringUtil.isNullOrEmpty(classId) || StringUtil.isNullOrEmpty(collectionId)
           || StringUtil.isNullOrEmpty(studentId) || (dcaContentId == null)) {
         LOGGER.warn("Invalid Json Payload");
@@ -64,6 +67,14 @@ public class DCAOATeacherGradingHandler implements DBHandler {
 
     LOGGER.debug("checkSanity() OK");
     return new ExecutionResult<>(null, ExecutionStatus.CONTINUE_PROCESSING);
+  }
+
+  private void initializeRequestParams() {
+    req = context.request();
+    classId = req.getString(AJEntityRubricGrading.CLASS_ID);
+    dcaContentId = req.getLong(AJEntityRubricGrading.DCA_CONTENT_ID);
+    studentId = req.getString(AJEntityRubricGrading.STUDENT_ID);
+    collectionId = req.getString(AJEntityRubricGrading.COLLECTION_ID);
   }
 
   @SuppressWarnings("rawtypes")
@@ -90,7 +101,7 @@ public class DCAOATeacherGradingHandler implements DBHandler {
   public ExecutionResult<MessageResponse> executeRequest() {
     rubricGrading = new AJEntityRubricGrading();
     score = req.getDouble(AJEntityRubricGrading.STUDENT_SCORE);
-    max_score = req.getDouble(AJEntityRubricGrading.MAX_SCORE);
+    maxScore = req.getDouble(AJEntityRubricGrading.MAX_SCORE);
     prune();
     
     new DefAJEntityDCAOATeacherGradingEntityBuilder()
@@ -107,14 +118,15 @@ public class DCAOATeacherGradingHandler implements DBHandler {
     if (!updateDCARecord()) {
       return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(),
           ExecutionStatus.FAILED);    
-      }
+    }
+    
+    sendEventsToGEPAndRDA();
     
     LOGGER.debug("executeRequest() OK");
     return new ExecutionResult<>(MessageResponseFactory.createOkayResponse(),
         ExecutionStatus.SUCCESSFUL);
 
   }
-
 
   private static class DefAJEntityDCAOATeacherGradingEntityBuilder
       implements EntityBuilder<AJEntityRubricGrading> {
@@ -149,7 +161,7 @@ public class DCAOATeacherGradingHandler implements DBHandler {
       long id = Long.valueOf(duplicateRow.get("id").toString());
       int res = Base.exec(AJEntityRubricGrading.UPDATE_COLLECTION_GRADES,
           rubricGrading.get(AJEntityOASelfGrading.STUDENT_SCORE),
-          rubricGrading.get(AJEntityOASelfGrading.MAX_SCORE),          
+          rubricGrading.get(AJEntityOASelfGrading.MAX_SCORE),
           rubricGrading.get(AJEntityOASelfGrading.OVERALL_COMMENT),
           rubricGrading.get(AJEntityOASelfGrading.CATEGORY_SCORE),
           new Timestamp(System.currentTimeMillis()), id);
@@ -168,7 +180,7 @@ public class DCAOATeacherGradingHandler implements DBHandler {
   private boolean updateDCARecord() {
     if (rubricGrading.isValid()) {
       int result = 0;
-      result = Base.exec(AJEntityDailyClassActivity.UPDATE_OA_SCORE, score, max_score, true, studentId, collectionId, dcaContentId);
+      result = Base.exec(AJEntityDailyClassActivity.UPDATE_OA_SCORE, score, maxScore, true, studentId, collectionId, dcaContentId);
       LOGGER.debug("Total score updated successfully..."); 
       if (result > 0) {
         LOGGER.info("Score updated into DCA for student {} & OA {} ", studentId, dcaContentId);
@@ -188,6 +200,62 @@ public class DCAOATeacherGradingHandler implements DBHandler {
     }
   }
   
+  private void sendEventsToGEPAndRDA() {
+    String collectionType = rubricGrading.get(AJEntityRubricGrading.COLLECTION_TYPE) != null ? rubricGrading.get(AJEntityRubricGrading.COLLECTION_TYPE).toString() : OA_TYPE;    
+    LOGGER.info("Sending OA Teacher grade Event to GEP and RDA");
+    sendOATeacherGradingEventtoGEP(collectionType);
+    RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(this.rubricGrading,
+        collectionType, score, maxScore, null, null, null, null,
+        true);
+    rdaEventDispatcher.sendOATeacherGradeEventFromDCAOATGHToRDA();
+  }
+
+  private void sendOATeacherGradingEventtoGEP(String cType) {
+    JsonObject gepEvent = createOATeacherGradingEvent(cType);
+    try {
+      LOGGER.debug("The OA teacher grading GEP Event is : {} ", gepEvent);
+      MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_GEP, gepEvent);
+      LOGGER.info("Successfully dispatched OA teacher grading GEP Event..");
+    } catch (Exception e) {
+      LOGGER.error("Error while dispatching OA teacher grading GEP Event ", e);
+    }
+  }
+
+  private JsonObject createOATeacherGradingEvent(String collectionType) {
+    JsonObject cpEvent = new JsonObject();
+    JsonObject context = new JsonObject();
+    JsonObject result = new JsonObject();
+
+    cpEvent.put(GEPConstants.USER_ID, rubricGrading.get(AJEntityRubricGrading.STUDENT_ID));
+    cpEvent.put(GEPConstants.ACTIVITY_TIME, System.currentTimeMillis());
+    cpEvent.put(GEPConstants.EVENT_ID, UUID.randomUUID().toString());
+    cpEvent.put(GEPConstants.EVENT_NAME, GEPConstants.COLL_SCORE_UPDATE_EVENT);
+    cpEvent.put(GEPConstants.COLLECTION_ID, rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID));
+    cpEvent.put(GEPConstants.COLLECTION_TYPE, collectionType);
+    context.put(GEPConstants.CONTENT_SOURCE, GEPConstants.DAILY_CLASS_ACTIVIY);
+    context.put(GEPConstants.CLASS_ID, rubricGrading.get(AJEntityRubricGrading.CLASS_ID));
+    context.put(GEPConstants.COURSE_ID, rubricGrading.get(AJEntityRubricGrading.COURSE_ID));
+    context.put(GEPConstants.UNIT_ID, rubricGrading.get(AJEntityRubricGrading.UNIT_ID));
+    context.put(GEPConstants.LESSON_ID, rubricGrading.get(AJEntityRubricGrading.LESSON_ID));
+    context.put(GEPConstants.SESSION_ID, rubricGrading.get(AJEntityRubricGrading.SESSION_ID));
+    context.putNull(GEPConstants.ADDITIONAL_CONTEXT);
+
+    cpEvent.put(GEPConstants.CONTEXT, context);
+
+    if (validateScoreAndMaxScore(score, maxScore)) {
+      result.put(GEPConstants.SCORE, rubricGrading.get(AJEntityRubricGrading.STUDENT_SCORE));
+      result.put(GEPConstants.MAX_SCORE, rubricGrading.get(AJEntityRubricGrading.MAX_SCORE));
+    } else {
+      result.putNull(GEPConstants.SCORE);
+      if (validateMaxScore(maxScore)) {
+        result.put(GEPConstants.MAX_SCORE, rubricGrading.get(AJEntityRubricGrading.MAX_SCORE));
+      } else {
+        result.putNull(GEPConstants.MAX_SCORE);
+      }
+    }
+    cpEvent.put(GEPConstants.RESULT, result);
+    return cpEvent;
+  }
   
   @Override
   public boolean handlerReadOnly() {
