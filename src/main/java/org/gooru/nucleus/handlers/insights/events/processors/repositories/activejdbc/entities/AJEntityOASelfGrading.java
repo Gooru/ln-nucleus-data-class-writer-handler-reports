@@ -23,6 +23,7 @@ public class AJEntityOASelfGrading extends Model {
   public static final String OA_ID = "oa_id";
   public static final String OA_DCA_ID = "oa_dca_id";
   public static final String CLASS_ID = "class_id";
+  public static final String RUBRIC_ID = "rubric_id";
   public static final String STUDENT_ID = "student_id";
   public static final String STUDENT_SCORE = "student_score";
   public static final String MAX_SCORE = "max_score";
@@ -30,12 +31,18 @@ public class AJEntityOASelfGrading extends Model {
   public static final String OVERALL_COMMENT = "overall_comment";
   public static final String CATEGORY_SCORE = "category_score";
   public static final String CONTENT_SOURCE = "content_source";
+  public static final String GRADER = "grader";
   public static final String CREATED_AT = "created_at";
   public static final String UPDATED_AT = "updated_at";  
  
+  //For ANY change in the model, assess this UPDATE QUERY.
+  //timeSpent should not be updated using this self_grade update statement.
   public static final String UPDATE_OA_SELF_GRADE_FOR_THIS_STUDENT =
-      "UPDATE offline_activity_self_grades SET time_spent = ?, student_score = ?, "
+      "UPDATE offline_activity_self_grades SET rubric_id = ?, grader = ?, student_score = ?, "
           + "max_score = ?, category_score = ?, overall_comment = ?, content_source = ?, updated_at = ? WHERE id = ?";
+  
+  public static final String UPDATE_TIMESPENT_FOR_THIS_STUDENT =
+      "UPDATE offline_activity_self_grades SET time_spent = ? WHERE id = ?";
   
   public static final String GET_OA_PERFORMANCE =
       "select student_id, student_score, max_score, time_spent "
