@@ -120,7 +120,7 @@ public class DCAOATeacherGradingHandler implements DBHandler {
           ExecutionStatus.FAILED);    
     }
     
-    sendEventsToGEPAndRDA();
+    sendEventsToRDA();
     
     LOGGER.debug("executeRequest() OK");
     return new ExecutionResult<>(MessageResponseFactory.createOkayResponse(),
@@ -155,6 +155,7 @@ public class DCAOATeacherGradingHandler implements DBHandler {
         return false;
       } else {
         LOGGER.info("Teacher Grades inserted for student {} & OA {} ", studentId, dcaContentId);
+        sendInsertEventToGEP();
         return true;
       }
     } else if (duplicateRow != null && rubricGrading.isValid()){
@@ -167,6 +168,7 @@ public class DCAOATeacherGradingHandler implements DBHandler {
           new Timestamp(System.currentTimeMillis()), id);
       if (res > 0) {
         LOGGER.info("Teacher Grades updated for student {} & OA {} ", studentId, dcaContentId);
+        sendUpdateEventToGEP();
         return true;
       } else {
         LOGGER.error("Teacher Grades cannot be updated for student {} & OA {} ", studentId, dcaContentId);
@@ -200,18 +202,28 @@ public class DCAOATeacherGradingHandler implements DBHandler {
     }
   }
   
-  private void sendEventsToGEPAndRDA() {
-    String collectionType = rubricGrading.get(AJEntityRubricGrading.COLLECTION_TYPE) != null ? rubricGrading.get(AJEntityRubricGrading.COLLECTION_TYPE).toString() : OA_TYPE;    
-    LOGGER.info("Sending OA Teacher grade Event to GEP and RDA");
-    sendOATeacherGradingEventtoGEP(collectionType);
+  private void sendEventsToRDA() {
+    String collectionType = rubricGrading.get(AJEntityRubricGrading.COLLECTION_TYPE) != null ? rubricGrading.get(AJEntityRubricGrading.COLLECTION_TYPE).toString() : OA_TYPE;
+    LOGGER.info("Sending OA Teacher grade Event to RDA");
     RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(this.rubricGrading,
         collectionType, score, maxScore, null, null, null, null,
         true);
     rdaEventDispatcher.sendOATeacherGradeEventFromDCAOATGHToRDA();
   }
+  
+  private void sendInsertEventToGEP() {
+    sendOATeacherGradingEventtoGEP(GEPConstants.COLLECTION_PERF_EVENT);
+  }
 
-  private void sendOATeacherGradingEventtoGEP(String cType) {
-    JsonObject gepEvent = createOATeacherGradingEvent(cType);
+  private void sendUpdateEventToGEP() {
+    sendOATeacherGradingEventtoGEP(GEPConstants.COLL_SCORE_UPDATE_EVENT);
+  }
+  
+  private void sendOATeacherGradingEventtoGEP(String eventName) {
+    String cType = rubricGrading.get(AJEntityRubricGrading.COLLECTION_TYPE) != null ? rubricGrading.get(AJEntityRubricGrading.COLLECTION_TYPE).toString() : OA_TYPE;    
+    LOGGER.info("Sending OA Teacher grade insert Event to GEP and RDA");
+
+    JsonObject gepEvent = createOATeacherGradingEvent(cType, eventName);
     try {
       LOGGER.debug("The OA teacher grading GEP Event is : {} ", gepEvent);
       MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_GEP, gepEvent);
@@ -221,7 +233,7 @@ public class DCAOATeacherGradingHandler implements DBHandler {
     }
   }
 
-  private JsonObject createOATeacherGradingEvent(String collectionType) {
+  private JsonObject createOATeacherGradingEvent(String collectionType, String eventName) {
     JsonObject cpEvent = new JsonObject();
     JsonObject context = new JsonObject();
     JsonObject result = new JsonObject();
@@ -229,7 +241,7 @@ public class DCAOATeacherGradingHandler implements DBHandler {
     cpEvent.put(GEPConstants.USER_ID, rubricGrading.get(AJEntityRubricGrading.STUDENT_ID));
     cpEvent.put(GEPConstants.ACTIVITY_TIME, System.currentTimeMillis());
     cpEvent.put(GEPConstants.EVENT_ID, UUID.randomUUID().toString());
-    cpEvent.put(GEPConstants.EVENT_NAME, GEPConstants.COLL_SCORE_UPDATE_EVENT);
+    cpEvent.put(GEPConstants.EVENT_NAME, eventName);
     cpEvent.put(GEPConstants.COLLECTION_ID, rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID));
     cpEvent.put(GEPConstants.COLLECTION_TYPE, collectionType);
     context.put(GEPConstants.CONTENT_SOURCE, GEPConstants.DAILY_CLASS_ACTIVIY);
