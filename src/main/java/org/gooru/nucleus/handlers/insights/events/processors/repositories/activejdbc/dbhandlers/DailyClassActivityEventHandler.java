@@ -80,7 +80,7 @@ public class DailyClassActivityEventHandler implements DBHandler {
     dcaReport.set("question_type", event.getQuestionType());
     dcaReport.set("resource_type", event.getResourceType());
     dcaReport.set("reaction", event.getReaction());
-    dcaReport.set("score", event.getScore());
+
     dcaReport.set("resource_attempt_status", event.getAnswerStatus());
     dcaReport.set("views", event.getViews());
     dcaReport.set("time_spent", event.getTimespent());

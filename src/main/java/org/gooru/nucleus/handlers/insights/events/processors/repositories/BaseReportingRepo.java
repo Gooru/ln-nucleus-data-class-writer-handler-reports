@@ -33,4 +33,6 @@ public interface BaseReportingRepo {
   
   MessageResponse updateDCAPerf();
 
+  //TODO: *
+  MessageResponse processStudentDCAGrades();
 }

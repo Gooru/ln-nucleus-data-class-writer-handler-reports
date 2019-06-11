@@ -1,5 +1,6 @@
 package org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers;
 
+import static org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.validators.ValidationUtils.validateScoreAndMaxScore;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -110,7 +111,7 @@ public class DCAScoreUpdateHandler implements DBHandler {
     for (JsonObject attr : lstResources) {
         Double score = attr.getValue(AJEntityDailyClassActivity.SCORE) != null ? Double.valueOf(attr.getValue(AJEntityDailyClassActivity.SCORE).toString()) : null;
         Double maxScore = attr.getValue(AJEntityDailyClassActivity.MAX_SCORE) != null ? Double.valueOf(attr.getValue(AJEntityDailyClassActivity.MAX_SCORE).toString()) : null;
-        if (score == null || maxScore == null || maxScore <= 0.0 || score > maxScore) {
+        if (!validateScoreAndMaxScore(score, maxScore)) {
             LOGGER.debug("Invalid score/maxscore given for Score Update");
             return new ExecutionResult<>(
                 MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload"),

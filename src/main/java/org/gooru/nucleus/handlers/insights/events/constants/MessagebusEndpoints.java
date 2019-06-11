@@ -13,10 +13,14 @@ public final class MessagebusEndpoints {
   public static final String MBEP_ANALYTICS_UPDATE = "org.gooru.nucleus.message.bus.analytics.update";
   //Student Self Grading
   public static final String MBEP_ANALYTICS_SELF_GRADING_EXT_ASSESSMENT = "org.gooru.nucleus.message.bus.analytics.self.grade.ext.assessment";
-
   //Student Offline Report
   public static final String MBEP_ANALYTICS_OFFLINE_REPORT = "org.gooru.nucleus.message.bus.analytics.offline.report";
+  //Post Processor (Process Assessment events for Diagnostics)
   public static final String MBEP_POSTPROCESSOR = "org.gooru.nucleus.message.bus.analytics.postprocessor";
+  //Offline Activity
+  public static final String MBEP_OFFLINE_ACTIVITY = "org.gooru.nucleus.message.bus.analytics.offline.activity";
+  //Grading
+  public static final String MBEP_RUBRIC_GRADING = "org.gooru.nucleus.message.bus.analytics.rubric.grading";  
 
   private MessagebusEndpoints() {
     throw new AssertionError();

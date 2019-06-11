@@ -74,4 +74,22 @@ public final class BaseUtil {
     return strLocaleDate;
   }
 
+  public static String UTCDate(Long strUtcDate) {
+
+    String strUTCDate = null;
+    try {
+      Long epohTime = strUtcDate;
+      Date utcDate = new Date(epohTime);
+
+      SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+      simpleDateFormat.setTimeZone(TimeZone.getTimeZone("Etc/UTC"));
+      strUTCDate = simpleDateFormat.format(utcDate);
+      LOGGER.debug("UTC Date String: " + strUTCDate);
+
+    } catch (Exception e) {
+      LOGGER.error(e.getMessage());
+    }
+
+    return strUTCDate;
+  }
 }

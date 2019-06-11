@@ -45,6 +45,16 @@
 		"config": {
 			"message.bus.send.timeout.seconds": 10
 		}
+	},	
+	"org.gooru.nucleus.handlers.insights.events.bootstrap.OAVerticle": {
+		"config": {
+			"message.bus.send.timeout.seconds": 100
+		}
+	},
+		"org.gooru.nucleus.handlers.insights.events.bootstrap.GradingVerticle": {
+		"config": {
+			"message.bus.send.timeout.seconds": 100
+		}
 	},
 	"org.gooru.nucleus.handlers.insights.events.bootstrap.MessageConsumerVerticle": {
 		"thead.pool.size": 10,
