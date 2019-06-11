@@ -168,7 +168,12 @@ public class DCAOATeacherGradingHandler implements DBHandler {
   private boolean updateDCARecord() {
     if (rubricGrading.isValid()) {
       int result = 0;
-      result = Base.exec(AJEntityDailyClassActivity.UPDATE_OA_SCORE, score, max_score, true, studentId, collectionId, dcaContentId);
+      Double scoreInPercent = null;
+      if (score != null && max_score != null && max_score > 0.0) {
+        scoreInPercent = ((score * 100) / max_score);
+        LOGGER.debug("Re-Computed total score {} ", scoreInPercent);
+      }
+      result = Base.exec(AJEntityDailyClassActivity.UPDATE_OA_SCORE, scoreInPercent, max_score, true, studentId, collectionId, dcaContentId);
       LOGGER.debug("Total score updated successfully..."); 
       if (result > 0) {
         LOGGER.info("Score updated into DCA for student {} & OA {} ", studentId, dcaContentId);
