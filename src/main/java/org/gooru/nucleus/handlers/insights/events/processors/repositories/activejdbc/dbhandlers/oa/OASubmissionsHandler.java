@@ -99,18 +99,36 @@ public class OASubmissionsHandler implements DBHandler {
         JsonObject submission = (JsonObject) sub;
         oaSubmissions.set(AJEntityOASubmissions.TASK_ID,
             submission.getLong(AJEntityOASubmissions.TASK_ID));
-        oaSubmissions.set(AJEntityOASubmissions.SUBMISSION_TEXT,
-            submission.getString(AJEntityOASubmissions.SUBMISSION_TEXT));
-        oaSubmissions.set(AJEntityOASubmissions.SUBMISSION_INFO,
-            submission.getString(AJEntityOASubmissions.SUBMISSION_INFO));
-        oaSubmissions.set(AJEntityOASubmissions.SUBMISSION_TYPE,
-            submission.getString(AJEntityOASubmissions.SUBMISSION_TYPE));
-        oaSubmissions.set(AJEntityOASubmissions.SUBMISSION_SUBTYPE,
-            submission.getString(AJEntityOASubmissions.SUBMISSION_SUBTYPE));
-
-        if (!insertRecord(oaSubmissions)) {
-          return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(),
-              ExecutionStatus.FAILED);
+        String subText = submission.getString(AJEntityOASubmissions.SUBMISSION_TEXT);
+        if (!StringUtil.isNullOrEmpty(subText)) {
+          oaSubmissions.set(AJEntityOASubmissions.SUBMISSION_TEXT,
+              subText);
+          //Auto-update ID
+          oaSubmissions.set(AJEntityDailyClassActivity.ID, null);
+          if (!insertOrUpdateSubmissionText(oaSubmissions)) {
+            return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(),
+                ExecutionStatus.FAILED);
+          }
+        }
+        String subInfo = submission.getString(AJEntityOASubmissions.SUBMISSION_INFO);
+        if (!StringUtil.isNullOrEmpty(subInfo)) {
+          oaSubmissions.set(AJEntityOASubmissions.SUBMISSION_INFO,
+              subInfo);
+          //NOTE: Submissions Text is stored as a separate row. Ideally when submission_text is 
+          //sent, other submission_info should not be sent. However if they do that, we will 
+          //isolate submission_text and submission_info into 2 separate rows. Hence in this flow
+          //submission_text is set to null
+          oaSubmissions.set(AJEntityOASubmissions.SUBMISSION_TEXT, null);
+          //Auto-update ID
+          oaSubmissions.set(AJEntityDailyClassActivity.ID, null);
+          oaSubmissions.set(AJEntityOASubmissions.SUBMISSION_TYPE,
+              submission.getString(AJEntityOASubmissions.SUBMISSION_TYPE));
+          oaSubmissions.set(AJEntityOASubmissions.SUBMISSION_SUBTYPE,
+              submission.getString(AJEntityOASubmissions.SUBMISSION_SUBTYPE));
+          if (!insertRecord(oaSubmissions)) {
+            return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(),
+                ExecutionStatus.FAILED);
+          }
         }
 
       }
@@ -196,6 +214,43 @@ public class OASubmissionsHandler implements DBHandler {
       } else {
         LOGGER.info("Submission data stored for student {} & OA {} ", studentId, oaId);
         return true;
+      }
+    } else { // catchAll
+      return false;
+    }
+  }
+  
+  private boolean insertOrUpdateSubmissionText(AJEntityOASubmissions oaSubmissions) {
+    AJEntityOASubmissions duplicateRow = null;    
+    duplicateRow = AJEntityOASubmissions.findFirst(
+        "student_id = ? AND oa_id = ? AND oa_dca_id = ? AND class_id = ? AND task_id = ? "
+        + " AND submission_text IS NOT NULL order by updated_at desc",
+        UUID.fromString(studentId), UUID.fromString(oaId), oaDcaId, UUID.fromString(classId),
+        oaSubmissions.get(AJEntityOASubmissions.TASK_ID));
+    if (duplicateRow == null && oaSubmissions.isValid()) {
+      boolean result = oaSubmissions.insert();
+      if (!result) {
+        LOGGER.error("Submission text cannot be stored for student {} & OA {} ", studentId, oaId);
+        if (oaSubmissions.hasErrors()) {
+          Map<String, String> map = oaSubmissions.errors();
+          JsonObject errors = new JsonObject();
+          map.forEach(errors::put);
+        }
+        return false;
+      } else {
+        LOGGER.info("Submission text stored for student {} & OA {} ", studentId, oaId);
+        return true;
+      }
+    } else if (duplicateRow != null && oaSubmissions.isValid()) {
+      long id = Long.valueOf(duplicateRow.get("id").toString());
+      int res = Base.exec(AJEntityOASubmissions.UPDATE_SUBMISSION_TEXT,
+          oaSubmissions.get(AJEntityOASubmissions.SUBMISSION_TEXT), new Timestamp(System.currentTimeMillis()), id);
+      if (res > 0) {
+        LOGGER.info("Submission Text updated for student {} & OA {} ", studentId, oaId);
+        return true;
+      } else {
+        LOGGER.error("Submission Text cannot be updated for student {} & OA {} ", studentId, oaId);
+        return false;
       }
     } else { // catchAll
       return false;
