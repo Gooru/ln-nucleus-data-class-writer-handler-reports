@@ -910,6 +910,12 @@ public class EventConstants {
   public static final String UNKNOWN = "unknown";
 
   public static final String ADDITIONAL_CONTEXT = "additionalContext";
+  
+  public static final String STUDENT = "student";
+  
+  public static final String OFFLINE_ACTIVITY = "offline-activity";
+  
+  public static final String SELF = "self";
     
   private EventConstants() {
     throw new AssertionError();

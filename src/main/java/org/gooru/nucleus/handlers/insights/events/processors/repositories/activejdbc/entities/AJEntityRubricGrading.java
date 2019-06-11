@@ -67,10 +67,18 @@ public class AJEntityRubricGrading extends Model {
   public static final String OVERALL_COMMENT = "overall_comment";
   public static final String GRADER = "grader";
   public static final String GRADER_ID = "grader_id";
+  public static final String DCA_CONTENT_ID = "dca_content_id";
+  
 
   public static final String CREATED_AT = "created_at";
   public static final String UPDATED_AT = "updated_at";
 
+
+//  public static final String ACTIVITY_DATE = "activity_date";
+//  public static final String ACTIVITY_TYPE = "activity_type";
+//  public static final String ACTIVITY_ID = "activity_id";
+  public static final String CONTENT_SOURCE = "content_source";
+  
   public static final String ATTR_ASSESSMENT = "assessment";
   public static final String ATTR_COLLECTION = "collection";
 
@@ -81,7 +89,18 @@ public class AJEntityRubricGrading extends Model {
           + "WHERE student_id = ? AND class_id = ? AND course_id = ? AND unit_id = ? AND lesson_id = ? AND collection_id = ? "
           + "AND resource_id = ? AND session_id = ?";
 
+  //Includes activity Date
+  public static final String THIS_QUESTION_DCA_GRADES_FIND =
+      "SELECT id, student_score, max_score FROM student_rubric_grading "
+          + "WHERE student_id = ? AND class_id = ? AND collection_id = ? "
+          + "AND resource_id = ? AND session_id = ?";
+
+  
   public static final String UPDATE_QUESTION_GRADES =
+      "UPDATE student_rubric_grading SET student_score = ?, max_score = ?, "
+          + "overall_comment = ?, category_score = ?, updated_at = ? WHERE id = ?";
+  
+  public static final String UPDATE_COLLECTION_GRADES =
       "UPDATE student_rubric_grading SET student_score = ?, max_score = ?, "
           + "overall_comment = ?, category_score = ?, updated_at = ? WHERE id = ?";
 
