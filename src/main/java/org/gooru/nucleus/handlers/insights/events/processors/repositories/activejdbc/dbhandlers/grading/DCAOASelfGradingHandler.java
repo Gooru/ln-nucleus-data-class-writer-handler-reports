@@ -69,18 +69,18 @@ public class DCAOASelfGradingHandler implements DBHandler {
   @Override
   public ExecutionResult<MessageResponse> validateRequest() {
     // Student validation
-//    if (context.request().getString("userIdFromSession") != null) {
-//      if (!context.request().getString("userIdFromSession")
-//          .equals(studentId)) {
-//        return new
-//            ExecutionResult<>(MessageResponseFactory.createForbiddenResponse
-//            ("Auth Failure"), ExecutionStatus.FAILED);
-//      }
-//    } else if (StringUtil.isNullOrEmpty(context.request().getString("userIdFromSession"))) {
-//      return new
-//          ExecutionResult<>(MessageResponseFactory.createForbiddenResponse
-//          ("Auth Failure"), ExecutionStatus.FAILED);
-//    }
+    if (context.request().getString("userIdFromSession") != null) {
+      if (!context.request().getString("userIdFromSession")
+          .equals(studentId)) {
+        return new
+            ExecutionResult<>(MessageResponseFactory.createForbiddenResponse
+            ("Auth Failure"), ExecutionStatus.FAILED);
+      }
+    } else if (StringUtil.isNullOrEmpty(context.request().getString("userIdFromSession"))) {
+      return new
+          ExecutionResult<>(MessageResponseFactory.createForbiddenResponse
+          ("Auth Failure"), ExecutionStatus.FAILED);
+    }
     LOGGER.debug("validateRequest() OK");
     return new ExecutionResult<>(null, ExecutionStatus.CONTINUE_PROCESSING);
   }
@@ -142,8 +142,11 @@ public class DCAOASelfGradingHandler implements DBHandler {
       }
     } else if (duplicateRow != null && oaSelfGrading.isValid()){
       long id = Long.valueOf(duplicateRow.get("id").toString());
+      //Timespent will not be inserted or updated from the self-grading flow, but will be updated
+      //during the student submission
       int res = Base.exec(AJEntityOASelfGrading.UPDATE_OA_SELF_GRADE_FOR_THIS_STUDENT,
-          oaSelfGrading.get(AJEntityOASelfGrading.TIMESPENT),
+          oaSelfGrading.get(AJEntityOASelfGrading.RUBRIC_ID),
+          oaSelfGrading.get(AJEntityOASelfGrading.GRADER),
           oaSelfGrading.get(AJEntityOASelfGrading.STUDENT_SCORE),
           oaSelfGrading.get(AJEntityOASelfGrading.MAX_SCORE),
           oaSelfGrading.get(AJEntityOASelfGrading.CATEGORY_SCORE),

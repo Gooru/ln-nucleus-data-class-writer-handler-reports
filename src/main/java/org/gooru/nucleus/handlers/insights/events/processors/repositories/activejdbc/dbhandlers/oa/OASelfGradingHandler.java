@@ -22,7 +22,7 @@ import io.vertx.core.json.JsonObject;
  */
 public class OASelfGradingHandler implements DBHandler {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(OADCAEventHandler.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(OASelfGradingHandler.class);
   public static final String COLLECTION_TYPE = "collection_type";
   public static final String COLLECTION_ID = "collection_id";
   public static final String DCA_CONTENT_ID = "dca_content_id";
@@ -143,14 +143,19 @@ public class OASelfGradingHandler implements DBHandler {
       }
     } else if (duplicateRow != null && oaSelfGrading.isValid()){
       long id = Long.valueOf(duplicateRow.get("id").toString());
+      //Timespent will not be inserted or updated from the self-grading flow, but will be updated
+      //during the student submission
       int res = Base.exec(AJEntityOASelfGrading.UPDATE_OA_SELF_GRADE_FOR_THIS_STUDENT,
-          oaSelfGrading.get(AJEntityOASelfGrading.TIMESPENT),
+          oaSelfGrading.get(AJEntityOASelfGrading.RUBRIC_ID),
+          oaSelfGrading.get(AJEntityOASelfGrading.CONTENT_SOURCE),
+          oaSelfGrading.get(AJEntityOASelfGrading.GRADER),
           oaSelfGrading.get(AJEntityOASelfGrading.STUDENT_SCORE),
           oaSelfGrading.get(AJEntityOASelfGrading.MAX_SCORE),
           oaSelfGrading.get(AJEntityOASelfGrading.CATEGORY_SCORE),
           oaSelfGrading.get(AJEntityOASelfGrading.OVERALL_COMMENT),
           oaSelfGrading.get(AJEntityOASelfGrading.CONTENT_SOURCE),
           new Timestamp(System.currentTimeMillis()), id);
+      
       if (res > 0) {
         LOGGER.info("Self Grades updated for student {} & OA {} ", studentId, oaId);
         return true;
