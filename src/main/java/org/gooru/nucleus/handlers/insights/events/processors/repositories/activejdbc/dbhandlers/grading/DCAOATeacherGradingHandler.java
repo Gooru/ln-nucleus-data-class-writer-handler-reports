@@ -1,17 +1,26 @@
 package org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.grading;
 
+import static org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.validators.ValidationUtils.validateMaxScore;
+import static org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.validators.ValidationUtils.validateScoreAndMaxScore;
+import java.io.UnsupportedEncodingException;
 import java.sql.Timestamp;
+import java.util.Base64;
 import java.util.Map;
+import java.util.UUID;
+import org.gooru.nucleus.handlers.insights.events.constants.GEPConstants;
+import org.gooru.nucleus.handlers.insights.events.processors.MessageDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.grading.GradingContext;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.DBHandler;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.GEPEventDispatcher;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.RDAEventDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityDailyClassActivity;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityOASelfGrading;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityRubricGrading;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.EntityBuilder;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult;
+import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult.ExecutionStatus;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponse;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponseFactory;
-import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult.ExecutionStatus;
 import org.javalite.activejdbc.Base;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +34,8 @@ import io.vertx.core.json.JsonObject;
 public class DCAOATeacherGradingHandler implements DBHandler {
   
   private static final Logger LOGGER = LoggerFactory.getLogger(DCAOATeacherGradingHandler.class);
+  public static final String TOPIC_GEP = "gep";
+  public static final String OA_TYPE = "offline-activity";
   private AJEntityRubricGrading rubricGrading;
   private final GradingContext context;
   private JsonObject req;
@@ -33,7 +44,7 @@ public class DCAOATeacherGradingHandler implements DBHandler {
   private Long dcaContentId;
   private String collectionId;
   private Double score;
-  private Double max_score;
+  private Double maxScore;
   
   public DCAOATeacherGradingHandler(GradingContext context) {
     this.context = context;
@@ -41,13 +52,9 @@ public class DCAOATeacherGradingHandler implements DBHandler {
 
   @Override
   public ExecutionResult<MessageResponse> checkSanity() {
-    req = context.request();
-    classId = context.request().getString(AJEntityRubricGrading.CLASS_ID);
-    dcaContentId = context.request().getLong(AJEntityRubricGrading.DCA_CONTENT_ID);
-    studentId = context.request().getString(AJEntityRubricGrading.STUDENT_ID);
-    collectionId = context.request().getString(AJEntityRubricGrading.COLLECTION_ID);
-
+    
     if (context.request() != null || !context.request().isEmpty()) {
+      initializeRequestParams();
       if (StringUtil.isNullOrEmpty(classId) || StringUtil.isNullOrEmpty(collectionId)
           || StringUtil.isNullOrEmpty(studentId) || (dcaContentId == null)) {
         LOGGER.warn("Invalid Json Payload");
@@ -64,6 +71,14 @@ public class DCAOATeacherGradingHandler implements DBHandler {
 
     LOGGER.debug("checkSanity() OK");
     return new ExecutionResult<>(null, ExecutionStatus.CONTINUE_PROCESSING);
+  }
+
+  private void initializeRequestParams() {
+    req = context.request();
+    classId = req.getString(AJEntityRubricGrading.CLASS_ID);
+    dcaContentId = req.getLong(AJEntityRubricGrading.DCA_CONTENT_ID);
+    studentId = req.getString(AJEntityRubricGrading.STUDENT_ID);
+    collectionId = req.getString(AJEntityRubricGrading.COLLECTION_ID);
   }
 
   @SuppressWarnings("rawtypes")
@@ -90,7 +105,7 @@ public class DCAOATeacherGradingHandler implements DBHandler {
   public ExecutionResult<MessageResponse> executeRequest() {
     rubricGrading = new AJEntityRubricGrading();
     score = req.getDouble(AJEntityRubricGrading.STUDENT_SCORE);
-    max_score = req.getDouble(AJEntityRubricGrading.MAX_SCORE);
+    maxScore = req.getDouble(AJEntityRubricGrading.MAX_SCORE);
     prune();
     
     new DefAJEntityDCAOATeacherGradingEntityBuilder()
@@ -107,14 +122,18 @@ public class DCAOATeacherGradingHandler implements DBHandler {
     if (!updateDCARecord()) {
       return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(),
           ExecutionStatus.FAILED);    
-      }
+    }
     
+    sendEventsToRDA();
+    //Currently since SUGGESTIONS are not supported in the Grading Flow,
+    //pathType & pathId are set to null and 0. Update pathType and pathId
+    //when SUGGESTIONS are supported.
+    sendOAScoreUpdateEventToGEP();
     LOGGER.debug("executeRequest() OK");
     return new ExecutionResult<>(MessageResponseFactory.createOkayResponse(),
         ExecutionStatus.SUCCESSFUL);
 
   }
-
 
   private static class DefAJEntityDCAOATeacherGradingEntityBuilder
       implements EntityBuilder<AJEntityRubricGrading> {
@@ -149,7 +168,7 @@ public class DCAOATeacherGradingHandler implements DBHandler {
       long id = Long.valueOf(duplicateRow.get("id").toString());
       int res = Base.exec(AJEntityRubricGrading.UPDATE_COLLECTION_GRADES,
           rubricGrading.get(AJEntityOASelfGrading.STUDENT_SCORE),
-          rubricGrading.get(AJEntityOASelfGrading.MAX_SCORE),          
+          rubricGrading.get(AJEntityOASelfGrading.MAX_SCORE),
           rubricGrading.get(AJEntityOASelfGrading.OVERALL_COMMENT),
           rubricGrading.get(AJEntityOASelfGrading.CATEGORY_SCORE),
           new Timestamp(System.currentTimeMillis()), id);
@@ -169,22 +188,16 @@ public class DCAOATeacherGradingHandler implements DBHandler {
     if (rubricGrading.isValid()) {
       int result = 0;
       Double scoreInPercent = null;
-      if (score != null && max_score != null && max_score > 0.0) {
-        scoreInPercent = ((score * 100) / max_score);
+      if (validateScoreAndMaxScore(score, maxScore)) {
+        scoreInPercent = ((score * 100) / maxScore);
         LOGGER.debug("Re-Computed total score {} ", scoreInPercent);
       }
-      result = Base.exec(AJEntityDailyClassActivity.UPDATE_OA_SCORE, scoreInPercent, max_score, true, studentId, collectionId, dcaContentId);
-      LOGGER.debug("Total score updated successfully..."); 
+      result = Base.exec(AJEntityDailyClassActivity.UPDATE_OA_SCORE, scoreInPercent, maxScore, true, studentId, collectionId, dcaContentId);
       if (result > 0) {
         LOGGER.info("Score updated into DCA for student {} & OA {} ", studentId, dcaContentId);
         return true;
       } else {
         LOGGER.error("Score cannot be updated into DCA for student {} & OA {} ", studentId, dcaContentId);
-        if (rubricGrading.hasErrors()) {
-          Map<String, String> map = rubricGrading.errors();
-          JsonObject errors = new JsonObject();
-          map.forEach(errors::put);          
-        }
         return false;
       }
     } else {
@@ -193,6 +206,46 @@ public class DCAOATeacherGradingHandler implements DBHandler {
     }
   }
   
+  private void sendEventsToRDA() {
+    String collectionType = rubricGrading.get(AJEntityRubricGrading.COLLECTION_TYPE) != null ? rubricGrading.get(AJEntityRubricGrading.COLLECTION_TYPE).toString() : OA_TYPE;
+    Double scoreInPercent = null;
+    if (validateScoreAndMaxScore(score, maxScore)) {
+      scoreInPercent = ((score * 100) / maxScore);
+    }
+    LOGGER.info("Sending OA Teacher grade Event to RDA");
+    RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(this.rubricGrading,
+        collectionType, scoreInPercent, maxScore, null, null, null, null,
+        true);
+    rdaEventDispatcher.sendOATeacherGradeEventFromDCAOATGHToRDA();
+  }
+  
+
+  private void sendOAScoreUpdateEventToGEP() {
+    String additionalContext = setBase64EncodedAdditionalContext();
+    if (validateScoreAndMaxScore(score, maxScore))  {      
+      GEPEventDispatcher eventDispatcher = new GEPEventDispatcher(rubricGrading, 
+          maxScore, ((score * 100) / maxScore), System.currentTimeMillis(), additionalContext);
+      eventDispatcher.sendScoreUpdateEventFromDCAtoGEP();
+    } else {
+      GEPEventDispatcher eventDispatcher = new GEPEventDispatcher(rubricGrading,
+          0.0, null, System.currentTimeMillis(), additionalContext);
+      eventDispatcher.sendScoreUpdateEventFromDCAtoGEP();
+    }    
+  }
+
+  private String setBase64EncodedAdditionalContext() {
+    String base64encodedString;
+    try {
+      JsonObject additionalContext = new JsonObject();
+      additionalContext.put(GEPConstants.DCA_CONTENT_ID, dcaContentId);
+      base64encodedString = Base64.getEncoder().encodeToString(
+          additionalContext.toString().getBytes(GEPConstants.UTF8));
+    } catch (UnsupportedEncodingException e) {
+      LOGGER.error("Error while encoding additionalContext", e);
+      return null;
+    }
+    return base64encodedString;
+  }
   
   @Override
   public boolean handlerReadOnly() {

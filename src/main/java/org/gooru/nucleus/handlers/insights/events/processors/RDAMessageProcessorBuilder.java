@@ -30,6 +30,7 @@ public class RDAMessageProcessorBuilder {
       case CollectionEventConstants.EventAttributes.COLLECTION_SCORE_UPDATE_EVENT:
       case CollectionEventConstants.EventAttributes.COLLECTION_SELF_GRADE_EVENT:
       case CollectionEventConstants.EventAttributes.OFFLINE_STUDENT_COLLECTION_PERF_EVENT:
+      case CollectionEventConstants.EventAttributes.OFFLINE_ACTIVITY_TEACHER_GRADE_EVENT:
         return new CollectionEventProcessor(message);
       default:
         LOGGER.error("Invalid RDA operation type passed in, not able to handle");

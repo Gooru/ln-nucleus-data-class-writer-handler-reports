@@ -14,5 +14,9 @@ public final class ValidationUtils {
         || (maxScore.compareTo(0.00) < 0) || (maxScore.compareTo(0.00) == 0)
         || (score.compareTo(maxScore) > 0));
   }
+  
+  public static boolean validateMaxScore(Double maxScore) {
+    return !(maxScore == null || (maxScore.compareTo(0.00) < 0) || (maxScore.compareTo(0.00) == 0));
+  }
 
 }

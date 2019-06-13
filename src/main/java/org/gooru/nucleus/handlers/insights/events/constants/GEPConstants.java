@@ -51,6 +51,8 @@ public class GEPConstants {
   public static final String COLL_SCORE_UPDATE_EVENT = "collection.score.update";
   public static final String RES_SCORE_UPDATE_EVENT = "resource.score.update";
   public static final String ADDITIONAL_CONTEXT = "additionalContext";
+  public static final String DCA_CONTENT_ID = "dcaContentId";
+  public static final String UTF8 = "utf8";
 
 
 }

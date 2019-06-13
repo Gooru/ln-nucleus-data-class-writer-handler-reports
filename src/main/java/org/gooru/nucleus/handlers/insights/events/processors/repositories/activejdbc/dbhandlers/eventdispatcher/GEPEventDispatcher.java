@@ -7,6 +7,7 @@ import org.gooru.nucleus.handlers.insights.events.constants.GEPConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.MessageDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityDailyClassActivity;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityReporting;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityRubricGrading;
 import org.javalite.activejdbc.Model;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +21,7 @@ public class GEPEventDispatcher {
   public static final String TOPIC_GEP = "gep";
   private AJEntityReporting baseReports;
   private AJEntityDailyClassActivity dcaReport;
+  private AJEntityRubricGrading dcaGrading;
   private long activityTime;
   private String additionalContext;
   private Double maxScore;
@@ -42,6 +44,15 @@ public class GEPEventDispatcher {
     this.activityTime = activityTime;
     this.resResult = resResult;
   }
+
+  public GEPEventDispatcher(AJEntityRubricGrading dcaGrading, Double maxScore,
+      Double score, long activityTime, String additionalContext) {
+    this.dcaGrading = dcaGrading;
+    this.activityTime = activityTime;
+    this.additionalContext = additionalContext;
+    this.maxScore = maxScore;
+    this.score = score;
+  }
   
   public GEPEventDispatcher(AJEntityReporting baseReports, Long timespent, Double maxScore,
       Double score, long activityTime, String additionalContext) {
@@ -56,7 +67,7 @@ public class GEPEventDispatcher {
       JsonObject gepEvent = createCPEvent(dcaReport);
       LOGGER.debug("The Collection GEP Event is : {} ", gepEvent);
       MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_GEP, gepEvent);
-      LOGGER.info("Successfully dispatched Collection Perf GEP report..");
+      LOGGER.info("Successfully dispatched Collection Perf GEP event..");
     } catch (Exception e) {
       LOGGER.error("Error while dispatching Collection Perf GEP Event ", e);
     }
@@ -68,7 +79,7 @@ public class GEPEventDispatcher {
       JsonObject gepEvent = createCRPEvent(dcaReport);
       LOGGER.debug("The Collection Resource GEP Event is : {} ", gepEvent);
       MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_GEP, gepEvent);
-      LOGGER.info("Successfully dispatched Collection Resource GEP report..");
+      LOGGER.info("Successfully dispatched Collection Resource GEP event..");
     } catch (Exception e) {
       LOGGER.error("Error while dispatching Collection Resource GEP Event ", e);
     }
@@ -80,7 +91,7 @@ public class GEPEventDispatcher {
       JsonObject gepEvent = createDCACPStopEvent(dcaReport);
       LOGGER.debug("The Collection GEP Event is : {} ", gepEvent);
       MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_GEP, gepEvent);
-      LOGGER.info("Successfully dispatched Collection Perf GEP report..");
+      LOGGER.info("Successfully dispatched Collection Perf GEP event..");
     } catch (Exception e) {
       LOGGER.error("Error while dispatching Collection Perf GEP Event ", e);
     }
@@ -91,12 +102,23 @@ public class GEPEventDispatcher {
       JsonObject gepEvent = createDCACPStartEvent(dcaReport);
       LOGGER.debug("The Collection GEP Event is : {} ", gepEvent);
       MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_GEP, gepEvent);
-      LOGGER.info("Successfully dispatched Collection Perf GEP report..");
+      LOGGER.info("Successfully dispatched Collection Perf GEP event..");
     } catch (Exception e) {
       LOGGER.error("Error while dispatching Collection Perf GEP Event ", e);
     }
   }
 
+  public void sendScoreUpdateEventFromDCAtoGEP() {
+    try {
+      JsonObject gepEvent = createDCAScoreUpdateEvent(dcaGrading);
+      LOGGER.debug("The Grading GEP Event is : {} ", gepEvent);
+      MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_GEP, gepEvent);
+      LOGGER.info("Successfully dispatched DCA Grading Event..");
+    } catch (Exception e) {
+      LOGGER.error("Error while dispatching DCA Grading Event ", e);
+    }
+  }
+  
   public void sendCRPEventFromDCAtoGEP() {
     try {
       JsonObject gepEvent = createDCACRPEvent(dcaReport);
@@ -396,5 +418,42 @@ public class GEPEventDispatcher {
     gepCRPEvent.put(GEPConstants.RESULT, result);
 
     return gepCRPEvent;
+  }
+  
+  private JsonObject createDCAScoreUpdateEvent(Model report) {
+    JsonObject gepCPEvent = new JsonObject();
+    JsonObject context = new JsonObject();
+
+    gepCPEvent.put(GEPConstants.USER_ID, report.get(AJEntityRubricGrading.STUDENT_ID));
+    gepCPEvent.put(GEPConstants.ACTIVITY_TIME, this.activityTime);
+    gepCPEvent.put(GEPConstants.EVENT_ID, UUID.randomUUID().toString());
+    gepCPEvent.put(GEPConstants.EVENT_NAME, GEPConstants.COLL_SCORE_UPDATE_EVENT);
+    gepCPEvent.put(GEPConstants.COLLECTION_ID,
+        report.getString(AJEntityRubricGrading.COLLECTION_ID));
+    gepCPEvent.put(GEPConstants.COLLECTION_TYPE, report.get(AJEntityRubricGrading.COLLECTION_TYPE));
+    
+    context.put(GEPConstants.CLASS_ID, report.get(AJEntityRubricGrading.CLASS_ID));
+    context.put(GEPConstants.COURSE_ID, report.get(AJEntityRubricGrading.COURSE_ID));
+    context.put(GEPConstants.UNIT_ID, report.get(AJEntityRubricGrading.UNIT_ID));
+    context.put(GEPConstants.LESSON_ID, report.get(AJEntityRubricGrading.LESSON_ID));
+    context.put(GEPConstants.SESSION_ID, report.get(AJEntityRubricGrading.SESSION_ID));
+    
+    context.put(GEPConstants.CONTENT_SOURCE, GEPConstants.DAILY_CLASS_ACTIVIY);
+
+    //Currently NO SUGGESTIONS are supported in the Grading FLOW.
+    context.put(GEPConstants.PATH_ID, 0);
+    context.putNull(GEPConstants.PATH_TYPE);
+    context.putNull(GEPConstants.CONTEXT_COLLECTION_ID);
+    context.putNull(GEPConstants.CONTEXT_COLLECTION_TYPE);
+    
+    context.put(GEPConstants.ADDITIONAL_CONTEXT, additionalContext);    
+    gepCPEvent.put(GEPConstants.CONTEXT, context);
+
+    JsonObject result = new JsonObject();
+    
+    result.put(GEPConstants.SCORE, this.score);
+    result.put(GEPConstants.MAX_SCORE, this.maxScore);
+    gepCPEvent.put(GEPConstants.RESULT, result);
+    return gepCPEvent;
   }
 }
