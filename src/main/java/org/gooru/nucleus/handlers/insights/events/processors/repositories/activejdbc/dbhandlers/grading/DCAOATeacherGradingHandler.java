@@ -1,7 +1,10 @@
 package org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.grading;
 
-import static org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.validators.ValidationUtils.*;
+import static org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.validators.ValidationUtils.validateMaxScore;
+import static org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.validators.ValidationUtils.validateScoreAndMaxScore;
+import java.io.UnsupportedEncodingException;
 import java.sql.Timestamp;
+import java.util.Base64;
 import java.util.Map;
 import java.util.UUID;
 import org.gooru.nucleus.handlers.insights.events.constants.GEPConstants;
@@ -183,11 +186,11 @@ public class DCAOATeacherGradingHandler implements DBHandler {
     if (rubricGrading.isValid()) {
       int result = 0;
       Double scoreInPercent = null;
-      if (score != null && max_score != null && max_score > 0.0) {
-        scoreInPercent = ((score * 100) / max_score);
+      if (validateScoreAndMaxScore(score, maxScore)) {
+        scoreInPercent = ((score * 100) / maxScore);
         LOGGER.debug("Re-Computed total score {} ", scoreInPercent);
       }
-      result = Base.exec(AJEntityDailyClassActivity.UPDATE_OA_SCORE, scoreInPercent, max_score, true, studentId, collectionId, dcaContentId);
+      result = Base.exec(AJEntityDailyClassActivity.UPDATE_OA_SCORE, scoreInPercent, maxScore, true, studentId, collectionId, dcaContentId);
       LOGGER.debug("Total score updated successfully..."); 
       if (result > 0) {
         LOGGER.info("Score updated into DCA for student {} & OA {} ", studentId, dcaContentId);
@@ -209,9 +212,13 @@ public class DCAOATeacherGradingHandler implements DBHandler {
   
   private void sendEventsToRDA() {
     String collectionType = rubricGrading.get(AJEntityRubricGrading.COLLECTION_TYPE) != null ? rubricGrading.get(AJEntityRubricGrading.COLLECTION_TYPE).toString() : OA_TYPE;
+    Double scoreInPercent = null;
+    if (validateScoreAndMaxScore(score, maxScore)) {
+      scoreInPercent = ((score * 100) / maxScore);
+    }
     LOGGER.info("Sending OA Teacher grade Event to RDA");
     RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(this.rubricGrading,
-        collectionType, score, maxScore, null, null, null, null,
+        collectionType, scoreInPercent, maxScore, null, null, null, null,
         true);
     rdaEventDispatcher.sendOATeacherGradeEventFromDCAOATGHToRDA();
   }
@@ -255,12 +262,18 @@ public class DCAOATeacherGradingHandler implements DBHandler {
     context.put(GEPConstants.UNIT_ID, rubricGrading.get(AJEntityRubricGrading.UNIT_ID));
     context.put(GEPConstants.LESSON_ID, rubricGrading.get(AJEntityRubricGrading.LESSON_ID));
     context.put(GEPConstants.SESSION_ID, rubricGrading.get(AJEntityRubricGrading.SESSION_ID));
-    context.putNull(GEPConstants.ADDITIONAL_CONTEXT);
-
+    
+    if (dcaContentId != null) {
+      setBase64EncodedAdditionalContext(context);
+    } else {
+      context.putNull(GEPConstants.ADDITIONAL_CONTEXT);
+    }
+    
     cpEvent.put(GEPConstants.CONTEXT, context);
 
     if (validateScoreAndMaxScore(score, maxScore)) {
-      result.put(GEPConstants.SCORE, rubricGrading.get(AJEntityRubricGrading.STUDENT_SCORE));
+      Double scoreInPercent = ((score * 100) / maxScore);
+      result.put(GEPConstants.SCORE, scoreInPercent);
       result.put(GEPConstants.MAX_SCORE, rubricGrading.get(AJEntityRubricGrading.MAX_SCORE));
     } else {
       result.putNull(GEPConstants.SCORE);
@@ -272,6 +285,19 @@ public class DCAOATeacherGradingHandler implements DBHandler {
     }
     cpEvent.put(GEPConstants.RESULT, result);
     return cpEvent;
+  }
+
+  private void setBase64EncodedAdditionalContext(JsonObject context) {
+    String base64encodedString;
+    try {
+      JsonObject additionalContext = new JsonObject();
+      additionalContext.put(GEPConstants.DCA_CONTENT_ID, dcaContentId);
+      base64encodedString = Base64.getEncoder().encodeToString(
+          additionalContext.toString().getBytes(GEPConstants.UTF8));
+      context.put(GEPConstants.ADDITIONAL_CONTEXT, base64encodedString);
+    } catch (UnsupportedEncodingException e) {
+      LOGGER.error("Error while encoding additionalContext to Base64 onn dispatching OA teacher grading GEP Event ", e);
+    }
   }
   
   @Override
