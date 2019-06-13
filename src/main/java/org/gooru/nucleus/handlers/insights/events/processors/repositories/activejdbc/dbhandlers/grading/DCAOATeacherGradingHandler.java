@@ -11,6 +11,7 @@ import org.gooru.nucleus.handlers.insights.events.constants.GEPConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.MessageDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.grading.GradingContext;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.DBHandler;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.GEPEventDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.RDAEventDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityDailyClassActivity;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityOASelfGrading;
@@ -124,7 +125,10 @@ public class DCAOATeacherGradingHandler implements DBHandler {
     }
     
     sendEventsToRDA();
-    
+    //Currently since SUGGESTIONS are not supported in the Grading Flow,
+    //pathType & pathId are set to null and 0. Update pathType and pathId
+    //when SUGGESTIONS are supported.
+    sendOAScoreUpdateEventToGEP();
     LOGGER.debug("executeRequest() OK");
     return new ExecutionResult<>(MessageResponseFactory.createOkayResponse(),
         ExecutionStatus.SUCCESSFUL);
@@ -158,7 +162,6 @@ public class DCAOATeacherGradingHandler implements DBHandler {
         return false;
       } else {
         LOGGER.info("Teacher Grades inserted for student {} & OA {} ", studentId, dcaContentId);
-        sendInsertEventToGEP();
         return true;
       }
     } else if (duplicateRow != null && rubricGrading.isValid()){
@@ -171,7 +174,6 @@ public class DCAOATeacherGradingHandler implements DBHandler {
           new Timestamp(System.currentTimeMillis()), id);
       if (res > 0) {
         LOGGER.info("Teacher Grades updated for student {} & OA {} ", studentId, dcaContentId);
-        sendUpdateEventToGEP();
         return true;
       } else {
         LOGGER.error("Teacher Grades cannot be updated for student {} & OA {} ", studentId, dcaContentId);
@@ -191,17 +193,11 @@ public class DCAOATeacherGradingHandler implements DBHandler {
         LOGGER.debug("Re-Computed total score {} ", scoreInPercent);
       }
       result = Base.exec(AJEntityDailyClassActivity.UPDATE_OA_SCORE, scoreInPercent, maxScore, true, studentId, collectionId, dcaContentId);
-      LOGGER.debug("Total score updated successfully..."); 
       if (result > 0) {
         LOGGER.info("Score updated into DCA for student {} & OA {} ", studentId, dcaContentId);
         return true;
       } else {
         LOGGER.error("Score cannot be updated into DCA for student {} & OA {} ", studentId, dcaContentId);
-        if (rubricGrading.hasErrors()) {
-          Map<String, String> map = rubricGrading.errors();
-          JsonObject errors = new JsonObject();
-          map.forEach(errors::put);          
-        }
         return false;
       }
     } else {
@@ -223,81 +219,32 @@ public class DCAOATeacherGradingHandler implements DBHandler {
     rdaEventDispatcher.sendOATeacherGradeEventFromDCAOATGHToRDA();
   }
   
-  private void sendInsertEventToGEP() {
-    sendOATeacherGradingEventtoGEP(GEPConstants.COLLECTION_PERF_EVENT);
-  }
 
-  private void sendUpdateEventToGEP() {
-    sendOATeacherGradingEventtoGEP(GEPConstants.COLL_SCORE_UPDATE_EVENT);
-  }
-  
-  private void sendOATeacherGradingEventtoGEP(String eventName) {
-    String cType = rubricGrading.get(AJEntityRubricGrading.COLLECTION_TYPE) != null ? rubricGrading.get(AJEntityRubricGrading.COLLECTION_TYPE).toString() : OA_TYPE;    
-    LOGGER.info("Sending OA Teacher grade insert Event to GEP and RDA");
-
-    JsonObject gepEvent = createOATeacherGradingEvent(cType, eventName);
-    try {
-      LOGGER.debug("The OA teacher grading GEP Event is : {} ", gepEvent);
-      MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_GEP, gepEvent);
-      LOGGER.info("Successfully dispatched OA teacher grading GEP Event..");
-    } catch (Exception e) {
-      LOGGER.error("Error while dispatching OA teacher grading GEP Event ", e);
-    }
-  }
-
-  private JsonObject createOATeacherGradingEvent(String collectionType, String eventName) {
-    JsonObject cpEvent = new JsonObject();
-    JsonObject context = new JsonObject();
-    JsonObject result = new JsonObject();
-
-    cpEvent.put(GEPConstants.USER_ID, rubricGrading.get(AJEntityRubricGrading.STUDENT_ID));
-    cpEvent.put(GEPConstants.ACTIVITY_TIME, System.currentTimeMillis());
-    cpEvent.put(GEPConstants.EVENT_ID, UUID.randomUUID().toString());
-    cpEvent.put(GEPConstants.EVENT_NAME, eventName);
-    cpEvent.put(GEPConstants.COLLECTION_ID, rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID));
-    cpEvent.put(GEPConstants.COLLECTION_TYPE, collectionType);
-    context.put(GEPConstants.CONTENT_SOURCE, GEPConstants.DAILY_CLASS_ACTIVIY);
-    context.put(GEPConstants.CLASS_ID, rubricGrading.get(AJEntityRubricGrading.CLASS_ID));
-    context.put(GEPConstants.COURSE_ID, rubricGrading.get(AJEntityRubricGrading.COURSE_ID));
-    context.put(GEPConstants.UNIT_ID, rubricGrading.get(AJEntityRubricGrading.UNIT_ID));
-    context.put(GEPConstants.LESSON_ID, rubricGrading.get(AJEntityRubricGrading.LESSON_ID));
-    context.put(GEPConstants.SESSION_ID, rubricGrading.get(AJEntityRubricGrading.SESSION_ID));
-    
-    if (dcaContentId != null) {
-      setBase64EncodedAdditionalContext(context);
+  private void sendOAScoreUpdateEventToGEP() {
+    String additionalContext = setBase64EncodedAdditionalContext();
+    if (validateScoreAndMaxScore(score, maxScore))  {      
+      GEPEventDispatcher eventDispatcher = new GEPEventDispatcher(rubricGrading, 
+          maxScore, ((score * 100) / maxScore), System.currentTimeMillis(), additionalContext);
+      eventDispatcher.sendScoreUpdateEventFromDCAtoGEP();
     } else {
-      context.putNull(GEPConstants.ADDITIONAL_CONTEXT);
-    }
-    
-    cpEvent.put(GEPConstants.CONTEXT, context);
-
-    if (validateScoreAndMaxScore(score, maxScore)) {
-      Double scoreInPercent = ((score * 100) / maxScore);
-      result.put(GEPConstants.SCORE, scoreInPercent);
-      result.put(GEPConstants.MAX_SCORE, rubricGrading.get(AJEntityRubricGrading.MAX_SCORE));
-    } else {
-      result.putNull(GEPConstants.SCORE);
-      if (validateMaxScore(maxScore)) {
-        result.put(GEPConstants.MAX_SCORE, rubricGrading.get(AJEntityRubricGrading.MAX_SCORE));
-      } else {
-        result.putNull(GEPConstants.MAX_SCORE);
-      }
-    }
-    cpEvent.put(GEPConstants.RESULT, result);
-    return cpEvent;
+      GEPEventDispatcher eventDispatcher = new GEPEventDispatcher(rubricGrading,
+          0.0, null, System.currentTimeMillis(), additionalContext);
+      eventDispatcher.sendScoreUpdateEventFromDCAtoGEP();
+    }    
   }
 
-  private void setBase64EncodedAdditionalContext(JsonObject context) {
+  private String setBase64EncodedAdditionalContext() {
     String base64encodedString;
     try {
       JsonObject additionalContext = new JsonObject();
       additionalContext.put(GEPConstants.DCA_CONTENT_ID, dcaContentId);
       base64encodedString = Base64.getEncoder().encodeToString(
           additionalContext.toString().getBytes(GEPConstants.UTF8));
-      context.put(GEPConstants.ADDITIONAL_CONTEXT, base64encodedString);
     } catch (UnsupportedEncodingException e) {
-      LOGGER.error("Error while encoding additionalContext to Base64 onn dispatching OA teacher grading GEP Event ", e);
+      LOGGER.error("Error while encoding additionalContext", e);
+      return null;
     }
+    return base64encodedString;
   }
   
   @Override
