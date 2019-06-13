@@ -149,7 +149,7 @@ public class RDAEventDispatcher {
 
   public void sendCollScoreUpdateEventFromRGHToRDA() {
     try {
-      JsonObject rdaEvent = createCollScoreUpdateEventFromRubricGrading();
+      JsonObject rdaEvent = createCollScoreUpdateEventFromRubricGrading(CollectionEventConstants.EventAttributes.COLLECTION_SCORE_UPDATE_EVENT);
       LOGGER.debug("RGH::The Collection RDA Event is : {} ", rdaEvent);
       MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_RDA, rdaEvent);
       LOGGER.info("RGH::Successfully dispatched Collection score update RDA Event..");
@@ -188,6 +188,17 @@ public class RDAEventDispatcher {
       LOGGER.info("PEH::Successfully dispatched Collection DCAOfflineStudentPerf RDA Event..");
     } catch (Exception e) {
       LOGGER.error("PEH::Error while dispatching Collection DCAOfflineStudentPerf RDA Event ", e);
+    }
+  }
+  
+  public void sendOATeacherGradeEventFromDCAOATGHToRDA() {
+    try {
+      JsonObject rdaEvent = createCollScoreUpdateEventFromRubricGrading(CollectionEventConstants.EventAttributes.OFFLINE_ACTIVITY_TEACHER_GRADE_EVENT);
+      LOGGER.debug("RGH::The OA RDA Event is : {} ", rdaEvent);
+      MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_RDA, rdaEvent);
+      LOGGER.info("RGH::Successfully dispatched OA Teacher Grade RDA Event..");
+    } catch (Exception e) {
+      LOGGER.error("RGH::Error while dispatching OA Teacher Grade RDA Event ", e);
     }
   }
 
@@ -383,7 +394,7 @@ public class RDAEventDispatcher {
 
   }
 
-  private JsonObject createCollScoreUpdateEventFromRubricGrading() {
+  private JsonObject createCollScoreUpdateEventFromRubricGrading(String eventName) {
     JsonObject cpEvent = new JsonObject();
     JsonObject context = new JsonObject();
     JsonObject result = new JsonObject();
@@ -392,7 +403,7 @@ public class RDAEventDispatcher {
         rubricGrading.get(AJEntityRubricGrading.STUDENT_ID));
     cpEvent.put(CollectionEventConstants.EventAttributes.ACTIVITY_TIME, System.currentTimeMillis());
     cpEvent.put(CollectionEventConstants.EventAttributes.EVENT_NAME,
-        CollectionEventConstants.EventAttributes.COLLECTION_SCORE_UPDATE_EVENT);
+        eventName);
     cpEvent.put(CollectionEventConstants.EventAttributes.COLLECTION_ID,
         rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID));
     cpEvent.put(CollectionEventConstants.EventAttributes.COLLECTION_TYPE, collectionType);
@@ -403,6 +414,8 @@ public class RDAEventDispatcher {
         contextCollectionType);
     context.put(CollectionEventConstants.EventAttributes.PATH_ID, pathId);
     context.put(CollectionEventConstants.EventAttributes.PATH_TYPE, pathType);
+    context.put(CollectionEventConstants.EventAttributes.CONTENT_SOURCE,
+        rubricGrading.get(AJEntityReporting.CONTENT_SOURCE) != null ? rubricGrading.get(AJEntityReporting.CONTENT_SOURCE) : null);
 
     context.put(CollectionEventConstants.EventAttributes.CLASS_ID,
         rubricGrading.get(AJEntityRubricGrading.CLASS_ID));
