@@ -12,6 +12,7 @@ import java.util.stream.IntStream;
 import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.oa.OAContext;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.DBHandler;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.GradingPendingEventDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityClassAuthorizedUsers;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityDailyClassActivity;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityOASelfGrading;
@@ -46,8 +47,10 @@ public class OADCAEventHandler implements DBHandler {
   private long pathId = 0L;
   private String pathType = null;
   private JsonArray users;
+  private String additionalContext = null;
   List<String> selfGradedList = new ArrayList<>();
   List<String> oaStudentsList = new ArrayList<>();
+  
 
   public OADCAEventHandler(OAContext context) {
     this.context = context;
@@ -111,6 +114,11 @@ public class OADCAEventHandler implements DBHandler {
             return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(),
                 ExecutionStatus.FAILED);
           }
+          //Send Grading Pending Notification
+          additionalContext = BaseUtil.setBase64EncodedAdditionalContext(oaDcaId);
+          GradingPendingEventDispatcher eventDispatcher = new GradingPendingEventDispatcher(
+              dca, additionalContext);
+          eventDispatcher.sendDCAGradingPendingEventtoNotifications();
         }
       }    
       
@@ -128,6 +136,11 @@ public class OADCAEventHandler implements DBHandler {
             return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(),
                 ExecutionStatus.FAILED);
           }
+          //Send Grading Pending Notification
+          additionalContext = BaseUtil.setBase64EncodedAdditionalContext(oaDcaId);
+          GradingPendingEventDispatcher eventDispatcher = new GradingPendingEventDispatcher(
+              notSelfGradedDca, additionalContext);
+          eventDispatcher.sendDCAGradingPendingEventtoNotifications();
         }
       }      
     }

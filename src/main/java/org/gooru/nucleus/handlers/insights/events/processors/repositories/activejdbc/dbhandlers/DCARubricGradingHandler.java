@@ -14,7 +14,6 @@ import org.gooru.nucleus.handlers.insights.events.processors.repositories.active
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.RubricGradingEventDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityClassAuthorizedUsers;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityDailyClassActivity;
-import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityReporting;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityRubricGrading;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.EntityBuilder;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult;
@@ -36,7 +35,6 @@ public class DCARubricGradingHandler implements DBHandler {
   private static final Logger LOGGER = LoggerFactory.getLogger(RubricGradingHandler.class);
   // TODO: This Kafka Topic name needs to be picked up from config
   public static final String TOPIC_GEP_USAGE_EVENTS = "org.gooru.da.sink.logW.usage.events";
-  //public static final String TOPIC_NOTIFICATIONS = "notifications";
   public static final String ADDITIONAL_CONTEXT = "additional_context";
   private final ProcessorContext context;
   private AJEntityRubricGrading rubricGrading;
@@ -50,12 +48,9 @@ public class DCARubricGradingHandler implements DBHandler {
   private String contextCollectionType;
   private Boolean isGraded;
   private String additionalContext = null;
-  private String additionalContextEncoded = null;
+  private String additionalContextDecoded = null;
   private Date activityDate;
-//  private String updated_at;
-//  private String tenantId;
-//  private String partnerId;
-//  private Integer queCount = 0;
+  private Integer queCount = 0;
 
   public DCARubricGradingHandler(ProcessorContext context) {
     this.context = context;
@@ -97,17 +92,14 @@ public class DCARubricGradingHandler implements DBHandler {
     req.remove("userIdFromSession");
     //Analytics will not store gut_codes in the Rubric Grading Table.
     req.remove(AJEntityRubricGrading.GUT_CODES);
-    //TODO: Other than passing this additional_context to the DAP, 
-    //we need to decide if this also needs to be stored at the rubrics table
-    additionalContextEncoded = req.getString(ADDITIONAL_CONTEXT);
+    additionalContext = req.getString(ADDITIONAL_CONTEXT);
     req.remove(ADDITIONAL_CONTEXT);
     //TODO * activity_date maybe redundant post dca_content_id is posted by FE
     String date = req.getString("activity_date");
     if (!StringUtil.isNullOrEmpty(date)) {
       this.activityDate = Date.valueOf(date);
     }
-    //We will not store activity_date in the Rubrics Table as of now.
-    //Based on the offline design this may change.  
+    
     req.remove("activity_date");
     LazyList<AJEntityRubricGrading> duplicateRow = null;
 
@@ -138,7 +130,6 @@ public class DCARubricGradingHandler implements DBHandler {
     if (duplicateRow == null || duplicateRow.isEmpty()) {
       rubricGrading.set(AJEntityRubricGrading.GRADER_ID, teacherId);
       rubricGrading.set("grader", "Teacher");
-      //Timestamps are mandatory
       rubricGrading.set("created_at", new Timestamp(
           Long.valueOf(rubricGrading.get(AJEntityRubricGrading.CREATED_AT).toString())));
       rubricGrading.set("updated_at", new Timestamp(
@@ -191,8 +182,6 @@ public class DCARubricGradingHandler implements DBHandler {
           .findBySQL(AJEntityDailyClassActivity.COMPUTE_ASSESSMENT_SCORE_POST_GRADING,
               rubricGrading.get(AJEntityRubricGrading.STUDENT_ID), rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID), 
               sessionId.toString());
-      //LOGGER.debug("scoreTS {} ", scoreTS);
-
       if (scoreTS != null && !scoreTS.isEmpty()) {
         scoreTS.forEach(m -> {
           rawScore = (m.get(AJEntityDailyClassActivity.SCORE) != null ? Double
@@ -234,13 +223,8 @@ public class DCARubricGradingHandler implements DBHandler {
               ? sessionPathIdTypeModel.get(AJEntityDailyClassActivity.CONTEXT_COLLECTION_ID).toString() : null;
       contextCollectionType = sessionPathIdTypeModel.get(AJEntityDailyClassActivity.CONTEXT_COLLECTION_TYPE) != null
               ? sessionPathIdTypeModel.get(AJEntityDailyClassActivity.CONTEXT_COLLECTION_TYPE).toString() : null;
-//      updated_at = sessionPathIdTypeModel.get(AJEntityDailyClassActivity.UPDATE_TIMESTAMP).toString();
-//      partnerId = sessionPathIdTypeModel.get(AJEntityDailyClassActivity.PARTNER_ID) != null
-//          ? sessionPathIdTypeModel.get(AJEntityDailyClassActivity.PARTNER_ID).toString() : null;
-//      tenantId = sessionPathIdTypeModel.get(AJEntityDailyClassActivity.TENANT_ID) != null
-//          ? sessionPathIdTypeModel.get(AJEntityDailyClassActivity.TENANT_ID).toString() : null;
-//      queCount = sessionPathIdTypeModel.get(AJEntityReporting.QUESTION_COUNT) != null ? Integer.valueOf(sessionPathIdTypeModel
-//                  .get(AJEntityReporting.QUESTION_COUNT).toString()) : 0;              
+      queCount = sessionPathIdTypeModel.get(AJEntityDailyClassActivity.QUESTION_COUNT) != null ? Integer.valueOf(sessionPathIdTypeModel
+                  .get(AJEntityDailyClassActivity.QUESTION_COUNT).toString()) : 0;              
     }
 
     if ((!StringUtil.isNullOrEmpty(latestSessionId) &&
@@ -251,22 +235,23 @@ public class DCARubricGradingHandler implements DBHandler {
       //Note that {"score":0 & "maxScore":0} is possible for Questions that have Rubrics with Scoring OFF.
       //In this case, teacher will update only comments & no scores.
       //NOTIFICATIONS EVENTS for No Scoring events should be generated from here.
-//      if (queCount == 1 && !checkNoScoreAndMaxScore()) {
-//        LazyList<AJEntityReporting>  queGraded = AJEntityReporting.findBySQL(AJEntityReporting.IS_COLLECTION_GRADED,
-//            rubricGrading.get(AJEntityRubricGrading.STUDENT_ID),
-//            latestSessionId, rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID),
-//            EventConstants.COLLECTION_RESOURCE_PLAY, EventConstants.STOP, false);
-//        if (queGraded == null || queGraded.isEmpty()) {
-//          RubricGradingEventDispatcher eventDispatcher = new RubricGradingEventDispatcher(
-//              rubricGrading, pathType, pathId, contextCollectionId, contextCollectionType);
-//          eventDispatcher.sendGradingCompleteTeacherEventtoNotifications();
-//          eventDispatcher.sendGradingCompleteStudentEventtoNotifications();
+      if (queCount == 1 && !checkNoScoreAndMaxScore()) {
+        LazyList<AJEntityDailyClassActivity>  queGraded = AJEntityDailyClassActivity.findBySQL(AJEntityDailyClassActivity.IS_COLLECTION_GRADED,
+            rubricGrading.get(AJEntityRubricGrading.STUDENT_ID),
+            latestSessionId, rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID),
+            EventConstants.COLLECTION_RESOURCE_PLAY, EventConstants.STOP, false);
+        if (queGraded == null || queGraded.isEmpty()) {
+          RubricGradingEventDispatcher eventDispatcher = new RubricGradingEventDispatcher(
+              rubricGrading, pathType, pathId, contextCollectionId, contextCollectionType, additionalContext);
+          eventDispatcher.sendGradingCompleteTeacherEventtoNotifications();
+          eventDispatcher.sendGradingCompleteStudentEventtoNotifications();
+          //TODO:
 //          RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(this.rubricGrading,
 //              collType.toString(), 0.0, 0.0, pathId, pathType, contextCollectionId, contextCollectionType,
 //              true);
 //          rdaEventDispatcher.sendCollScoreUpdateEventFromRGHToRDA();
-//        }      
-//      }
+        }      
+      }
     } else {
       LOGGER.info("The latest Session Id for this activity is {} and not {}. "
           + "Events will not be propogated to the downstream systems for this grading actvity ", latestSessionId, sessionId.toString());
@@ -285,12 +270,10 @@ public class DCARubricGradingHandler implements DBHandler {
       if (allGraded == null || allGraded.isEmpty()) {
         sendCollScoreUpdateEventtoGEP(collType.toString());
         isGraded = true;
-        //TODO: Uncomment this for notifications
-        // Currently we are not going to send NOTIFICATION EVENTS for GRADING FROM DCA.        
-        // RubricGradingEventDispatcher eventDispatcher = new RubricGradingEventDispatcher(
-        // rubricGrading, pathType, pathId, contextCollectionId, contextCollectionType);
-        // eventDispatcher.sendGradingCompleteTeacherEventtoNotifications();
-        // eventDispatcher.sendGradingCompleteStudentEventtoNotifications();
+         RubricGradingEventDispatcher eventDispatcher = new RubricGradingEventDispatcher(
+         rubricGrading, pathType, pathId, contextCollectionId, contextCollectionType, additionalContext);
+         eventDispatcher.sendGradingCompleteTeacherEventtoNotifications();
+         eventDispatcher.sendGradingCompleteStudentEventtoNotifications();
       }
 
       //In the current scenario, pathId and pathType will be 0L and null respectively for DCA
@@ -332,8 +315,8 @@ public class DCARubricGradingHandler implements DBHandler {
     
   private void decodeAdditionalContext() {
     try {
-      additionalContext = new String(Base64.getDecoder().decode(additionalContextEncoded));
-      LOGGER.info("Decoded Additional Context is {}", additionalContext);       
+      additionalContextDecoded = new String(Base64.getDecoder().decode(additionalContext));
+      LOGGER.info("Decoded Additional Context is {}", additionalContextDecoded);       
     } catch (IllegalArgumentException e) {
       LOGGER.error("Unable to decode Additional Context ", e);
   }  

@@ -29,6 +29,9 @@ public class NotificationConstants {
   public static final String EXT_COLLECTION = "collection-external";
   public static final String ASSESSMENT = "assessment";
   public static final String EXT_ASSESSMENT = "assessment-external";
+  
+  public static final String ADDITIONAL_CONTEXT = "additionalContext";
+  public static final String CONTENT_SOURCE = "contentSource";
 
   public static final String STUDENT_SELF_REPORT = "student.self.report";
   public static final String TEACHER_GRADING_COMPLETE = "teacher.grading.complete";

@@ -367,7 +367,7 @@ class ProcessEventHandler implements DBHandler {
       } else {
         this.isGraded = false;
         GradingPendingEventDispatcher eventDispatcher = new GradingPendingEventDispatcher(
-            baseReport);
+            baseReport, event.getAdditionalContext());
         eventDispatcher.sendGradingPendingEventtoNotifications();
       }
       RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(baseReport, this.views,

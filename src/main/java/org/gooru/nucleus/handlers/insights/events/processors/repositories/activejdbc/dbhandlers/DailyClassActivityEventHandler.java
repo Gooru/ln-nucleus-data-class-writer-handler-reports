@@ -10,6 +10,7 @@ import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.insights.events.processors.events.EventParser;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.GEPEventDispatcher;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.GradingPendingEventDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityDailyClassActivity;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult.ExecutionStatus;
@@ -65,6 +66,8 @@ public class DailyClassActivityEventHandler implements DBHandler {
   @SuppressWarnings("rawtypes")
   public ExecutionResult<MessageResponse> executeRequest() {
     dcaReport = new AJEntityDailyClassActivity();
+    LazyList<AJEntityDailyClassActivity> allGraded = null;
+    
     event = context.getEvent();
     LazyList<AJEntityDailyClassActivity> duplicateRow = null;
     LazyList<AJEntityDailyClassActivity> scoreTS = null;
@@ -164,14 +167,6 @@ public class DailyClassActivityEventHandler implements DBHandler {
         }
       }
     }
-
-//    	if ((event.getEventName().equals(EventConstants.COLLECTION_RESOURCE_PLAY))) {
-//    	  duplicateRow = AJEntityDailyClassActivity.findBySQL(AJEntityDailyClassActivity.FIND_RESOURCE_EVENT, 
-//    			  event.getParentGooruId(), event.getSessionId(),event.getContentGooruId(),event.getEventType());
-//    		dcaReport.set("collection_id", event.getParentGooruId());
-//    		dcaReport.set("resource_id", event.getContentGooruId());    		
-//    		dcaReport.set("answer_object", event.getAnswerObject().toString());
-//    	}
 
     if ((event.getEventName().equals(EventConstants.COLLECTION_RESOURCE_PLAY))) {
       duplicateRow = AJEntityDailyClassActivity
@@ -276,8 +271,19 @@ public class DailyClassActivityEventHandler implements DBHandler {
     }
 
     if ((event.getEventName().equals(EventConstants.COLLECTION_PLAY)) && event.getEventType()
-        .equalsIgnoreCase(EventConstants.STOP)) {
-      sendCPStopEventToGEP(dcaReport);
+        .equalsIgnoreCase(EventConstants.STOP)) {      
+      allGraded = AJEntityDailyClassActivity
+          .findBySQL(AJEntityDailyClassActivity.IS_COLLECTION_GRADED, event.getGooruUUID(),
+              event.getSessionId(),
+              event.getContentGooruId(), EventConstants.COLLECTION_RESOURCE_PLAY,
+              EventConstants.STOP, false);
+      if (allGraded == null || allGraded.isEmpty()) {
+        sendCPStopEventToGEP(dcaReport);
+      } else {
+        GradingPendingEventDispatcher eventDispatcher = new GradingPendingEventDispatcher(
+            dcaReport, event.getAdditionalContext());
+        eventDispatcher.sendDCAGradingPendingEventtoNotifications();
+      }      
     }
 
     if ((event.getEventName().equals(EventConstants.COLLECTION_RESOURCE_PLAY)) && event

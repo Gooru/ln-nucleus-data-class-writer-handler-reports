@@ -1,22 +1,24 @@
 package org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.grading;
 
-import static org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.validators.ValidationUtils.validateMaxScore;
 import static org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.validators.ValidationUtils.validateScoreAndMaxScore;
 import java.io.UnsupportedEncodingException;
 import java.sql.Timestamp;
 import java.util.Base64;
+import java.util.List;
 import java.util.Map;
-import java.util.UUID;
+import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.constants.GEPConstants;
-import org.gooru.nucleus.handlers.insights.events.processors.MessageDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.grading.GradingContext;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.DBHandler;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.GEPEventDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.RDAEventDispatcher;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.RubricGradingEventDispatcher;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityClassAuthorizedUsers;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityDailyClassActivity;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityOASelfGrading;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityRubricGrading;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.EntityBuilder;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.utils.BaseUtil;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult.ExecutionStatus;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponse;
@@ -35,7 +37,6 @@ public class DCAOATeacherGradingHandler implements DBHandler {
   
   private static final Logger LOGGER = LoggerFactory.getLogger(DCAOATeacherGradingHandler.class);
   public static final String TOPIC_GEP = "gep";
-  public static final String OA_TYPE = "offline-activity";
   private AJEntityRubricGrading rubricGrading;
   private final GradingContext context;
   private JsonObject req;
@@ -85,18 +86,13 @@ public class DCAOATeacherGradingHandler implements DBHandler {
   @Override
   public ExecutionResult<MessageResponse> validateRequest() {
     // Teacher validation
-//    if (context.request().getString("userIdFromSession") != null) {
-//      if (!context.request().getString("userIdFromSession")
-//          .equals(studentId)) {
-//        return new
-//            ExecutionResult<>(MessageResponseFactory.createForbiddenResponse
-//            ("Auth Failure"), ExecutionStatus.FAILED);
-//      }
-//    } else if (StringUtil.isNullOrEmpty(context.request().getString("userIdFromSession"))) {
-//      return new
-//          ExecutionResult<>(MessageResponseFactory.createForbiddenResponse
-//          ("Auth Failure"), ExecutionStatus.FAILED);
-//    }
+    if (context.request().getString("userIdFromSession") != null) {
+      List<Map> owner = Base.findAll(AJEntityClassAuthorizedUsers.SELECT_CLASS_OWNER,
+          classId, context.request().getString("userIdFromSession"));
+      if (owner.isEmpty()) {
+        LOGGER.warn("User is not a teacher or collaborator");
+      }
+    }
     LOGGER.debug("validateRequest() OK");
     return new ExecutionResult<>(null, ExecutionStatus.CONTINUE_PROCESSING);
   }
@@ -129,6 +125,7 @@ public class DCAOATeacherGradingHandler implements DBHandler {
     //pathType & pathId are set to null and 0. Update pathType and pathId
     //when SUGGESTIONS are supported.
     sendOAScoreUpdateEventToGEP();
+    sendOAGradingNotification();
     LOGGER.debug("executeRequest() OK");
     return new ExecutionResult<>(MessageResponseFactory.createOkayResponse(),
         ExecutionStatus.SUCCESSFUL);
@@ -207,7 +204,7 @@ public class DCAOATeacherGradingHandler implements DBHandler {
   }
   
   private void sendEventsToRDA() {
-    String collectionType = rubricGrading.get(AJEntityRubricGrading.COLLECTION_TYPE) != null ? rubricGrading.get(AJEntityRubricGrading.COLLECTION_TYPE).toString() : OA_TYPE;
+    String collectionType = rubricGrading.get(AJEntityRubricGrading.COLLECTION_TYPE) != null ? rubricGrading.get(AJEntityRubricGrading.COLLECTION_TYPE).toString() : EventConstants.OFFLINE_ACTIVITY;
     Double scoreInPercent = null;
     if (validateScoreAndMaxScore(score, maxScore)) {
       scoreInPercent = ((score * 100) / maxScore);
@@ -221,7 +218,7 @@ public class DCAOATeacherGradingHandler implements DBHandler {
   
 
   private void sendOAScoreUpdateEventToGEP() {
-    String additionalContext = setBase64EncodedAdditionalContext();
+    String additionalContext = BaseUtil.setBase64EncodedAdditionalContext(dcaContentId);
     if (validateScoreAndMaxScore(score, maxScore))  {      
       GEPEventDispatcher eventDispatcher = new GEPEventDispatcher(rubricGrading, 
           maxScore, ((score * 100) / maxScore), System.currentTimeMillis(), additionalContext);
@@ -233,18 +230,12 @@ public class DCAOATeacherGradingHandler implements DBHandler {
     }    
   }
 
-  private String setBase64EncodedAdditionalContext() {
-    String base64encodedString;
-    try {
-      JsonObject additionalContext = new JsonObject();
-      additionalContext.put(GEPConstants.DCA_CONTENT_ID, dcaContentId);
-      base64encodedString = Base64.getEncoder().encodeToString(
-          additionalContext.toString().getBytes(GEPConstants.UTF8));
-    } catch (UnsupportedEncodingException e) {
-      LOGGER.error("Error while encoding additionalContext", e);
-      return null;
-    }
-    return base64encodedString;
+  private void sendOAGradingNotification() {
+    String additionalContext = BaseUtil.setBase64EncodedAdditionalContext(dcaContentId);
+    RubricGradingEventDispatcher eventDispatcher = new RubricGradingEventDispatcher(
+        rubricGrading, null, 0L, null, null, additionalContext);
+    eventDispatcher.sendGradingCompleteTeacherEventtoNotifications();
+    eventDispatcher.sendGradingCompleteStudentEventtoNotifications();
   }
   
   @Override

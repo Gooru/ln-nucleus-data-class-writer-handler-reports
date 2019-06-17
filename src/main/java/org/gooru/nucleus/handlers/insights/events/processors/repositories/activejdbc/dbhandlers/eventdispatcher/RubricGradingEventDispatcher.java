@@ -21,21 +21,22 @@ public class RubricGradingEventDispatcher {
   private String pathType;
   private String contextCollectionId;
   private String contextCollectionType;
+  private String additionalContext;
 
   public RubricGradingEventDispatcher(AJEntityRubricGrading rubricGrading, String pathType,
-      Long pathId,
-      String contextCollectionId, String contextCollectionType) {
+      Long pathId, String contextCollectionId, String contextCollectionType, String additionalContext) {
     this.pathType = pathType;
     this.pathId = pathId;
     this.rubricGrading = rubricGrading;
     this.contextCollectionId = contextCollectionId;
     this.contextCollectionType = contextCollectionType;
+    this.additionalContext = additionalContext;
   }
 
   public void sendGradingCompleteTeacherEventtoNotifications() {
     try {
       JsonObject notificationEvent = createGradingCompleteTeacherNotificationEvent();
-      LOGGER.debug("Teacher Grading Notification Event for Teacher : {} ", notificationEvent);
+      LOGGER.debug("Teacher Grading Notification Event for Teacher : {} ", notificationEvent.toString());
       MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_NOTIFICATIONS, notificationEvent);
       LOGGER.info("Successfully dispatched Teacher Grading Notification Event..");
     } catch (Exception e) {
@@ -44,10 +45,9 @@ public class RubricGradingEventDispatcher {
   }
 
   public void sendGradingCompleteStudentEventtoNotifications() {
-
     try {
       JsonObject notificationEvent = createGradingCompleteStudentNotificationEvent();
-      LOGGER.debug("Teacher Grading Notification Event for Student : {} ", notificationEvent);
+      LOGGER.debug("Teacher Grading Notification Event for Student : {} ", notificationEvent.toString());
       MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_NOTIFICATIONS, notificationEvent);
       LOGGER.info("Successfully dispatched Teacher Grading Notification Event..");
     } catch (Exception e) {
@@ -81,6 +81,9 @@ public class RubricGradingEventDispatcher {
 
     selfReportEvent.put(NotificationConstants.PATH_ID, pathId);
     selfReportEvent.put(NotificationConstants.PATH_TYPE, pathType);
+    
+    selfReportEvent.put(NotificationConstants.ADDITIONAL_CONTEXT, additionalContext);
+    selfReportEvent.put(NotificationConstants.CONTENT_SOURCE, rubricGrading.get(AJEntityRubricGrading.CONTENT_SOURCE));
 
     selfReportEvent.put(NotificationConstants.ACTION, NotificationConstants.INITIATE);
 
@@ -113,6 +116,10 @@ public class RubricGradingEventDispatcher {
 
     selfReportEvent.put(NotificationConstants.PATH_ID, pathId);
     selfReportEvent.put(NotificationConstants.PATH_TYPE, pathType);
+    
+    selfReportEvent.put(NotificationConstants.ADDITIONAL_CONTEXT, additionalContext);
+    selfReportEvent.put(NotificationConstants.CONTENT_SOURCE, rubricGrading.get(AJEntityRubricGrading.CONTENT_SOURCE));
+
     selfReportEvent.put(NotificationConstants.ACTION, NotificationConstants.COMPLETE);
 
     return selfReportEvent;

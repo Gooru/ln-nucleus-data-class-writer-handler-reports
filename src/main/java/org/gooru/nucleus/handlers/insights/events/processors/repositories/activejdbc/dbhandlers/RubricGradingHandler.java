@@ -48,7 +48,7 @@ public class RubricGradingHandler implements DBHandler {
   private String pathType;
   private String contextCollectionId;
   private String contextCollectionType;
-  private String additionalContext;
+  private String additionalContext = null;
   private Boolean isGraded;
   private String updated_at;
   private String tenantId;
@@ -267,7 +267,7 @@ public class RubricGradingHandler implements DBHandler {
             EventConstants.COLLECTION_RESOURCE_PLAY, EventConstants.STOP, false);
         if (queGraded == null || queGraded.isEmpty()) {
           RubricGradingEventDispatcher eventDispatcher = new RubricGradingEventDispatcher(
-              rubricGrading, pathType, pathId, contextCollectionId, contextCollectionType);
+              rubricGrading, pathType, pathId, contextCollectionId, contextCollectionType, additionalContext);
           eventDispatcher.sendGradingCompleteTeacherEventtoNotifications();
           eventDispatcher.sendGradingCompleteStudentEventtoNotifications();
           RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(this.rubricGrading,
@@ -292,7 +292,7 @@ public class RubricGradingHandler implements DBHandler {
       if (allGraded == null || allGraded.isEmpty()) {
         sendCollScoreUpdateEventtoGEP(collType.toString());
         RubricGradingEventDispatcher eventDispatcher = new RubricGradingEventDispatcher(
-            rubricGrading, pathType, pathId, contextCollectionId, contextCollectionType);
+            rubricGrading, pathType, pathId, contextCollectionId, contextCollectionType, additionalContext);
         isGraded = true;
         eventDispatcher.sendGradingCompleteTeacherEventtoNotifications();
         eventDispatcher.sendGradingCompleteStudentEventtoNotifications();
@@ -425,7 +425,7 @@ public class RubricGradingHandler implements DBHandler {
     context.put(GEPConstants.UNIT_ID, rubricGrading.get(AJEntityRubricGrading.UNIT_ID));
     context.put(GEPConstants.LESSON_ID, rubricGrading.get(AJEntityRubricGrading.LESSON_ID));
     context.put(GEPConstants.SESSION_ID, rubricGrading.get(AJEntityRubricGrading.SESSION_ID));
-    context.putNull(GEPConstants.ADDITIONAL_CONTEXT);
+    context.put(GEPConstants.ADDITIONAL_CONTEXT, additionalContext);
 
     cpEvent.put(GEPConstants.CONTEXT, context);
 
