@@ -34,6 +34,9 @@ public class AJEntityOASubmissions extends Model {
   public static final String GET_STUDENTS_FOR_OA =
       "SELECT distinct(student_id) from offline_activity_submissions where class_id = ? AND oa_id = ? AND oa_dca_id = ?";
   
+  public static final String UPDATE_SUBMISSION_TEXT =
+      "UPDATE offline_activity_submissions SET submission_info = ?, updated_at = ? WHERE id = ?";
+  
   private static final Map<String, FieldConverter> converterRegistry;
 
   static {

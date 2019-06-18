@@ -3,20 +3,18 @@ package org.gooru.nucleus.handlers.insights.events.processors.repositories.activ
 import java.sql.Timestamp;
 import java.util.Map;
 import java.util.UUID;
-import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
+import java.util.regex.Pattern;
 import org.gooru.nucleus.handlers.insights.events.constants.MessageConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.oa.OAContext;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.DBHandler;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityDailyClassActivity;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityOASelfGrading;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityOASubmissions;
-import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.EntityBuilder;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult;
+import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult.ExecutionStatus;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponse;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponseFactory;
-import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult.ExecutionStatus;
 import org.javalite.activejdbc.Base;
-import org.javalite.activejdbc.LazyList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.hazelcast.util.StringUtil;
@@ -38,6 +36,9 @@ public class OASubmissionsHandler implements DBHandler {
   private String studentId;
   private Long timeSpent;
   private JsonObject req;
+  private JsonArray submissions;
+  private Pattern SUBMISSION_TYPES = Pattern.compile("uploaded|remote|free-form-text");
+  private String FREE_FORM_TEXT = "free-form-text";
 
   public OASubmissionsHandler(OAContext context) {
     this.context = context;
@@ -65,12 +66,25 @@ public class OASubmissionsHandler implements DBHandler {
           MessageResponseFactory.createInvalidRequestResponse("Invalid Request Payload"),
           ExecutionStatus.FAILED);
     }
+    
+    if (req.getJsonArray(MessageConstants.SUBMISSIONS) != null
+        && !req.getJsonArray(MessageConstants.SUBMISSIONS).isEmpty()) {
+      submissions = req.getJsonArray(MessageConstants.SUBMISSIONS);
+      for (Object sub : submissions) {
+        JsonObject submission = (JsonObject) sub;
+        String submissionType = submission.getString(AJEntityOASubmissions.SUBMISSION_TYPE); 
+        if (submissionType == null || !SUBMISSION_TYPES.matcher(submissionType).matches()) {
+          return new ExecutionResult<>(
+              MessageResponseFactory.createInvalidRequestResponse("Invalid Submission Type in Payload"),
+              ExecutionStatus.FAILED);
+        }
+      }
+    }
 
     LOGGER.debug("checkSanity() OK");
     return new ExecutionResult<>(null, ExecutionStatus.CONTINUE_PROCESSING);
   }
 
-  @SuppressWarnings("rawtypes")
   @Override
   public ExecutionResult<MessageResponse> validateRequest() {
     // Student validation
@@ -91,28 +105,35 @@ public class OASubmissionsHandler implements DBHandler {
   public ExecutionResult<MessageResponse> executeRequest() {
     timeSpent = context.request().getLong(TIMESPENT);
 
-    if (req.getJsonArray(MessageConstants.SUBMISSIONS) != null
-        && !req.getJsonArray(MessageConstants.SUBMISSIONS).isEmpty()) {
-      JsonArray submissions = req.getJsonArray(MessageConstants.SUBMISSIONS);
+    if (submissions != null) {
       for (Object sub : submissions) {
         AJEntityOASubmissions oaSubmissions = setOASubmissionsModel();
         JsonObject submission = (JsonObject) sub;
         oaSubmissions.set(AJEntityOASubmissions.TASK_ID,
             submission.getLong(AJEntityOASubmissions.TASK_ID));
-        oaSubmissions.set(AJEntityOASubmissions.SUBMISSION_TEXT,
-            submission.getString(AJEntityOASubmissions.SUBMISSION_TEXT));
-        oaSubmissions.set(AJEntityOASubmissions.SUBMISSION_INFO,
-            submission.getString(AJEntityOASubmissions.SUBMISSION_INFO));
-        oaSubmissions.set(AJEntityOASubmissions.SUBMISSION_TYPE,
-            submission.getString(AJEntityOASubmissions.SUBMISSION_TYPE));
-        oaSubmissions.set(AJEntityOASubmissions.SUBMISSION_SUBTYPE,
-            submission.getString(AJEntityOASubmissions.SUBMISSION_SUBTYPE));
+        String subInfo = submission.getString(AJEntityOASubmissions.SUBMISSION_INFO);
+        if (!StringUtil.isNullOrEmpty(subInfo)) {
+          String submissionType = submission.getString(AJEntityOASubmissions.SUBMISSION_TYPE);
 
-        if (!insertRecord(oaSubmissions)) {
-          return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(),
-              ExecutionStatus.FAILED);
+          oaSubmissions.set(AJEntityOASubmissions.SUBMISSION_INFO, subInfo);
+          oaSubmissions.set(AJEntityOASubmissions.SUBMISSION_TYPE,
+              submission.getString(AJEntityOASubmissions.SUBMISSION_TYPE));
+          oaSubmissions.set(AJEntityOASubmissions.SUBMISSION_SUBTYPE,
+              submission.getString(AJEntityOASubmissions.SUBMISSION_SUBTYPE));
+          // Auto-update ID
+          oaSubmissions.set(AJEntityDailyClassActivity.ID, null);
+          if (submissionType.equalsIgnoreCase(FREE_FORM_TEXT)) {
+            if (!insertOrUpdateSubmissionText(oaSubmissions)) {
+              return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(),
+                  ExecutionStatus.FAILED);
+            }
+          } else {
+            if (!insertRecord(oaSubmissions)) {
+              return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(),
+                  ExecutionStatus.FAILED);
+            }
+          }
         }
-
       }
     }
 
@@ -196,6 +217,43 @@ public class OASubmissionsHandler implements DBHandler {
       } else {
         LOGGER.info("Submission data stored for student {} & OA {} ", studentId, oaId);
         return true;
+      }
+    } else { // catchAll
+      return false;
+    }
+  }
+  
+  private boolean insertOrUpdateSubmissionText(AJEntityOASubmissions oaSubmissions) {
+    AJEntityOASubmissions duplicateRow = null;    
+    duplicateRow = AJEntityOASubmissions.findFirst(
+        "student_id = ? AND oa_id = ? AND oa_dca_id = ? AND class_id = ? AND task_id = ? "
+        + " AND submission_info IS NOT NULL and submission_type = 'free-form-text' order by updated_at desc",
+        UUID.fromString(studentId), UUID.fromString(oaId), oaDcaId, UUID.fromString(classId),
+        oaSubmissions.get(AJEntityOASubmissions.TASK_ID));
+    if (duplicateRow == null && oaSubmissions.isValid()) {
+      boolean result = oaSubmissions.insert();
+      if (!result) {
+        LOGGER.error("Submission text cannot be stored for student {} & OA {} ", studentId, oaId);
+        if (oaSubmissions.hasErrors()) {
+          Map<String, String> map = oaSubmissions.errors();
+          JsonObject errors = new JsonObject();
+          map.forEach(errors::put);
+        }
+        return false;
+      } else {
+        LOGGER.info("Submission text stored for student {} & OA {} ", studentId, oaId);
+        return true;
+      }
+    } else if (duplicateRow != null && oaSubmissions.isValid()) {
+      long id = Long.valueOf(duplicateRow.get("id").toString());
+      int res = Base.exec(AJEntityOASubmissions.UPDATE_SUBMISSION_TEXT,
+          oaSubmissions.get(AJEntityOASubmissions.SUBMISSION_INFO), new Timestamp(System.currentTimeMillis()), id);
+      if (res > 0) {
+        LOGGER.info("Submission Text updated for student {} & OA {} ", studentId, oaId);
+        return true;
+      } else {
+        LOGGER.error("Submission Text cannot be updated for student {} & OA {} ", studentId, oaId);
+        return false;
       }
     } else { // catchAll
       return false;

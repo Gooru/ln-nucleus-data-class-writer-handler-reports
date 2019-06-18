@@ -52,5 +52,11 @@ class AJReportDataAggregateRepo implements ReportDataAggregateRepo {
     return TransactionExecutor
         .executeTransaction(DBHandlerBuilder.buildOfflineStudentPerfRDAHandler(context));
   }
+  
+  @Override
+  public MessageResponse processOATeacherGradeForRDA() {
+    return TransactionExecutor
+        .executeTransaction(DBHandlerBuilder.buildOATeacherGradeRDAHandler(context));
+  }  
 
 }
