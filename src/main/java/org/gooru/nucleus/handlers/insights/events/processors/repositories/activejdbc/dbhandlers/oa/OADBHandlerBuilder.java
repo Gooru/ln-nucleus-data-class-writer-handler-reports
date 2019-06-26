@@ -20,4 +20,8 @@ public final class OADBHandlerBuilder {
   public static DBHandler buildOASubmissionsHandler(OAContext context) {
     return new OASubmissionsHandler(context);
   }
+  
+  public static DBHandler buildOACompletionEventHandler(OAContext context) {
+    return new OACompletionEventHandler(context);
+  }
 }

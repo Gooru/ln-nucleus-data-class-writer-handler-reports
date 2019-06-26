@@ -13,4 +13,6 @@ public interface OARepo {
   
   MessageResponse storeSubmissionDetails();
 
+  MessageResponse processOACompletionEvent();
+
 }

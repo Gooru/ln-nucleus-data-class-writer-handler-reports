@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 public class OATeacherGradingHandler implements DBHandler {
   
   private static final Logger LOGGER =
-      LoggerFactory.getLogger(OADCAEventHandler.class);
+      LoggerFactory.getLogger(OATeacherGradingHandler.class);
   private final OAContext context;
 
   public OATeacherGradingHandler(OAContext context) {
