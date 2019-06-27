@@ -6,21 +6,20 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.oa.OAContext;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.DBHandler;
-import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityClassAuthorizedUsers;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityDailyClassActivity;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityOACompletionStatus;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityOASelfGrading;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityOASubmissions;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.utils.BaseUtil;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult;
+import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult.ExecutionStatus;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponse;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponseFactory;
-import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult.ExecutionStatus;
 import org.javalite.activejdbc.Base;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,7 +53,8 @@ public class OADCAEventHandler implements DBHandler {
   }
 
   @Override
-  public ExecutionResult<MessageResponse> checkSanity() {    
+  public ExecutionResult<MessageResponse> checkSanity() {  
+
     classId = context.request().getString(AJEntityDailyClassActivity.CLASS_GOORU_OID);
     oaId = context.request().getString(AJEntityOASubmissions.OA_ID);
     oaDcaId = context.request().getLong(AJEntityOASubmissions.OA_DCA_ID);
@@ -112,8 +112,14 @@ public class OADCAEventHandler implements DBHandler {
                 ExecutionStatus.FAILED);
           }
         }
-      }    
+      }
       
+      ExecutionResult<MessageResponse> executionStatus = storeOACompletionStatus();
+      if (executionStatus.hasFailed()) {
+        return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(),
+            ExecutionStatus.FAILED);
+      }
+       
       //Students have not graded their tasks, and may or may not have submissions.
       getNotSelfGradedList();
       if (oaStudentsList != null && !oaStudentsList.isEmpty()) {
@@ -222,8 +228,9 @@ public class OADCAEventHandler implements DBHandler {
     localeDate = BaseUtil.UTCDate(ts);
   }
   
+  
   private String listToPostgresArrayString(List<String> input) {
-    int approxSize = ((input.size() + 1) * 36); 
+    int approxSize = ((input.size() + 1) * 36);
     Iterator<String> it = input.iterator();
     if (!it.hasNext()) {
       return "{}";
@@ -237,6 +244,59 @@ public class OADCAEventHandler implements DBHandler {
         return sb.append('}').toString();
       }
       sb.append(',');
+    }
+  }
+  
+  private ExecutionResult<MessageResponse> storeOACompletionStatus() {
+    if (oaStudentsList != null ) {
+      for (String studentId: oaStudentsList) {
+        AJEntityOACompletionStatus oacs = new AJEntityOACompletionStatus();
+        oacs.set(AJEntityOACompletionStatus.CLASS_ID, UUID.fromString(classId));
+        oacs.set(AJEntityOACompletionStatus.OA_ID, UUID.fromString(oaId));
+        oacs.set(AJEntityOACompletionStatus.OA_DCA_ID, oaDcaId);
+        oacs.set(AJEntityOACompletionStatus.STUDENT_ID, UUID.fromString(studentId));
+        oacs.set(AJEntityOACompletionStatus.COLLECTION_TYPE, EventConstants.OFFLINE_ACTIVITY);
+        oacs.set(AJEntityOACompletionStatus.CONTENT_SOURCE, EventConstants.DCA);
+        oacs.set(AJEntityOACompletionStatus.IS_MARKED_BY_TEACHER, true);
+        if (!insertOrUpdateCompletionRecord(studentId, oacs)) {
+         return new ExecutionResult<>(null, ExecutionStatus.FAILED);
+        }
+      }
+    }
+    return new ExecutionResult<>(null, ExecutionStatus.CONTINUE_PROCESSING);
+  }
+  
+  private boolean insertOrUpdateCompletionRecord(String studentId, AJEntityOACompletionStatus oacs) {
+    AJEntityOACompletionStatus duplicateRow = AJEntityOACompletionStatus.findFirst(AJEntityOACompletionStatus.GET_OA_COMPLETION_STATUS, studentId, oaId, oaDcaId, classId, EventConstants.DCA);
+    
+    if (duplicateRow == null && oacs.isValid()) {
+      boolean result = oacs.insert();
+      if (!result) {
+        LOGGER.error("Offline Activity Completion status cannot be inserted into oacs table {} & OA {} ", studentId, oaId);
+        if (oacs.hasErrors()) {
+          Map<String, String> map = oacs.errors();
+          JsonObject errors = new JsonObject();
+          map.forEach(errors::put);          
+        }
+        return false;
+      } else {
+        LOGGER.info("Offline Activity Completion status Inserted into oacs table {} & OA {} ", studentId, oaId);
+        return true;
+      }
+    } else if (duplicateRow != null && oacs.isValid()){
+      long id = Long.valueOf(duplicateRow.get("id").toString());
+      int res = 0;
+      res = Base.exec(AJEntityOACompletionStatus.UPDATE_OA_COMPLETION_STATUS_BY_TEACHER, true,
+          new Timestamp(System.currentTimeMillis()), id, oacs.getString(AJEntityOACompletionStatus.CONTENT_SOURCE));
+      if (res > 0) {
+        LOGGER.info("Offline Activity Completion status updated into oacs table {} & OA {} ", studentId, oaId);
+        return true;
+      } else {
+        LOGGER.error("Offline Activity Completion status cannot be updated into oacs table {} & OA {} ", studentId, oaId);
+        return false;
+      }  
+    } else { //catchAll
+      return false;
     }
   }
 

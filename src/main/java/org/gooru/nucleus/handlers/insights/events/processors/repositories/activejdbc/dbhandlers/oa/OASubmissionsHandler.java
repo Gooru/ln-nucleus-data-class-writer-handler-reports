@@ -8,8 +8,10 @@ import org.gooru.nucleus.handlers.insights.events.constants.MessageConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.oa.OAContext;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.DBHandler;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityDailyClassActivity;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityOACompletionStatus;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityOASelfGrading;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityOASubmissions;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.validators.ValidationUtils;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult.ExecutionStatus;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponse;
@@ -39,6 +41,7 @@ public class OASubmissionsHandler implements DBHandler {
   private JsonArray submissions;
   private Pattern SUBMISSION_TYPES = Pattern.compile("uploaded|remote|free-form-text");
   private String FREE_FORM_TEXT = "free-form-text";
+  private String contentSource;
 
   public OASubmissionsHandler(OAContext context) {
     this.context = context;
@@ -51,10 +54,12 @@ public class OASubmissionsHandler implements DBHandler {
     oaId = context.request().getString(AJEntityOASubmissions.OA_ID);
     oaDcaId = context.request().getLong(AJEntityOASubmissions.OA_DCA_ID);
     studentId = context.request().getString(AJEntityOASubmissions.STUDENT_ID);
+    contentSource = context.request().getString(AJEntityOASubmissions.CONTENT_SOURCE);
 
     if (context.request() != null || !context.request().isEmpty()) {
-      if (StringUtil.isNullOrEmpty(classId) || StringUtil.isNullOrEmpty(oaId)
-          || StringUtil.isNullOrEmpty(studentId) || (oaDcaId == null)) {
+      if (!ValidationUtils.isValidUUID(classId) || !ValidationUtils.isValidUUID(oaId)
+          || !ValidationUtils.isValidUUID(studentId) || (oaDcaId == null)
+          || StringUtil.isNullOrEmptyAfterTrim(contentSource)) {
         LOGGER.warn("Invalid Json Payload");
         return new ExecutionResult<>(
             MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload"),
@@ -96,6 +101,13 @@ public class OASubmissionsHandler implements DBHandler {
     } else if (StringUtil.isNullOrEmpty(context.request().getString("userIdFromSession"))) {
       return new ExecutionResult<>(MessageResponseFactory.createForbiddenResponse("Auth Failure"),
           ExecutionStatus.FAILED);
+    }
+    AJEntityOACompletionStatus isOAMarkedComplete =
+        AJEntityOACompletionStatus.findFirst(AJEntityOACompletionStatus.GET_OA_MARKED_AS_COMPLETED,
+            studentId, oaId, oaDcaId, classId, contentSource);
+    if (isOAMarkedComplete != null) {
+      return new ExecutionResult<>(MessageResponseFactory.createForbiddenResponse(
+          "OA is marked as completed. Submission is closed."), ExecutionStatus.FAILED);
     }
     LOGGER.debug("validateRequest() OK");
     return new ExecutionResult<>(null, ExecutionStatus.CONTINUE_PROCESSING);

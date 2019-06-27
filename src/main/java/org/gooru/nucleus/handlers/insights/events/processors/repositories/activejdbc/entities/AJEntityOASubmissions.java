@@ -26,6 +26,7 @@ public class AJEntityOASubmissions extends Model {
   public static final String SUBMISSION_SUBTYPE = "submission_subtype";
   public static final String SUBMISSION_TYPE = "submission_type";
   public static final String SUBMISSION_TEXT = "submission_text";
+  public static final String CONTENT_SOURCE = "content_source";
   public static final String STUDENT_ID = "student_id";
   public static final String CLASS_ID = "class_id";
   public static final String CREATED_AT = "created_at";

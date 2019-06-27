@@ -10,7 +10,6 @@ import org.gooru.nucleus.handlers.insights.events.processors.repositories.active
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityDailyClassActivity;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityOACompletionStatus;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityOASelfGrading;
-import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityOASubmissions;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.utils.BaseUtil;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.validators.ValidationUtils;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult;
@@ -42,22 +41,26 @@ public class OACompletionEventHandler implements DBHandler {
   private String pathType = null;
   private String studentId;
   private String markedBy;
+  private String contentSource;
 
   public OACompletionEventHandler(OAContext context) {
     this.context = context;
   }
 
   @Override
-  public ExecutionResult<MessageResponse> checkSanity() {    
-    classId = context.request().getString(AJEntityDailyClassActivity.CLASS_GOORU_OID);
-    oaId = context.request().getString(AJEntityOASubmissions.OA_ID);
-    oaDcaId = context.request().getLong(AJEntityOASubmissions.OA_DCA_ID);
-    studentId = context.request().getString(AJEntityOASubmissions.STUDENT_ID);
+  public ExecutionResult<MessageResponse> checkSanity() {  
+    classId = context.request().getString(AJEntityOACompletionStatus.CLASS_ID);
+    oaId = context.request().getString(AJEntityOACompletionStatus.OA_ID);
+    oaDcaId = context.request().getLong(AJEntityOACompletionStatus.OA_DCA_ID);
+    studentId = context.request().getString(AJEntityOACompletionStatus.STUDENT_ID);
     markedBy = context.request().getString(AJEntityOACompletionStatus.MARKED_BY);
-    
-    if (!ValidationUtils.isValidUUID(classId) || !ValidationUtils.isValidUUID(oaId) || !ValidationUtils.isValidUUID(studentId)
-        || oaDcaId == null || StringUtil.isNullOrEmpty(markedBy) || 
-        (markedBy != null && !VALID_MARKED_BY_TYPE.matcher(markedBy).matches())) {
+    contentSource = context.request().getString(AJEntityOACompletionStatus.CONTENT_SOURCE);
+
+    if (!ValidationUtils.isValidUUID(classId) || !ValidationUtils.isValidUUID(oaId)
+        || !ValidationUtils.isValidUUID(studentId) || oaDcaId == null
+        || StringUtil.isNullOrEmptyAfterTrim(markedBy)
+        || (markedBy != null && !VALID_MARKED_BY_TYPE.matcher(markedBy).matches())
+        || StringUtil.isNullOrEmptyAfterTrim(contentSource)) {
       LOGGER.warn("Invalid Json Payload");
       return new ExecutionResult<>(
           MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload"),
@@ -215,19 +218,24 @@ public class OACompletionEventHandler implements DBHandler {
     oacs.set(AJEntityOACompletionStatus.OA_DCA_ID, oaDcaId);
     oacs.set(AJEntityOACompletionStatus.STUDENT_ID, UUID.fromString(studentId));
     oacs.set(AJEntityOACompletionStatus.COLLECTION_TYPE, EventConstants.OFFLINE_ACTIVITY);
-    oacs.set(AJEntityOACompletionStatus.MARKED_BY, markedBy); 
     oacs.set(AJEntityOACompletionStatus.CONTENT_SOURCE, EventConstants.DCA);
+    if (markedBy.equalsIgnoreCase(EventConstants.STUDENT)) {
+      oacs.set(AJEntityOACompletionStatus.IS_MARKED_BY_STUDENT, true);
+    } else {
+      oacs.set(AJEntityOACompletionStatus.IS_MARKED_BY_TEACHER, true);
+    }
     return oacs;
   }
   
   private boolean insertOrUpdateCompletionRecord(String studentId, AJEntityOACompletionStatus oacs) {
-    AJEntityOACompletionStatus duplicateRow = null;
-    duplicateRow = AJEntityOACompletionStatus.findFirst(AJEntityOACompletionStatus.GET_STUDENT_OA_COMPLETION_STATUS, studentId, oaId, oaDcaId, classId);
+    AJEntityOACompletionStatus duplicateRow =
+        AJEntityOACompletionStatus.findFirst(AJEntityOACompletionStatus.GET_OA_COMPLETION_STATUS,
+            studentId, oaId, oaDcaId, classId, contentSource);
     
     if (duplicateRow == null && oacs.isValid()) {
       boolean result = oacs.insert();
       if (!result) {
-        LOGGER.error("Offline Activity Student Completion status cannot be inserted into oacs table {} & OA {} ", studentId, oaId);
+        LOGGER.error("Offline Activity Completion status cannot be inserted into oacs table {} & OA {} ", studentId, oaId);
         if (oacs.hasErrors()) {
           Map<String, String> map = oacs.errors();
           JsonObject errors = new JsonObject();
@@ -235,19 +243,24 @@ public class OACompletionEventHandler implements DBHandler {
         }
         return false;
       } else {
-        LOGGER.info("Offline Activity Student Completion status Inserted into oacs table {} & OA {} ", studentId, oaId);
+        LOGGER.info("Offline Activity Completion status Inserted into oacs table {} & OA {} ", studentId, oaId);
         return true;
       }
     } else if (duplicateRow != null && oacs.isValid()){
       long id = Long.valueOf(duplicateRow.get("id").toString());
-      int res = Base.exec(AJEntityOACompletionStatus.UPDATE_STUDENT_OA_COMPLETION_STATUS,
-          markedBy,
-          new Timestamp(System.currentTimeMillis()), id);
+      int res = 0;
+      if (markedBy.equalsIgnoreCase(EventConstants.STUDENT)) {
+        res = Base.exec(AJEntityOACompletionStatus.UPDATE_OA_COMPLETION_STATUS_BY_STUDENT, true,
+            new Timestamp(System.currentTimeMillis()), id, contentSource);
+      } else {
+        res = Base.exec(AJEntityOACompletionStatus.UPDATE_OA_COMPLETION_STATUS_BY_TEACHER, true,
+            new Timestamp(System.currentTimeMillis()), id, contentSource);
+      }
       if (res > 0) {
-        LOGGER.info("Offline Activity Student Completion status updated into oacs table {} & OA {} ", studentId, oaId);
+        LOGGER.info("Offline Activity Completion status updated into oacs table {} & OA {} ", studentId, oaId);
         return true;
       } else {
-        LOGGER.error("Offline Activity Student Completion status cannot be updated into oacs table {} & OA {} ", studentId, oaId);
+        LOGGER.error("Offline Activity Completion status cannot be updated into oacs table {} & OA {} ", studentId, oaId);
         return false;
       }  
     } else { //catchAll
