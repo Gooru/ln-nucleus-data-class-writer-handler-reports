@@ -26,6 +26,7 @@ public class AJEntityOACompletionStatus extends Model {
   public static final String STUDENT_ID = "student_id";
   public static final String CONTENT_SOURCE = "content_source";
   public static final String COLLECTION_TYPE = "collection_type";
+  public static final String MARKED_BY = "marked_by";
   public static final String IS_MARKED_BY_STUDENT = "is_marked_by_student";
   public static final String IS_MARKED_BY_TEACHER = "is_marked_by_teacher";
   public static final String CREATED_AT = "created_at";
