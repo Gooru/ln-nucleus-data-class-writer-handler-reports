@@ -22,11 +22,12 @@ public final class MessageConstants {
   public static final String MSG_MESSAGE = "message";
 
   //Offline Activities
-  public static final String MSG_OP_OA_COMPLETE = "oa.complete";
+  public static final String MSG_OP_OA_COMPLETE_INTERNAL = "oa.complete.internal";
   public static final String MSG_OP_OA_SUBMISSIONS = "oa.submissions";
   public static final String MSG_OP_OA_TASK_SELF_GRADING = "oa.task.self.grading";
   public static final String MSG_OP_OA_SELF_GRADING = "oa.self.grading";
   public static final String MSG_OP_OA_TEACHER_GRADING = "oa.teacher.grading";
+  public static final String MSG_OP_OA_COMPLETE = "oa.complete";
   
   //Grading
   public static final String MSG_OP_RUBRIC_GRADING = "rubric.grading";

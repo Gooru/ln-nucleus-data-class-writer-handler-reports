@@ -31,4 +31,11 @@ public class AJOARepo implements OARepo {
     return TransactionExecutor
         .executeTransaction(OADBHandlerBuilder.buildOASubmissionsHandler(context));
   }
+  
+  @Override
+  public MessageResponse processOACompletionEvent() {
+    return TransactionExecutor
+        .executeTransaction(OADBHandlerBuilder.buildOACompletionEventHandler(context));
+  }
+  
 }
