@@ -16,6 +16,7 @@ import org.gooru.nucleus.handlers.insights.events.processors.repositories.active
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityOASelfGrading;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityOASubmissions;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.utils.BaseUtil;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.validators.ValidationUtils;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult.ExecutionStatus;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponse;
@@ -61,7 +62,7 @@ public class OADCAEventHandler implements DBHandler {
     users = context.request().getJsonArray(USERS);
     
     
-    if (StringUtil.isNullOrEmpty(classId) || StringUtil.isNullOrEmpty(oaId)
+    if (!ValidationUtils.isValidUUID(classId) || !ValidationUtils.isValidUUID(oaId)
         || oaDcaId == null || users == null) {
       LOGGER.warn("Invalid Json Payload");
       return new ExecutionResult<>(
