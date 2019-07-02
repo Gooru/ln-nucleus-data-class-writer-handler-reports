@@ -73,13 +73,12 @@ public class OACompletionEventHandler implements DBHandler {
 
   @Override
   public ExecutionResult<MessageResponse> validateRequest() {
-/*    if (context.request().getString("userIdFromSession") != null && !context.request().getString("userIdFromSession").equals(studentId)) {
-        return new ExecutionResult<>(MessageResponseFactory.createForbiddenResponse("Auth Failure"),
-            ExecutionStatus.FAILED);
-    } else if (StringUtil.isNullOrEmpty(context.request().getString("userIdFromSession"))) {
+    if (StringUtil.isNullOrEmpty(context.request().getString("userIdFromSession"))
+        || (context.request().getString("userIdFromSession") != null
+            && !context.request().getString("userIdFromSession").equals(studentId))) {
       return new ExecutionResult<>(MessageResponseFactory.createForbiddenResponse("Auth Failure"),
           ExecutionStatus.FAILED);
-    }*/
+    }
     LOGGER.debug("validateRequest() OK");
     return new ExecutionResult<>(null, ExecutionStatus.CONTINUE_PROCESSING);
   }
