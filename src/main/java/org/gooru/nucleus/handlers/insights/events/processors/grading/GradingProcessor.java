@@ -51,53 +51,31 @@ public class GradingProcessor implements Processor {
   }
   
   private MessageResponse processRubricGrades() {
-    MessageResponse result;
-    String grader = context.request().getString(MessageConstants.GRADER);
-    String type = context.request().getString(MessageConstants.COLLECTION_TYPE);
-    String contentSource = context.request().getString(MessageConstants.CONTENT_SOURCE);
-    switch (grader) {
+    MessageResponse response = null;
+    
+    Grader grader = null;
+    String graderType = context.request().getString(MessageConstants.GRADER);
+    switch (graderType) {
       case MessageConstants.GRADER_SELF:
-        if (type.equals(EventConstants.OFFLINE_ACTIVITY) && 
-            contentSource.equals(EventConstants.DCA)) {
-          result = processDCAOASelfGrades();           
-        } else {
-          return MessageResponseFactory.createInvalidRequestResponse();
-        }
+        grader = new SelfGrader();
         break;
       case MessageConstants.GRADER_TEACHER:
-        if (type.equals(EventConstants.OFFLINE_ACTIVITY) && 
-            contentSource.equals(EventConstants.DCA)) {
-          result = processDCAOATeacherGrades();           
-        } else {
-          return MessageResponseFactory.createInvalidRequestResponse();
-        }
+        grader = new TeacherGrader();
         break;
       case MessageConstants.GRADER_PEER:
-        LOGGER.warn("Invalid Grading Type: '{}'", grader);
-        return MessageResponseFactory.createInvalidRequestResponse();
+        grader = new PeerGrader();
+        break;
       default:
         LOGGER.warn("Invalid Grading Type: '{}'", grader);
-        return MessageResponseFactory.createInvalidRequestResponse();
     }
-    return result;
-  }
-  
-  private MessageResponse processDCAOASelfGrades() {
-    try {
-      return RepoBuilder.buildGradingRepo(context).processDCAOASelfGrades();
-    } catch (Throwable t) {
-      LOGGER.error("Exception while processing Student Self Grades", t.getMessage());
-      return MessageResponseFactory.createInternalErrorResponse(t.getMessage());
+    
+    if( grader != null) {
+      grader.setContext(context);
+      response = grader.process();
+    }else {
+      response =  MessageResponseFactory.createInvalidRequestResponse();
     }
-  }
-  
-  private MessageResponse processDCAOATeacherGrades() {
-    try {
-      return RepoBuilder.buildGradingRepo(context).processDCAOATeacherGrades();
-    } catch (Throwable t) {
-      LOGGER.error("Exception while processing Student Self Grades", t.getMessage());
-      return MessageResponseFactory.createInternalErrorResponse(t.getMessage());
-    }
+    return response;
   }
     
   private GradingContext createContext() {
