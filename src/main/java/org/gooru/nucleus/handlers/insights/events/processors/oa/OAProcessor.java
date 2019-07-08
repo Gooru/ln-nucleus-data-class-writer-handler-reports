@@ -39,9 +39,6 @@ public class OAProcessor implements Processor {
         case MessageConstants.MSG_OP_OA_COMPLETE_INTERNAL:
           result = createOAEvent();  
           break;
-        case MessageConstants.MSG_OP_OA_SELF_GRADING:
-          result = processSelfGrades();  
-          break;
         case MessageConstants.MSG_OP_OA_SUBMISSIONS:
           result = storeSubmissionDetails();  
           break;
@@ -64,15 +61,6 @@ public class OAProcessor implements Processor {
       return RepoBuilder.buildOARepo(context).processOAEvent();
     } catch (Throwable t) {
       LOGGER.error("Exception while processing internal OA Complete Request", t.getMessage());
-      return MessageResponseFactory.createInternalErrorResponse(t.getMessage());
-    }
-  }
-  
-  private MessageResponse processSelfGrades() {
-    try {
-      return RepoBuilder.buildOARepo(context).processOASelfGrades();
-    } catch (Throwable t) {
-      LOGGER.error("Exception while processing OA Self-Grading Request", t.getMessage());
       return MessageResponseFactory.createInternalErrorResponse(t.getMessage());
     }
   }

@@ -226,6 +226,14 @@ public class AJEntityReporting extends Model {
 
   public static final String FETCH_AVG_REACTION_OF_COLL_BY_SESSION = "SELECT COALESCE(ROUND(AVG(reaction)),0) AS reaction FROM base_reports  WHERE event_name = 'reaction.create' and session_id = ? and collection_id = ? and reaction <> 0";
 
+  public static final String UPDATE_OA_RECORD_FOR_THIS_STUDENT =
+      "UPDATE base_reports SET time_spent = ?, score = ?, max_score = ?, updated_at = ? WHERE id = ?";
+  
+  //Offline Activity Teacher grading
+  public static final String UPDATE_OA_SCORE =
+      "UPDATE base_reports SET score = ?, max_score = ?, is_graded = ? WHERE actor_id = ? AND collection_id =? AND course_id = ? AND unit_id = ? AND lesson_id = ? AND content_source = ? "
+          + "AND event_name = 'collection.play' AND event_type = 'stop'";
+  
   private static final Map<String, FieldValidator> validatorRegistry;
   private static final Map<String, FieldConverter> converterRegistry;
 

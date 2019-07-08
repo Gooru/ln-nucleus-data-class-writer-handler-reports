@@ -33,16 +33,22 @@ public class AJEntityOACompletionStatus extends Model {
   public static final String UPDATED_AT = "updated_at";  
  
   public static final String UPDATE_OA_COMPLETION_STATUS_BY_STUDENT =
-      "UPDATE offline_activity_completion_status SET is_marked_by_student = ?, updated_at = ? WHERE id = ? AND content_source = ?";
+      "UPDATE offline_activity_completion_status SET is_marked_by_student = ?, updated_at = ? WHERE id = ?";
 
   public static final String UPDATE_OA_COMPLETION_STATUS_BY_TEACHER =
-      "UPDATE offline_activity_completion_status SET is_marked_by_teacher = ?, updated_at = ? WHERE id = ? AND content_source = ?";
+      "UPDATE offline_activity_completion_status SET is_marked_by_teacher = ?, updated_at = ? WHERE id = ?";
 
-  public static final String GET_OA_COMPLETION_STATUS =
+  public static final String GET_DCA_OA_COMPLETION_STATUS =
       "student_id = ?::uuid AND oa_id = ?::uuid AND oa_dca_id = ? AND class_id = ?::uuid AND content_source = ?";
   
-  public static final String GET_OA_MARKED_AS_COMPLETED =
+  public static final String GET_CM_OA_COMPLETION_STATUS =
+      "student_id = ?::uuid AND oa_id = ?::uuid AND oa_dca_id IS NULL AND class_id = ?::uuid AND course_id = ?::uuid AND unit_id = ?::uuid AND lesson_id = ?::uuid AND content_source = ?";
+  
+  public static final String GET_DCA_OA_MARKED_AS_COMPLETED =
       "student_id = ?::uuid AND oa_id = ?::uuid AND oa_dca_id = ? AND class_id = ?::uuid AND content_source = ? and (is_marked_by_student = true or is_marked_by_teacher = true)";
+
+  public static final String GET_CM_OA_MARKED_AS_COMPLETED =
+      "student_id = ?::uuid AND oa_id = ?::uuid AND oa_dca_id IS NULL AND class_id = ?::uuid AND course_id = ?::uuid AND unit_id = ?::uuid AND lesson_id = ?::uuid AND content_source = ? and (is_marked_by_student = true or is_marked_by_teacher = true)";
 
   private static final Map<String, FieldConverter> converterRegistry;
 

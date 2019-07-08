@@ -191,7 +191,7 @@ public class RDAEventDispatcher {
     }
   }
   
-  public void sendOATeacherGradeEventFromDCAOATGHToRDA() {
+  public void sendOATeacherGradeEventFromOATGHToRDA() {
     try {
       JsonObject rdaEvent = createCollScoreUpdateEventFromRubricGrading(CollectionEventConstants.EventAttributes.OFFLINE_ACTIVITY_TEACHER_GRADE_EVENT);
       LOGGER.debug("RGH::The OA RDA Event is : {} ", rdaEvent);

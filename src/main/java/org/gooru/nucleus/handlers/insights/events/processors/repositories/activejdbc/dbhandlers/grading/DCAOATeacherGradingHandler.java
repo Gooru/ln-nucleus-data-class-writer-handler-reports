@@ -1,22 +1,24 @@
 package org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.grading;
 
-import static org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.validators.ValidationUtils.validateMaxScore;
 import static org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.validators.ValidationUtils.validateScoreAndMaxScore;
 import java.io.UnsupportedEncodingException;
 import java.sql.Timestamp;
 import java.util.Base64;
 import java.util.Map;
-import java.util.UUID;
+import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.constants.GEPConstants;
-import org.gooru.nucleus.handlers.insights.events.processors.MessageDispatcher;
+import org.gooru.nucleus.handlers.insights.events.constants.MessageConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.grading.GradingContext;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.DBHandler;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.GEPEventDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.RDAEventDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityDailyClassActivity;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityOASelfGrading;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityOASubmissions;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityReporting;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityRubricGrading;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.EntityBuilder;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.validators.ValidationUtils;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult.ExecutionStatus;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponse;
@@ -45,6 +47,13 @@ public class DCAOATeacherGradingHandler implements DBHandler {
   private String collectionId;
   private Double score;
   private Double maxScore;
+  private String contentSource;
+  private String courseId;
+  private String unitId;
+  private String lessonId;
+  private Long pathId;
+  private String pathType;
+  private String collectionType;
   
   public DCAOATeacherGradingHandler(GradingContext context) {
     this.context = context;
@@ -55,8 +64,13 @@ public class DCAOATeacherGradingHandler implements DBHandler {
     
     if (context.request() != null || !context.request().isEmpty()) {
       initializeRequestParams();
-      if (StringUtil.isNullOrEmpty(classId) || StringUtil.isNullOrEmpty(collectionId)
-          || StringUtil.isNullOrEmpty(studentId) || (dcaContentId == null)) {
+      if (collectionType == null || (collectionType != null && !collectionType.equalsIgnoreCase(EventConstants.OFFLINE_ACTIVITY))
+          || StringUtil.isNullOrEmptyAfterTrim(contentSource) || !(contentSource!= null && EventConstants.CM_DCA_CONTENT_SOURCE.matcher(contentSource).matches())
+          || !ValidationUtils.isValidUUID(classId) || !ValidationUtils.isValidUUID(collectionId)
+          || !ValidationUtils.isValidUUID(studentId)
+          || (dcaContentId == null && contentSource.equalsIgnoreCase(EventConstants.DCA))
+          || (contentSource.equalsIgnoreCase(EventConstants.COURSEMAP) && !(ValidationUtils.isValidUUID(courseId)
+              && ValidationUtils.isValidUUID(unitId) && ValidationUtils.isValidUUID(lessonId)))) {
         LOGGER.warn("Invalid Json Payload");
         return new ExecutionResult<>(
             MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload"),
@@ -75,10 +89,17 @@ public class DCAOATeacherGradingHandler implements DBHandler {
 
   private void initializeRequestParams() {
     req = context.request();
+    collectionType = req.getString(MessageConstants.COLLECTION_TYPE);
     classId = req.getString(AJEntityRubricGrading.CLASS_ID);
     dcaContentId = req.getLong(AJEntityRubricGrading.DCA_CONTENT_ID);
     studentId = req.getString(AJEntityRubricGrading.STUDENT_ID);
     collectionId = req.getString(AJEntityRubricGrading.COLLECTION_ID);
+    contentSource = req.getString(AJEntityOASubmissions.CONTENT_SOURCE);
+    courseId = req.getString(EventConstants.COURSE_ID);
+    unitId = req.getString(EventConstants.UNIT_ID);
+    lessonId = req.getString(EventConstants.LESSON_ID);
+    pathId = req.getLong(EventConstants._PATH_ID);
+    pathType = req.getString(EventConstants._PATH_TYPE);
   }
 
   @SuppressWarnings("rawtypes")
@@ -119,9 +140,16 @@ public class DCAOATeacherGradingHandler implements DBHandler {
     //Teacher can only grade, once the OA Activity is marked as complete.So we should have OA record for this student/oaID
     //already present in Daily Class Activity table. So we only UPDATE that record here. If the record is not found, then
     //we should error out.
-    if (!updateDCARecord()) {
-      return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(),
-          ExecutionStatus.FAILED);    
+    if (contentSource.equalsIgnoreCase(EventConstants.DCA)) {
+      if (!updateDCARecord()) {
+        return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(),
+            ExecutionStatus.FAILED);
+      }
+    } else if (contentSource.equalsIgnoreCase(EventConstants.COURSEMAP)) {
+      if (!updateBaseReportsRecord()) {
+        return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(),
+            ExecutionStatus.FAILED);
+      }
     }
     
     sendEventsToRDA();
@@ -142,14 +170,22 @@ public class DCAOATeacherGradingHandler implements DBHandler {
 
   private void prune() {
     req.remove("userIdFromSession");
+    if (req.containsKey(AJEntityDailyClassActivity.PATH_ID)) req.remove(AJEntityDailyClassActivity.PATH_ID);
+    if (req.containsKey(AJEntityDailyClassActivity.PATH_TYPE)) req.remove(AJEntityDailyClassActivity.PATH_TYPE);
   }
 
   private boolean insertOrUpdateGradingRecord() {
     AJEntityRubricGrading duplicateRow = null;
-    duplicateRow = AJEntityRubricGrading.findFirst("student_id = ? AND collection_id = ? AND dca_content_id = ? "
-        + "AND class_id = ?", 
-        studentId, collectionId, dcaContentId, classId);
-    
+    if (contentSource.equalsIgnoreCase(EventConstants.DCA)) {
+      duplicateRow = AJEntityRubricGrading.findFirst(
+          "student_id = ? AND collection_id = ? AND dca_content_id = ? " + "AND class_id = ? AND content_source = ?",
+          studentId, collectionId, dcaContentId, classId, contentSource);
+    } else if (contentSource.equalsIgnoreCase(EventConstants.COURSEMAP)) {
+      duplicateRow = AJEntityRubricGrading.findFirst(
+          "student_id = ? AND collection_id = ? AND dca_content_id IS NULL "
+              + "AND class_id = ? AND course_id = ? AND unit_id = ? AND lesson_id = ? AND content_source = ? ",
+          studentId, collectionId, classId, courseId, unitId, lessonId, contentSource);
+    }   
     if (duplicateRow == null && rubricGrading.isValid()) {
       boolean result = rubricGrading.insert();
       if (!result) {
@@ -206,6 +242,28 @@ public class DCAOATeacherGradingHandler implements DBHandler {
     }
   }
   
+  private boolean updateBaseReportsRecord() {
+    if (rubricGrading.isValid()) {
+      int result = 0;
+      Double scoreInPercent = null;
+      if (validateScoreAndMaxScore(score, maxScore)) {
+        scoreInPercent = ((score * 100) / maxScore);
+        LOGGER.debug("Re-Computed total score {} ", scoreInPercent);
+      }
+      result = Base.exec(AJEntityReporting.UPDATE_OA_SCORE, scoreInPercent, maxScore, true, studentId, collectionId, courseId, unitId, lessonId, contentSource);
+      if (result > 0) {
+        LOGGER.info("Score updated into base reports for student {} & OA {} ", studentId, collectionId);
+        return true;
+      } else {
+        LOGGER.error("Score cannot be updated into base reports for student {} & OA {} ", studentId, collectionId);
+        return false;
+      }
+    } else {
+      LOGGER.error("Score cannot be updated into base reports for student {} & OA {} ", studentId, collectionId);
+      return false;
+    }
+  }
+  
   private void sendEventsToRDA() {
     String collectionType = rubricGrading.get(AJEntityRubricGrading.COLLECTION_TYPE) != null ? rubricGrading.get(AJEntityRubricGrading.COLLECTION_TYPE).toString() : OA_TYPE;
     Double scoreInPercent = null;
@@ -214,22 +272,24 @@ public class DCAOATeacherGradingHandler implements DBHandler {
     }
     LOGGER.info("Sending OA Teacher grade Event to RDA");
     RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(this.rubricGrading,
-        collectionType, scoreInPercent, maxScore, null, null, null, null,
+        collectionType, scoreInPercent, maxScore, pathId, pathType, null, null,
         true);
-    rdaEventDispatcher.sendOATeacherGradeEventFromDCAOATGHToRDA();
+    rdaEventDispatcher.sendOATeacherGradeEventFromOATGHToRDA();
   }
-  
 
   private void sendOAScoreUpdateEventToGEP() {
-    String additionalContext = setBase64EncodedAdditionalContext();
+    String additionalContext = null;
+    if (contentSource.equalsIgnoreCase(EventConstants.DCA)) {
+      additionalContext = setBase64EncodedAdditionalContext();
+    }
     if (validateScoreAndMaxScore(score, maxScore))  {      
       GEPEventDispatcher eventDispatcher = new GEPEventDispatcher(rubricGrading, 
-          maxScore, ((score * 100) / maxScore), System.currentTimeMillis(), additionalContext);
-      eventDispatcher.sendScoreUpdateEventFromDCAtoGEP();
+          maxScore, ((score * 100) / maxScore), System.currentTimeMillis(), additionalContext, pathId, pathType);
+      eventDispatcher.sendScoreUpdateEventFromOATGHtoGEP();
     } else {
       GEPEventDispatcher eventDispatcher = new GEPEventDispatcher(rubricGrading,
-          0.0, null, System.currentTimeMillis(), additionalContext);
-      eventDispatcher.sendScoreUpdateEventFromDCAtoGEP();
+          0.0, null, System.currentTimeMillis(), additionalContext, pathId, pathType);
+      eventDispatcher.sendScoreUpdateEventFromOATGHtoGEP();
     }    
   }
 

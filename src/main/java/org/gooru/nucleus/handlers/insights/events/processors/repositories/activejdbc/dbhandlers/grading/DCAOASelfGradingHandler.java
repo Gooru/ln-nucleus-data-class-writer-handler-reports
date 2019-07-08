@@ -3,6 +3,8 @@ package org.gooru.nucleus.handlers.insights.events.processors.repositories.activ
 import java.sql.Timestamp;
 import java.util.Map;
 import java.util.UUID;
+import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
+import org.gooru.nucleus.handlers.insights.events.constants.MessageConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.grading.GradingContext;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.DBHandler;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityOACompletionStatus;
@@ -11,9 +13,9 @@ import org.gooru.nucleus.handlers.insights.events.processors.repositories.active
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.EntityBuilder;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.validators.ValidationUtils;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult;
+import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult.ExecutionStatus;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponse;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponseFactory;
-import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult.ExecutionStatus;
 import org.javalite.activejdbc.Base;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +39,10 @@ public class DCAOASelfGradingHandler implements DBHandler {
   private JsonObject req;
   private AJEntityOASelfGrading oaSelfGrading;
   private String contentSource;
+  private String courseId;
+  private String unitId;
+  private String lessonId;
+  private String collectionType;
 
   public DCAOASelfGradingHandler(GradingContext context) {
     this.context = context;
@@ -44,17 +50,17 @@ public class DCAOASelfGradingHandler implements DBHandler {
 
   @Override
   public ExecutionResult<MessageResponse> checkSanity() {
-    req = context.request();
-    classId = context.request().getString(AJEntityOASelfGrading.CLASS_ID);
-    oaId = context.request().getString(COLLECTION_ID);
-    oaDcaId = context.request().getLong(DCA_CONTENT_ID);
-    studentId = context.request().getString(AJEntityOASelfGrading.STUDENT_ID);
-    contentSource = context.request().getString(AJEntityOASubmissions.CONTENT_SOURCE);
 
     if (context.request() != null || !context.request().isEmpty()) {
-      if (!ValidationUtils.isValidUUID(classId) || !ValidationUtils.isValidUUID(oaId)
-          || !ValidationUtils.isValidUUID(studentId) || (oaDcaId == null)
-          || StringUtil.isNullOrEmptyAfterTrim(contentSource)) {
+      initializeRequestParams();
+      if (collectionType == null || (collectionType != null && !collectionType.equalsIgnoreCase(EventConstants.OFFLINE_ACTIVITY))
+          || StringUtil.isNullOrEmptyAfterTrim(contentSource) || !(contentSource!= null && EventConstants.CM_DCA_CONTENT_SOURCE.matcher(contentSource).matches())
+          || !ValidationUtils.isValidUUID(classId) || !ValidationUtils.isValidUUID(oaId)
+          || !ValidationUtils.isValidUUID(studentId)
+          || StringUtil.isNullOrEmptyAfterTrim(contentSource)
+          || (oaDcaId == null && contentSource.equalsIgnoreCase(EventConstants.DCA))
+          || (contentSource.equalsIgnoreCase(EventConstants.COURSEMAP) && !(ValidationUtils.isValidUUID(courseId)
+              && ValidationUtils.isValidUUID(unitId) && ValidationUtils.isValidUUID(lessonId)))) {
         LOGGER.warn("Invalid Json Payload");
         return new ExecutionResult<>(
             MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload"),
@@ -71,25 +77,26 @@ public class DCAOASelfGradingHandler implements DBHandler {
     return new ExecutionResult<>(null, ExecutionStatus.CONTINUE_PROCESSING);
   }
 
-  @SuppressWarnings("rawtypes")
   @Override
   public ExecutionResult<MessageResponse> validateRequest() {
     // Student validation
-    if (context.request().getString("userIdFromSession") != null) {
-      if (!context.request().getString("userIdFromSession")
-          .equals(studentId)) {
+    if (StringUtil.isNullOrEmpty(context.request().getString("userIdFromSession"))
+        || (context.request().getString("userIdFromSession") != null
+            && !context.request().getString("userIdFromSession").equals(studentId))) {
         return new
             ExecutionResult<>(MessageResponseFactory.createForbiddenResponse
             ("Auth Failure"), ExecutionStatus.FAILED);
-      }
-    } else if (StringUtil.isNullOrEmpty(context.request().getString("userIdFromSession"))) {
-      return new
-          ExecutionResult<>(MessageResponseFactory.createForbiddenResponse
-          ("Auth Failure"), ExecutionStatus.FAILED);
     }
-    AJEntityOACompletionStatus isOAMarkedComplete =
-        AJEntityOACompletionStatus.findFirst(AJEntityOACompletionStatus.GET_OA_MARKED_AS_COMPLETED,
-            studentId, oaId, oaDcaId, classId, contentSource);
+    AJEntityOACompletionStatus isOAMarkedComplete = null;
+    if (contentSource.equalsIgnoreCase(EventConstants.DCA)) {
+      isOAMarkedComplete = AJEntityOACompletionStatus.findFirst(
+          AJEntityOACompletionStatus.GET_DCA_OA_MARKED_AS_COMPLETED, studentId, oaId, oaDcaId,
+          classId, contentSource);
+    } else if (contentSource.equalsIgnoreCase(EventConstants.COURSEMAP)) {
+      isOAMarkedComplete = AJEntityOACompletionStatus.findFirst(
+          AJEntityOACompletionStatus.GET_CM_OA_MARKED_AS_COMPLETED, studentId, oaId, classId,
+          courseId, unitId, lessonId, contentSource);
+    }
     if (isOAMarkedComplete == null) {
       return new ExecutionResult<>(
           MessageResponseFactory.createForbiddenResponse(
@@ -125,22 +132,48 @@ public class DCAOASelfGradingHandler implements DBHandler {
 
   }
 
+  private void initializeRequestParams() {
+    req = context.request();
+    classId = req.getString(AJEntityOASelfGrading.CLASS_ID);
+    oaId = req.getString(COLLECTION_ID);
+    oaDcaId = req.getLong(DCA_CONTENT_ID);
+    studentId = req.getString(AJEntityOASelfGrading.STUDENT_ID);
+    contentSource = req.getString(AJEntityOASubmissions.CONTENT_SOURCE);
+    courseId = req.getString(EventConstants.COURSE_ID);
+    unitId = req.getString(EventConstants.UNIT_ID);
+    lessonId = req.getString(EventConstants.LESSON_ID);
+    collectionType = req.getString(MessageConstants.COLLECTION_TYPE);
+  }
+
   private void prune() {
     req.remove(COLLECTION_TYPE);
     req.remove(COLLECTION_ID);
-    req.remove(DCA_CONTENT_ID);
     req.remove("userIdFromSession");
+    if (req.containsKey(DCA_CONTENT_ID))
+      req.remove(DCA_CONTENT_ID);
   }
 
   private void mapOAAttributes() {    
    oaSelfGrading.set(AJEntityOASelfGrading.OA_ID, UUID.fromString(oaId));
-   oaSelfGrading.set(AJEntityOASelfGrading.OA_DCA_ID, oaDcaId);
+   if (contentSource.equalsIgnoreCase(EventConstants.DCA)) {
+     oaSelfGrading.set(AJEntityOASelfGrading.OA_DCA_ID, oaDcaId);
+   } else if (contentSource.equalsIgnoreCase(EventConstants.COURSEMAP)){
+     oaSelfGrading.set(EventConstants.COURSE_ID, UUID.fromString(courseId));
+     oaSelfGrading.set(EventConstants.UNIT_ID, UUID.fromString(unitId));
+     oaSelfGrading.set(EventConstants.LESSON_ID, UUID.fromString(lessonId));
+   }
   }
   private boolean insertOrUpdateRecord(AJEntityOASelfGrading oaSelfGrading) {
     AJEntityOASelfGrading duplicateRow = null;
-    duplicateRow = AJEntityOASelfGrading.findFirst("student_id = ? AND oa_id = ? AND oa_dca_id = ? AND class_id = ?", 
-        UUID.fromString(studentId), UUID.fromString(oaId), oaDcaId, UUID.fromString(classId));
-    
+    if (contentSource.equalsIgnoreCase(EventConstants.DCA)) {
+      duplicateRow = AJEntityOASelfGrading.findFirst(
+          "student_id = ?::uuid AND oa_id = ?::uuid AND oa_dca_id = ? AND class_id = ?::uuid AND content_source = ?",
+          studentId, oaId, oaDcaId, classId, contentSource);
+    } else if (contentSource.equalsIgnoreCase(EventConstants.COURSEMAP)) {
+      duplicateRow = AJEntityOASelfGrading.findFirst(
+          "student_id = ?::uuid AND oa_id = ?::uuid AND oa_dca_id IS NULL AND class_id = ?::uuid AND course_id = ?::uuid AND unit_id = ?::uuid AND lesson_id = ?::uuid AND content_source = ?",
+          studentId, oaId, classId, courseId, unitId, lessonId, contentSource);
+    }
     if (duplicateRow == null && oaSelfGrading.isValid()) {
       boolean result = oaSelfGrading.insert();
       if (!result) {
