@@ -320,10 +320,6 @@ public class OACompletionEventHandler implements DBHandler {
       model.set(AJEntityDailyClassActivity.UNIT_GOORU_OID, unitId);
       model.set(AJEntityDailyClassActivity.LESSON_GOORU_OID, lessonId);
     }
-    String localeDate = BaseUtil.UTCDate(ts);
-    if (localeDate != null) {
-      ((AJEntityDailyClassActivity) model).setDateinTZ(localeDate);
-    }
     pathId = context.request().containsKey(AJEntityDailyClassActivity.PATH_ID)
         ? context.request().getLong(AJEntityDailyClassActivity.PATH_ID)
         : 0L;

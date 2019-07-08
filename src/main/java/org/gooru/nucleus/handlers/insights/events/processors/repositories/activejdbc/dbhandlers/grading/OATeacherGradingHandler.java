@@ -33,9 +33,9 @@ import io.vertx.core.json.JsonObject;
 /**
  * @author mukul@gooru
  */
-public class DCAOATeacherGradingHandler implements DBHandler {
+public class OATeacherGradingHandler implements DBHandler {
   
-  private static final Logger LOGGER = LoggerFactory.getLogger(DCAOATeacherGradingHandler.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(OATeacherGradingHandler.class);
   public static final String TOPIC_GEP = "gep";
   public static final String OA_TYPE = "offline-activity";
   private AJEntityRubricGrading rubricGrading;
@@ -55,7 +55,7 @@ public class DCAOATeacherGradingHandler implements DBHandler {
   private String pathType;
   private String collectionType;
   
-  public DCAOATeacherGradingHandler(GradingContext context) {
+  public OATeacherGradingHandler(GradingContext context) {
     this.context = context;
   }
 

@@ -25,9 +25,9 @@ import io.vertx.core.json.JsonObject;
 /**
  * @author mukul@gooru
  */
-public class DCAOASelfGradingHandler implements DBHandler {
+public class OASelfGradingHandler implements DBHandler {
   
-  private static final Logger LOGGER = LoggerFactory.getLogger(DCAOASelfGradingHandler.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(OASelfGradingHandler.class);
   public static final String COLLECTION_TYPE = "collection_type";
   public static final String COLLECTION_ID = "collection_id";
   public static final String DCA_CONTENT_ID = "dca_content_id";
@@ -44,7 +44,7 @@ public class DCAOASelfGradingHandler implements DBHandler {
   private String lessonId;
   private String collectionType;
 
-  public DCAOASelfGradingHandler(GradingContext context) {
+  public OASelfGradingHandler(GradingContext context) {
     this.context = context;
   }
 
