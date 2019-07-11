@@ -7,6 +7,7 @@ import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.constants.MessageConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.grading.GradingContext;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.DBHandler;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityDailyClassActivity;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityOACompletionStatus;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityOASelfGrading;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityOASubmissions;
@@ -43,6 +44,8 @@ public class OASelfGradingHandler implements DBHandler {
   private String unitId;
   private String lessonId;
   private String collectionType;
+  private Long pathId;
+  private String pathType;
 
   public OASelfGradingHandler(GradingContext context) {
     this.context = context;
@@ -120,6 +123,11 @@ public class OASelfGradingHandler implements DBHandler {
       return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(),
           ExecutionStatus.FAILED);    }
 
+    if (!insertOrUpdateCompletionRecord(studentId)) {
+      return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(),
+          ExecutionStatus.FAILED);
+    }
+    
     LOGGER.debug("executeRequest() OK");
     return new ExecutionResult<>(MessageResponseFactory.createOkayResponse(),
         ExecutionStatus.SUCCESSFUL);
@@ -143,14 +151,17 @@ public class OASelfGradingHandler implements DBHandler {
     unitId = req.getString(EventConstants.UNIT_ID);
     lessonId = req.getString(EventConstants.LESSON_ID);
     collectionType = req.getString(MessageConstants.COLLECTION_TYPE);
+    pathId = req.getLong(EventConstants._PATH_ID);
+    pathType = req.getString(EventConstants._PATH_TYPE);
   }
 
   private void prune() {
     req.remove(COLLECTION_TYPE);
     req.remove(COLLECTION_ID);
     req.remove("userIdFromSession");
-    if (req.containsKey(DCA_CONTENT_ID))
-      req.remove(DCA_CONTENT_ID);
+    if (req.containsKey(DCA_CONTENT_ID)) req.remove(DCA_CONTENT_ID);
+    if (req.containsKey(AJEntityDailyClassActivity.PATH_ID)) req.remove(AJEntityDailyClassActivity.PATH_ID);
+    if (req.containsKey(AJEntityDailyClassActivity.PATH_TYPE)) req.remove(AJEntityDailyClassActivity.PATH_TYPE);
   }
 
   private void mapOAAttributes() {    
@@ -209,6 +220,75 @@ public class OASelfGradingHandler implements DBHandler {
         return false;
       }  
     } else { //catchAll
+      return false;
+    }
+  }
+  
+  private AJEntityOACompletionStatus setOACompletionStatusModel() {
+    AJEntityOACompletionStatus oacs = new AJEntityOACompletionStatus();
+    oacs.set(AJEntityOACompletionStatus.CLASS_ID, UUID.fromString(classId));
+    oacs.set(AJEntityOACompletionStatus.OA_ID, UUID.fromString(oaId));
+    oacs.set(AJEntityOACompletionStatus.STUDENT_ID, UUID.fromString(studentId));
+    oacs.set(AJEntityOACompletionStatus.COLLECTION_TYPE, EventConstants.OFFLINE_ACTIVITY);
+    oacs.set(AJEntityOACompletionStatus.CONTENT_SOURCE, contentSource);
+    oacs.set(AJEntityOACompletionStatus.IS_STUDENT_GRADED, true);
+    oacs.set(AJEntityOACompletionStatus.PATH_ID, pathId);
+    oacs.set(AJEntityOACompletionStatus.PATH_TYPE, pathType);
+    if (contentSource.equalsIgnoreCase(EventConstants.DCA)) {
+      oacs.set(AJEntityOACompletionStatus.OA_DCA_ID, oaDcaId);
+    } else if (contentSource.equalsIgnoreCase(EventConstants.COURSEMAP)) {
+      oacs.set(EventConstants.COURSE_ID, UUID.fromString(courseId));
+      oacs.set(EventConstants.UNIT_ID, UUID.fromString(unitId));
+      oacs.set(EventConstants.LESSON_ID, UUID.fromString(lessonId));
+    }
+    return oacs;
+  }
+
+  private boolean insertOrUpdateCompletionRecord(String studentId) {
+    AJEntityOACompletionStatus oacs = setOACompletionStatusModel();
+    AJEntityOACompletionStatus duplicateRow = null;
+    if (contentSource.equalsIgnoreCase(EventConstants.DCA)) {
+      duplicateRow = AJEntityOACompletionStatus.findFirst(
+          AJEntityOACompletionStatus.GET_DCA_OA_COMPLETION_STATUS, studentId, oaId, oaDcaId,
+          classId, contentSource);
+    } else if (contentSource.equalsIgnoreCase(EventConstants.COURSEMAP)) {
+      duplicateRow = AJEntityOACompletionStatus.findFirst(
+          AJEntityOACompletionStatus.GET_CM_OA_COMPLETION_STATUS, studentId, oaId, classId,
+          courseId, unitId, lessonId, contentSource);
+    }
+
+    if (duplicateRow == null && oacs.isValid()) {
+      boolean result = oacs.insert();
+      if (!result) {
+        LOGGER.error(
+            "Offline Activity self graded flag cannot be inserted into oacs table {} & OA {} ",
+            studentId, oaId);
+        if (oacs.hasErrors()) {
+          Map<String, String> map = oacs.errors();
+          JsonObject errors = new JsonObject();
+          map.forEach(errors::put);
+        }
+        return false;
+      } else {
+        LOGGER.info("Offline Activity self graded flag Inserted into oacs table {} & OA {} ",
+            studentId, oaId);
+        return true;
+      }
+    } else if (duplicateRow != null && oacs.isValid()) {
+      long id = Long.valueOf(duplicateRow.get("id").toString());
+      int res = Base.exec(AJEntityOACompletionStatus.UPDATE_OA_SELF_GRADED_FLAG, true,
+            new Timestamp(System.currentTimeMillis()), id);
+      if (res > 0) {
+        LOGGER.info("Offline Activity self graded flag updated into oacs table {} & OA {} ",
+            studentId, oaId);
+        return true;
+      } else {
+        LOGGER.error(
+            "Offline Activity self graded flag cannot be updated into oacs table {} & OA {} ",
+            studentId, oaId);
+        return false;
+      }
+    } else { // catchAll
       return false;
     }
   }

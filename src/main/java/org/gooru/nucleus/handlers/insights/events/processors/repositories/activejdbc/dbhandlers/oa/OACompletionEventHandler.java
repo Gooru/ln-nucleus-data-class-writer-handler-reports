@@ -10,7 +10,6 @@ import org.gooru.nucleus.handlers.insights.events.processors.repositories.active
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityDailyClassActivity;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityOACompletionStatus;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityOASelfGrading;
-import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityReporting;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.utils.BaseUtil;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.validators.ValidationUtils;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult;
@@ -53,16 +52,7 @@ public class OACompletionEventHandler implements DBHandler {
 
   @Override
   public ExecutionResult<MessageResponse> checkSanity() {
-    classId = context.request().getString(AJEntityOACompletionStatus.CLASS_ID);
-    oaId = context.request().getString(AJEntityOACompletionStatus.OA_ID);
-    oaDcaId = context.request().getLong(AJEntityOACompletionStatus.OA_DCA_ID);
-    studentId = context.request().getString(AJEntityOACompletionStatus.STUDENT_ID);
-    markedBy = context.request().getString(AJEntityOACompletionStatus.MARKED_BY);
-    contentSource = context.request().getString(AJEntityOACompletionStatus.CONTENT_SOURCE);
-    courseId = context.request().getString(EventConstants.COURSE_ID);
-    unitId = context.request().getString(EventConstants.UNIT_ID);
-    lessonId = context.request().getString(EventConstants.LESSON_ID);
-
+    initializeRequestParams();
     if (!ValidationUtils.isValidUUID(classId) || !ValidationUtils.isValidUUID(oaId)
         || !ValidationUtils.isValidUUID(studentId) || StringUtil.isNullOrEmptyAfterTrim(markedBy)
         || (markedBy != null && !VALID_MARKED_BY_TYPE.matcher(markedBy).matches())
@@ -81,6 +71,21 @@ public class OACompletionEventHandler implements DBHandler {
     return new ExecutionResult<>(null, ExecutionStatus.CONTINUE_PROCESSING);
   }
 
+  private void initializeRequestParams() {
+    JsonObject req = context.request();
+    classId = req.getString(AJEntityOACompletionStatus.CLASS_ID);
+    oaId = req.getString(AJEntityOACompletionStatus.OA_ID);
+    oaDcaId = req.getLong(AJEntityOACompletionStatus.OA_DCA_ID);
+    studentId = req.getString(AJEntityOACompletionStatus.STUDENT_ID);
+    markedBy = req.getString(AJEntityOACompletionStatus.MARKED_BY);
+    contentSource = req.getString(AJEntityOACompletionStatus.CONTENT_SOURCE);
+    courseId = req.getString(EventConstants.COURSE_ID);
+    unitId = req.getString(EventConstants.UNIT_ID);
+    lessonId = req.getString(EventConstants.LESSON_ID);
+    pathId = req.getLong(EventConstants._PATH_ID);
+    pathType = req.getString(EventConstants._PATH_TYPE);
+  }
+
   @Override
   public ExecutionResult<MessageResponse> validateRequest() {
     if (StringUtil.isNullOrEmpty(context.request().getString("userIdFromSession"))
@@ -97,108 +102,52 @@ public class OACompletionEventHandler implements DBHandler {
   public ExecutionResult<MessageResponse> executeRequest() {
     ts = System.currentTimeMillis();
     AJEntityOACompletionStatus oacs = setOACompletionStatusModel();
-    // If a record already exists for this student, then we UPDATE the Perf & TS else we Insert
+    // If a record already exists for this student, then we UPDATE the completion status else we Insert
     if (!insertOrUpdateCompletionRecord(studentId, oacs)) {
       return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(),
           ExecutionStatus.FAILED);
     }
 
     if (contentSource.equalsIgnoreCase(EventConstants.DCA)) {
-      AJEntityOASelfGrading oaPerf =
-          AJEntityOASelfGrading.findFirst(AJEntityOASelfGrading.GET_CA_OA_PERFORMANCE_FOR_STUDENT,
-              oaId, oaDcaId, studentId, classId, contentSource);
-      if (oaPerf != null) {
-        AJEntityDailyClassActivity dca = new AJEntityDailyClassActivity();
-        dca = (AJEntityDailyClassActivity) setCoreReportsModel(dca);
-        String localeDate = BaseUtil.UTCDate(ts);
-        if (localeDate != null) {
-          dca.setDateinTZ(localeDate);
-        }
-        dca.set(AJEntityDailyClassActivity.GOORUUID, studentId);
-        dca.set(AJEntityDailyClassActivity.TIMESPENT,
-            oaPerf.get(AJEntityOASelfGrading.TIMESPENT) != null
-                ? Long.valueOf(oaPerf.get(AJEntityOASelfGrading.TIMESPENT).toString())
-                : 0L);
-        dca.set(AJEntityDailyClassActivity.SCORE,
-            oaPerf.get(AJEntityOASelfGrading.STUDENT_SCORE) != null
-                ? Double.valueOf(oaPerf.get(AJEntityOASelfGrading.STUDENT_SCORE).toString())
-                : null);
-        dca.set(AJEntityDailyClassActivity.MAX_SCORE,
-            oaPerf.get(AJEntityOASelfGrading.MAX_SCORE) != null
-                ? Double.valueOf(oaPerf.get(AJEntityOASelfGrading.MAX_SCORE).toString())
-                : null);
-        // If a record already exists for this student, then we UPDATE the Perf & TS else we Insert
-        if (!insertOrUpdateDCARecord(studentId, dca)) {
-          return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(),
-              ExecutionStatus.FAILED);
-        }
-
-      } else {
-        AJEntityDailyClassActivity notSelfGradedDca = new AJEntityDailyClassActivity();
-        notSelfGradedDca = (AJEntityDailyClassActivity) setCoreReportsModel(notSelfGradedDca);
-        String localeDate = BaseUtil.UTCDate(ts);
-        if (localeDate != null) {
-          notSelfGradedDca.setDateinTZ(localeDate);
-        }
-        notSelfGradedDca.set(AJEntityDailyClassActivity.GOORUUID, studentId);
-        notSelfGradedDca.set(AJEntityDailyClassActivity.TIMESPENT, 0L);
-        notSelfGradedDca.set(AJEntityDailyClassActivity.SCORE, null);
-        notSelfGradedDca.set(AJEntityDailyClassActivity.MAX_SCORE, null);
-
-        if (!insertOrUpdateDCARecord(studentId, notSelfGradedDca)) {
-          return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(),
-              ExecutionStatus.FAILED);
-        }
-      }
-    } else if (contentSource.equalsIgnoreCase(EventConstants.COURSEMAP)) {
-      AJEntityOASelfGrading oaPerf =
-          AJEntityOASelfGrading.findFirst(AJEntityOASelfGrading.GET_CM_OA_PERFORMANCE_FOR_STUDENT,
-              oaId, studentId, classId, courseId, unitId, lessonId, contentSource);
-      if (oaPerf != null) {
-        AJEntityReporting baseReports = new AJEntityReporting();
-        baseReports = (AJEntityReporting) setCoreReportsModel(baseReports);
-        String localeDate = BaseUtil.UTCDate(ts);
-        if (localeDate != null) {
-          baseReports.setDateinTZ(localeDate);
-        }
-        baseReports.set(AJEntityDailyClassActivity.GOORUUID, studentId);
-        baseReports.set(AJEntityDailyClassActivity.TIMESPENT,
-            oaPerf.get(AJEntityOASelfGrading.TIMESPENT) != null
-                ? Long.valueOf(oaPerf.get(AJEntityOASelfGrading.TIMESPENT).toString())
-                : 0L);
-        baseReports.set(AJEntityDailyClassActivity.SCORE,
-            oaPerf.get(AJEntityOASelfGrading.STUDENT_SCORE) != null
-                ? Double.valueOf(oaPerf.get(AJEntityOASelfGrading.STUDENT_SCORE).toString())
-                : null);
-        baseReports.set(AJEntityDailyClassActivity.MAX_SCORE,
-            oaPerf.get(AJEntityOASelfGrading.MAX_SCORE) != null
-                ? Double.valueOf(oaPerf.get(AJEntityOASelfGrading.MAX_SCORE).toString())
-                : null);
-        if (!insertOrUpdateBaseReportsRecord(studentId, baseReports)) {
-          return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(),
-              ExecutionStatus.FAILED);
-        }
-      } else {
-        AJEntityReporting notSelfGradedDca = new AJEntityReporting();
-        notSelfGradedDca = (AJEntityReporting) setCoreReportsModel(notSelfGradedDca);
-        String localeDate = BaseUtil.UTCDate(ts);
-        if (localeDate != null) {
-          notSelfGradedDca.setDateinTZ(localeDate);
-        }
-        notSelfGradedDca.set(AJEntityReporting.GOORUUID, studentId);
-        notSelfGradedDca.set(AJEntityReporting.TIMESPENT, 0L);
-        notSelfGradedDca.set(AJEntityReporting.SCORE, null);
-        notSelfGradedDca.set(AJEntityReporting.MAX_SCORE, null);
-
-        if (!insertOrUpdateBaseReportsRecord(studentId, notSelfGradedDca)) {
-          return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(),
-              ExecutionStatus.FAILED);
-        }
+      ExecutionResult<MessageResponse> caExecResponse = processCAData();
+      if (caExecResponse.hasFailed()) {
+        return caExecResponse;
       }
     }
     return new ExecutionResult<>(MessageResponseFactory.createOkayResponse(),
         ExecutionStatus.SUCCESSFUL);
 
+  }
+
+  private ExecutionResult<MessageResponse> processCAData() {
+    AJEntityDailyClassActivity dca = new AJEntityDailyClassActivity();
+    dca = (AJEntityDailyClassActivity) setCoreReportsModel(dca);
+    String localeDate = BaseUtil.UTCDate(ts);
+    if (localeDate != null) {
+      dca.setDateinTZ(localeDate);
+    }
+    dca.set(AJEntityDailyClassActivity.GOORUUID, studentId);
+    AJEntityOASelfGrading oaPerf =
+        AJEntityOASelfGrading.findFirst(AJEntityOASelfGrading.GET_CA_OA_PERFORMANCE_FOR_STUDENT,
+            oaId, oaDcaId, studentId, classId, contentSource);
+    dca.set(AJEntityDailyClassActivity.TIMESPENT,
+        (oaPerf != null && oaPerf.get(AJEntityOASelfGrading.TIMESPENT) != null)
+            ? Long.valueOf(oaPerf.get(AJEntityOASelfGrading.TIMESPENT).toString())
+            : 0L);
+    dca.set(AJEntityDailyClassActivity.SCORE,
+        (oaPerf != null && oaPerf.get(AJEntityOASelfGrading.STUDENT_SCORE) != null)
+            ? Double.valueOf(oaPerf.get(AJEntityOASelfGrading.STUDENT_SCORE).toString())
+            : null);
+    dca.set(AJEntityDailyClassActivity.MAX_SCORE,
+        (oaPerf != null && oaPerf.get(AJEntityOASelfGrading.MAX_SCORE) != null)
+            ? Double.valueOf(oaPerf.get(AJEntityOASelfGrading.MAX_SCORE).toString())
+            : null);
+    // If a record already exists for this student, then we UPDATE the Perf & TS else we Insert
+    if (!insertOrUpdateDCARecord(studentId, dca)) {
+      return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(),
+          ExecutionStatus.FAILED);
+    }
+    return new ExecutionResult<>(null, ExecutionStatus.CONTINUE_PROCESSING);
   }
 
   @Override
@@ -249,53 +198,7 @@ public class OACompletionEventHandler implements DBHandler {
       return false;
     }
   }
-
-  private boolean insertOrUpdateBaseReportsRecord(String studentId, AJEntityReporting baseReports) {
-    AJEntityReporting duplicateRow = null;
-    duplicateRow = AJEntityReporting.findFirst(
-        "actor_id = ? AND collection_id = ? AND course_id = ? AND unit_id = ? AND lesson_id = ? "
-            + "AND content_source = ? AND collection_type = 'offline-activity' "
-            + "AND event_name = 'collection.play' AND event_type = 'stop'",
-        studentId, oaId, courseId, unitId, lessonId, contentSource);
-
-    if (duplicateRow == null && baseReports.isValid()) {
-      boolean result = baseReports.insert();
-      if (!result) {
-        LOGGER.error(
-            "Offline Activity Record cannot be inserted into base reports for student {} & OA {} ",
-            studentId, oaId);
-        if (baseReports.hasErrors()) {
-          Map<String, String> map = baseReports.errors();
-          JsonObject errors = new JsonObject();
-          map.forEach(errors::put);
-        }
-        return false;
-      } else {
-        LOGGER.info("Offline Activity Record Inserted into base reports for student {} & OA {} ",
-            studentId, oaId);
-        return true;
-      }
-    } else if (duplicateRow != null && baseReports.isValid()) {
-      long id = Long.valueOf(duplicateRow.get("id").toString());
-      int res = Base.exec(AJEntityReporting.UPDATE_OA_RECORD_FOR_THIS_STUDENT,
-          baseReports.get(AJEntityReporting.TIMESPENT), baseReports.get(AJEntityReporting.SCORE),
-          baseReports.get(AJEntityReporting.MAX_SCORE), new Timestamp(System.currentTimeMillis()),
-          id);
-      if (res > 0) {
-        LOGGER.info("Offline Activity Record updated into base reports for student {} & OA {} ",
-            studentId, oaId);
-        return true;
-      } else {
-        LOGGER.error(
-            "Offline Activity Record cannot be updated into base reports for student {} & OA {} ",
-            studentId, oaId);
-        return false;
-      }
-    } else { // catchAll
-      return false;
-    }
-  }
-
+  
   private Model setCoreReportsModel(Model model) {
     long ts = System.currentTimeMillis();
     model.set(AJEntityDailyClassActivity.IS_GRADED, false);
@@ -315,17 +218,7 @@ public class OACompletionEventHandler implements DBHandler {
     model.set(AJEntityDailyClassActivity.RESOURCE_ATTEMPT_STATUS, EventConstants.ATTEMPTED);
     if (contentSource.equalsIgnoreCase(EventConstants.DCA)) {
       model.set(AJEntityDailyClassActivity.DCA_CONTENT_ID, oaDcaId);
-    } else if (contentSource.equalsIgnoreCase(EventConstants.COURSEMAP)) {
-      model.set(AJEntityDailyClassActivity.COURSE_GOORU_OID, courseId);
-      model.set(AJEntityDailyClassActivity.UNIT_GOORU_OID, unitId);
-      model.set(AJEntityDailyClassActivity.LESSON_GOORU_OID, lessonId);
     }
-    pathId = context.request().containsKey(AJEntityDailyClassActivity.PATH_ID)
-        ? context.request().getLong(AJEntityDailyClassActivity.PATH_ID)
-        : 0L;
-    pathType = context.request().containsKey(AJEntityDailyClassActivity.PATH_TYPE)
-        ? context.request().getString(AJEntityDailyClassActivity.PATH_TYPE)
-        : null;
     model.set(AJEntityDailyClassActivity.PATH_ID, pathId);
     model.set(AJEntityDailyClassActivity.PATH_TYPE, pathType);
     return model;
@@ -338,6 +231,8 @@ public class OACompletionEventHandler implements DBHandler {
     oacs.set(AJEntityOACompletionStatus.STUDENT_ID, UUID.fromString(studentId));
     oacs.set(AJEntityOACompletionStatus.COLLECTION_TYPE, EventConstants.OFFLINE_ACTIVITY);
     oacs.set(AJEntityOACompletionStatus.CONTENT_SOURCE, contentSource);
+    oacs.set(AJEntityOACompletionStatus.PATH_ID, pathId);
+    oacs.set(AJEntityOACompletionStatus.PATH_TYPE, pathType);
     if (markedBy.equalsIgnoreCase(EventConstants.STUDENT)) {
       oacs.set(AJEntityOACompletionStatus.IS_MARKED_BY_STUDENT, true);
     } else {

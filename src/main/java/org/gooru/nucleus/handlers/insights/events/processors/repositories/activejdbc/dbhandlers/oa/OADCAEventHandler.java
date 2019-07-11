@@ -62,6 +62,8 @@ public class OADCAEventHandler implements DBHandler {
     oaDcaId = context.request().getLong(AJEntityOASubmissions.OA_DCA_ID);
     users = context.request().getJsonArray(USERS);
     contentSource = context.request().getString(AJEntityOACompletionStatus.CONTENT_SOURCE);
+    pathId = context.request().getLong(EventConstants._PATH_ID);
+    pathType = context.request().getString(EventConstants._PATH_TYPE);
     
     if (!ValidationUtils.isValidUUID(classId) || !ValidationUtils.isValidUUID(oaId)
         || oaDcaId == null || users == null || (StringUtil.isNullOrEmptyAfterTrim(contentSource)
@@ -173,9 +175,6 @@ public class OADCAEventHandler implements DBHandler {
     if (localeDate != null) {
       dcaModel.setDateinTZ(localeDate);      
     }    
-    //Since Offline-Activities are not designed to be Suggestions, path_id & path_type SHOULD be 0L & null resp.
-    pathId = context.request().containsKey(AJEntityDailyClassActivity.PATH_ID) ? context.request().getLong(AJEntityDailyClassActivity.PATH_ID) : 0L;
-    pathType = context.request().containsKey(AJEntityDailyClassActivity.PATH_TYPE) ? context.request().getString(AJEntityDailyClassActivity.PATH_TYPE) : null;
     dcaModel.set(AJEntityDailyClassActivity.PATH_ID, pathId);
     dcaModel.set(AJEntityDailyClassActivity.PATH_TYPE, pathType);    
     return dcaModel;
@@ -261,6 +260,8 @@ public class OADCAEventHandler implements DBHandler {
         oacs.set(AJEntityOACompletionStatus.COLLECTION_TYPE, EventConstants.OFFLINE_ACTIVITY);
         oacs.set(AJEntityOACompletionStatus.CONTENT_SOURCE, contentSource);
         oacs.set(AJEntityOACompletionStatus.IS_MARKED_BY_TEACHER, true);
+        oacs.set(AJEntityOACompletionStatus.PATH_ID, pathId);
+        oacs.set(AJEntityOACompletionStatus.PATH_TYPE, pathType);
         if (!insertOrUpdateCompletionRecord(studentId, oacs)) {
          return new ExecutionResult<>(null, ExecutionStatus.FAILED);
         }

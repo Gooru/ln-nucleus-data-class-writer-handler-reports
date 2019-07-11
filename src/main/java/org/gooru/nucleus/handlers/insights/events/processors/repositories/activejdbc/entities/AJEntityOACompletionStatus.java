@@ -29,8 +29,12 @@ public class AJEntityOACompletionStatus extends Model {
   public static final String MARKED_BY = "marked_by";
   public static final String IS_MARKED_BY_STUDENT = "is_marked_by_student";
   public static final String IS_MARKED_BY_TEACHER = "is_marked_by_teacher";
+  public static final String IS_STUDENT_GRADED = "is_student_graded";
+  public static final String IS_TEACHER_GRADED = "is_teacher_graded";
   public static final String CREATED_AT = "created_at";
   public static final String UPDATED_AT = "updated_at";  
+  public static final String PATH_ID = "path_id";
+  public static final String PATH_TYPE = "path_type";
  
   public static final String UPDATE_OA_COMPLETION_STATUS_BY_STUDENT =
       "UPDATE offline_activity_completion_status SET is_marked_by_student = ?, updated_at = ? WHERE id = ?";
@@ -50,6 +54,12 @@ public class AJEntityOACompletionStatus extends Model {
   public static final String GET_CM_OA_MARKED_AS_COMPLETED =
       "student_id = ?::uuid AND oa_id = ?::uuid AND oa_dca_id IS NULL AND class_id = ?::uuid AND course_id = ?::uuid AND unit_id = ?::uuid AND lesson_id = ?::uuid AND content_source = ? and (is_marked_by_student = true or is_marked_by_teacher = true)";
 
+  public static final String UPDATE_OA_SELF_GRADED_FLAG =
+      "UPDATE offline_activity_completion_status SET is_student_graded = ?, updated_at = ? WHERE id = ?";
+  
+  public static final String UPDATE_OA_TEACHER_GRADED_FLAG =
+      "UPDATE offline_activity_completion_status SET is_teacher_graded = ?, updated_at = ? WHERE id = ?";
+  
   private static final Map<String, FieldConverter> converterRegistry;
 
   static {
