@@ -438,6 +438,10 @@ public class RDAEventDispatcher {
     if (this.maxScore != null) {
       result.put(CollectionEventConstants.EventAttributes.MAX_SCORE, this.maxScore);
     }
+    if (eventName.equalsIgnoreCase(
+        CollectionEventConstants.EventAttributes.OFFLINE_ACTIVITY_TEACHER_GRADE_EVENT)) {
+      result.put(CollectionEventConstants.EventAttributes.STATUS, true);
+    }
     cpEvent.put(CollectionEventConstants.EventAttributes.RESULT, result);
 
     return cpEvent;
