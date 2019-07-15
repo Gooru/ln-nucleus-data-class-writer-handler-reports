@@ -5,8 +5,11 @@ import java.util.Map;
 import java.util.UUID;
 import org.gooru.nucleus.handlers.insights.events.processors.grading.GradingContext;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.DBHandler;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityOACompletionStatus;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityOASelfGrading;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityOASubmissions;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.EntityBuilder;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.validators.ValidationUtils;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponse;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponseFactory;
@@ -33,6 +36,7 @@ public class DCAOASelfGradingHandler implements DBHandler {
   private String studentId;
   private JsonObject req;
   private AJEntityOASelfGrading oaSelfGrading;
+  private String contentSource;
 
   public DCAOASelfGradingHandler(GradingContext context) {
     this.context = context;
@@ -45,10 +49,12 @@ public class DCAOASelfGradingHandler implements DBHandler {
     oaId = context.request().getString(COLLECTION_ID);
     oaDcaId = context.request().getLong(DCA_CONTENT_ID);
     studentId = context.request().getString(AJEntityOASelfGrading.STUDENT_ID);
+    contentSource = context.request().getString(AJEntityOASubmissions.CONTENT_SOURCE);
 
     if (context.request() != null || !context.request().isEmpty()) {
-      if (StringUtil.isNullOrEmpty(classId) || StringUtil.isNullOrEmpty(oaId)
-          || StringUtil.isNullOrEmpty(studentId) || (oaDcaId == null)) {
+      if (!ValidationUtils.isValidUUID(classId) || !ValidationUtils.isValidUUID(oaId)
+          || !ValidationUtils.isValidUUID(studentId) || (oaDcaId == null)
+          || StringUtil.isNullOrEmptyAfterTrim(contentSource)) {
         LOGGER.warn("Invalid Json Payload");
         return new ExecutionResult<>(
             MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload"),
@@ -81,6 +87,15 @@ public class DCAOASelfGradingHandler implements DBHandler {
           ExecutionResult<>(MessageResponseFactory.createForbiddenResponse
           ("Auth Failure"), ExecutionStatus.FAILED);
     }
+    AJEntityOACompletionStatus isOAMarkedComplete =
+        AJEntityOACompletionStatus.findFirst(AJEntityOACompletionStatus.GET_OA_MARKED_AS_COMPLETED,
+            studentId, oaId, oaDcaId, classId, contentSource);
+    if (isOAMarkedComplete == null) {
+      return new ExecutionResult<>(
+          MessageResponseFactory.createForbiddenResponse(
+              "OA is not marked as complete. self grading is not possible before OA completion."),
+          ExecutionStatus.FAILED);
+    } 
     LOGGER.debug("validateRequest() OK");
     return new ExecutionResult<>(null, ExecutionStatus.CONTINUE_PROCESSING);
   }
