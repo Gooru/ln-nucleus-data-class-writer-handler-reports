@@ -21,13 +21,15 @@ public class GEPEventDispatcher {
   public static final String TOPIC_GEP = "gep";
   private AJEntityReporting baseReports;
   private AJEntityDailyClassActivity dcaReport;
-  private AJEntityRubricGrading dcaGrading;
+  private AJEntityRubricGrading grading;
   private long activityTime;
   private String additionalContext;
   private Double maxScore;
   private Double score;
   private Long timespent;
   private JsonObject resResult;
+  private Long pathId;
+  private String pathType;
 
   public GEPEventDispatcher(AJEntityDailyClassActivity dcaReport, Long timespent, Double maxScore,
       Double score, long activityTime, String additionalContext) {
@@ -45,13 +47,15 @@ public class GEPEventDispatcher {
     this.resResult = resResult;
   }
 
-  public GEPEventDispatcher(AJEntityRubricGrading dcaGrading, Double maxScore,
-      Double score, long activityTime, String additionalContext) {
-    this.dcaGrading = dcaGrading;
+  public GEPEventDispatcher(AJEntityRubricGrading grading, Double maxScore,
+      Double score, long activityTime, String additionalContext, Long pathId, String pathType) {
+    this.grading = grading;
     this.activityTime = activityTime;
     this.additionalContext = additionalContext;
     this.maxScore = maxScore;
     this.score = score;
+    this.pathId = pathId;
+    this.pathType = pathType;
   }
   
   public GEPEventDispatcher(AJEntityReporting baseReports, Long timespent, Double maxScore,
@@ -108,9 +112,9 @@ public class GEPEventDispatcher {
     }
   }
 
-  public void sendScoreUpdateEventFromDCAtoGEP() {
+  public void sendScoreUpdateEventFromOATGHtoGEP() {
     try {
-      JsonObject gepEvent = createDCAScoreUpdateEvent(dcaGrading);
+      JsonObject gepEvent = createDCAScoreUpdateEvent(grading);
       LOGGER.debug("The Grading GEP Event is : {} ", gepEvent);
       MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_GEP, gepEvent);
       LOGGER.info("Successfully dispatched DCA Grading Event..");
@@ -438,11 +442,10 @@ public class GEPEventDispatcher {
     context.put(GEPConstants.LESSON_ID, report.get(AJEntityRubricGrading.LESSON_ID));
     context.put(GEPConstants.SESSION_ID, report.get(AJEntityRubricGrading.SESSION_ID));
     
-    context.put(GEPConstants.CONTENT_SOURCE, GEPConstants.DAILY_CLASS_ACTIVIY);
+    context.put(GEPConstants.CONTENT_SOURCE, report.get(AJEntityReporting.CONTENT_SOURCE) != null ? report.get(AJEntityReporting.CONTENT_SOURCE) : null);
 
-    //Currently NO SUGGESTIONS are supported in the Grading FLOW.
-    context.put(GEPConstants.PATH_ID, 0);
-    context.putNull(GEPConstants.PATH_TYPE);
+    context.put(GEPConstants.PATH_ID, pathId != null ? pathId : 0L);
+    context.put(GEPConstants.PATH_TYPE, pathType != null ? pathType : null);
     context.putNull(GEPConstants.CONTEXT_COLLECTION_ID);
     context.putNull(GEPConstants.CONTEXT_COLLECTION_TYPE);
     

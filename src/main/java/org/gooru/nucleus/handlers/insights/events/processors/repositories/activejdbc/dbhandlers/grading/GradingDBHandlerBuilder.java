@@ -10,11 +10,11 @@ import org.gooru.nucleus.handlers.insights.events.processors.repositories.active
 public class GradingDBHandlerBuilder {
 
   public static DBHandler buildDCAOASelfGradingHandler(GradingContext context) {
-    return new DCAOASelfGradingHandler(context);
+    return new OASelfGradingHandler(context);
   }
   
   public static DBHandler buildDCAOATeacherGradingHandler(GradingContext context) {
-    return new DCAOATeacherGradingHandler(context);
+    return new OATeacherGradingHandler(context);
   }
 
 }

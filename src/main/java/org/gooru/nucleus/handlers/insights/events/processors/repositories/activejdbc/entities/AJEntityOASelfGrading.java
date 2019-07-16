@@ -46,10 +46,13 @@ public class AJEntityOASelfGrading extends Model {
   
   public static final String GET_OA_PERFORMANCE =
       "select student_id, student_score, max_score, time_spent "
-      + "from offline_activity_self_grades where oa_id = ? AND oa_dca_id = ? AND student_id = ANY(?::uuid[]) AND class_id = ?";
+      + "from offline_activity_self_grades where oa_id = ? AND oa_dca_id = ? AND student_id = ANY(?::uuid[]) AND class_id = ? AND content_source = ?";
 
-  public static final String GET_OA_PERFORMANCE_FOR_STUDENT =
-      "oa_id = ? AND oa_dca_id = ? AND student_id = ?::uuid AND class_id = ?";
+  public static final String GET_CA_OA_PERFORMANCE_FOR_STUDENT =
+      "oa_id = ?::uuid AND oa_dca_id = ? AND student_id = ?::uuid AND class_id = ?::uuid AND content_source = ?";
+  
+  public static final String GET_CM_OA_PERFORMANCE_FOR_STUDENT =
+      "oa_id = ?::uuid AND oa_dca_id IS NULL AND student_id = ?::uuid AND class_id = ?::uuid AND course_id = ?::uuid AND unit_id = ?::uuid AND lesson_id = ?::uuid AND content_source = ?";
 
   private static final Map<String, FieldConverter> converterRegistry;
 
