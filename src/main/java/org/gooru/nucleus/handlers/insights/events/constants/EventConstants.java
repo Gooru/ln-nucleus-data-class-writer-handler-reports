@@ -916,6 +916,16 @@ public class EventConstants {
   public static final String OFFLINE_ACTIVITY = "offline-activity";
   
   public static final String SELF = "self";
+  
+  public static final String UNIT_ID = "unit_id";
+
+  public static final String LESSON_ID = "lesson_id";
+  
+  public static final String _PATH_ID = "path_id";
+  
+  public static final String _PATH_TYPE = "path_type";
+  
+  public static final Pattern CM_DCA_CONTENT_SOURCE = Pattern.compile("coursemap|dailyclassactivity");
     
   private EventConstants() {
     throw new AssertionError();

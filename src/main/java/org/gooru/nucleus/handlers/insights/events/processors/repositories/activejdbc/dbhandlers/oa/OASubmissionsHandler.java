@@ -4,6 +4,7 @@ import java.sql.Timestamp;
 import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Pattern;
+import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.constants.MessageConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.oa.OAContext;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.DBHandler;
@@ -42,6 +43,9 @@ public class OASubmissionsHandler implements DBHandler {
   private Pattern SUBMISSION_TYPES = Pattern.compile("uploaded|remote|free-form-text");
   private String FREE_FORM_TEXT = "free-form-text";
   private String contentSource;
+  private String courseId;
+  private String unitId;
+  private String lessonId;
 
   public OASubmissionsHandler(OAContext context) {
     this.context = context;
@@ -55,11 +59,19 @@ public class OASubmissionsHandler implements DBHandler {
     oaDcaId = context.request().getLong(AJEntityOASubmissions.OA_DCA_ID);
     studentId = context.request().getString(AJEntityOASubmissions.STUDENT_ID);
     contentSource = context.request().getString(AJEntityOASubmissions.CONTENT_SOURCE);
+    courseId = context.request().getString(EventConstants.COURSE_ID);
+    unitId = context.request().getString(EventConstants.UNIT_ID);
+    lessonId = context.request().getString(EventConstants.LESSON_ID);
 
     if (context.request() != null || !context.request().isEmpty()) {
       if (!ValidationUtils.isValidUUID(classId) || !ValidationUtils.isValidUUID(oaId)
-          || !ValidationUtils.isValidUUID(studentId) || (oaDcaId == null)
-          || StringUtil.isNullOrEmptyAfterTrim(contentSource)) {
+          || !ValidationUtils.isValidUUID(studentId)
+          || StringUtil.isNullOrEmptyAfterTrim(contentSource)
+          || (oaDcaId == null && contentSource.equalsIgnoreCase(EventConstants.DCA))
+          || !(EventConstants.CM_DCA_CONTENT_SOURCE.matcher(contentSource).matches())
+          || (contentSource.equalsIgnoreCase(EventConstants.COURSEMAP)
+              && !(ValidationUtils.isValidUUID(courseId) && ValidationUtils.isValidUUID(unitId)
+                  && ValidationUtils.isValidUUID(lessonId)))) {
         LOGGER.warn("Invalid Json Payload");
         return new ExecutionResult<>(
             MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload"),
@@ -93,18 +105,22 @@ public class OASubmissionsHandler implements DBHandler {
   @Override
   public ExecutionResult<MessageResponse> validateRequest() {
     // Student validation
-    if (context.request().getString("userIdFromSession") != null) {
-      if (!context.request().getString("userIdFromSession").equals(studentId)) {
+    if (StringUtil.isNullOrEmpty(context.request().getString("userIdFromSession")) 
+        || (context.request().getString("userIdFromSession") != null 
+        && !context.request().getString("userIdFromSession").equals(studentId))) {
         return new ExecutionResult<>(MessageResponseFactory.createForbiddenResponse("Auth Failure"),
             ExecutionStatus.FAILED);
-      }
-    } else if (StringUtil.isNullOrEmpty(context.request().getString("userIdFromSession"))) {
-      return new ExecutionResult<>(MessageResponseFactory.createForbiddenResponse("Auth Failure"),
-          ExecutionStatus.FAILED);
     }
-    AJEntityOACompletionStatus isOAMarkedComplete =
-        AJEntityOACompletionStatus.findFirst(AJEntityOACompletionStatus.GET_OA_MARKED_AS_COMPLETED,
-            studentId, oaId, oaDcaId, classId, contentSource);
+    AJEntityOACompletionStatus isOAMarkedComplete = null;
+    if (contentSource.equalsIgnoreCase(EventConstants.DCA)) {
+      isOAMarkedComplete = AJEntityOACompletionStatus.findFirst(
+          AJEntityOACompletionStatus.GET_DCA_OA_MARKED_AS_COMPLETED, studentId, oaId, oaDcaId, classId,
+          contentSource);
+    } else if (contentSource.equalsIgnoreCase(EventConstants.COURSEMAP)) {
+      isOAMarkedComplete = AJEntityOACompletionStatus.findFirst(
+          AJEntityOACompletionStatus.GET_CM_OA_MARKED_AS_COMPLETED, studentId, oaId, classId,
+          courseId, unitId, lessonId, contentSource);
+    }
     if (isOAMarkedComplete != null) {
       return new ExecutionResult<>(MessageResponseFactory.createForbiddenResponse(
           "OA is marked as completed. Submission is closed."), ExecutionStatus.FAILED);
@@ -167,25 +183,45 @@ public class OASubmissionsHandler implements DBHandler {
     AJEntityOASubmissions oaSubmissionsModel = new AJEntityOASubmissions();
     oaSubmissionsModel.set(AJEntityOASubmissions.CLASS_ID, UUID.fromString(classId));
     oaSubmissionsModel.set(AJEntityOASubmissions.OA_ID, UUID.fromString(oaId));
-    oaSubmissionsModel.set(AJEntityOASubmissions.OA_DCA_ID, oaDcaId);
     oaSubmissionsModel.set(AJEntityOASubmissions.STUDENT_ID, UUID.fromString(studentId));
-
+    oaSubmissionsModel.set(AJEntityOASubmissions.CONTENT_SOURCE, contentSource);
+    if (contentSource.equalsIgnoreCase(EventConstants.DCA)) {
+      oaSubmissionsModel.set(AJEntityOASubmissions.OA_DCA_ID, oaDcaId);
+    } else if (contentSource.equalsIgnoreCase(EventConstants.COURSEMAP)){
+      oaSubmissionsModel.set(EventConstants.COURSE_ID, UUID.fromString(courseId));
+      oaSubmissionsModel.set(EventConstants.UNIT_ID, UUID.fromString(unitId));
+      oaSubmissionsModel.set(EventConstants.LESSON_ID, UUID.fromString(lessonId));
+    }
     return oaSubmissionsModel;
   }
 
   private boolean insertOrUpdateTS() {
     AJEntityOASelfGrading oaSelfGrading = new AJEntityOASelfGrading();
     AJEntityOASelfGrading duplicateRow = null;
+    if(contentSource.equalsIgnoreCase(EventConstants.DCA)) {
     duplicateRow = AJEntityOASelfGrading.findFirst(
-        "student_id = ? AND oa_id = ? AND oa_dca_id = ? AND class_id = ?",
-        UUID.fromString(studentId), UUID.fromString(oaId), oaDcaId, UUID.fromString(classId));
-
+        "student_id = ? AND oa_id = ? AND oa_dca_id = ? AND class_id = ? AND content_source = ?",
+        UUID.fromString(studentId), UUID.fromString(oaId), oaDcaId, UUID.fromString(classId), contentSource);
+    } else if (contentSource.equalsIgnoreCase(EventConstants.COURSEMAP)) {
+      duplicateRow = AJEntityOASelfGrading.findFirst(
+          "student_id = ? AND oa_id = ? AND oa_dca_id is null AND class_id = ? "
+          + "AND course_id = ? AND unit_id = ? AND lesson_id = ? AND content_source = ?",
+          UUID.fromString(studentId), UUID.fromString(oaId), UUID.fromString(classId), UUID.fromString(courseId),
+          UUID.fromString(unitId), UUID.fromString(lessonId), contentSource);
+    }
     if (duplicateRow == null && oaSelfGrading.isValid()) {
       oaSelfGrading.set(AJEntityOASelfGrading.CLASS_ID, UUID.fromString(classId));
       oaSelfGrading.set(AJEntityOASelfGrading.OA_ID, UUID.fromString(oaId));
-      oaSelfGrading.set(AJEntityOASelfGrading.OA_DCA_ID, oaDcaId);
       oaSelfGrading.set(AJEntityOASelfGrading.STUDENT_ID, UUID.fromString(studentId));
       oaSelfGrading.set(AJEntityOASelfGrading.TIMESPENT, timeSpent);
+      oaSelfGrading.set(AJEntityOASelfGrading.CONTENT_SOURCE, contentSource);
+      if (contentSource.equalsIgnoreCase(EventConstants.DCA)) {
+        oaSelfGrading.set(AJEntityOASelfGrading.OA_DCA_ID, oaDcaId);
+      } else if (contentSource.equalsIgnoreCase(EventConstants.COURSEMAP)){
+        oaSelfGrading.set(EventConstants.COURSE_ID, UUID.fromString(courseId));
+        oaSelfGrading.set(EventConstants.UNIT_ID, UUID.fromString(unitId));
+        oaSelfGrading.set(EventConstants.LESSON_ID, UUID.fromString(lessonId));
+      }
       boolean result = oaSelfGrading.insert();
       if (!result) {
         LOGGER.error("Timespent cannot be inserted for student {} & OA {} ", studentId, oaId);
@@ -237,11 +273,21 @@ public class OASubmissionsHandler implements DBHandler {
   
   private boolean insertOrUpdateSubmissionText(AJEntityOASubmissions oaSubmissions) {
     AJEntityOASubmissions duplicateRow = null;    
-    duplicateRow = AJEntityOASubmissions.findFirst(
-        "student_id = ? AND oa_id = ? AND oa_dca_id = ? AND class_id = ? AND task_id = ? "
-        + " AND submission_info IS NOT NULL and submission_type = 'free-form-text' order by updated_at desc",
-        UUID.fromString(studentId), UUID.fromString(oaId), oaDcaId, UUID.fromString(classId),
-        oaSubmissions.get(AJEntityOASubmissions.TASK_ID));
+    if (contentSource.equalsIgnoreCase(EventConstants.DCA)) {
+      duplicateRow = AJEntityOASubmissions.findFirst(
+          "student_id = ?::uuid AND oa_id = ?::uuid AND oa_dca_id = ? AND class_id = ?::uuid AND task_id = ? "
+              + " AND submission_info IS NOT NULL and submission_type = 'free-form-text' and content_source = ? "
+              + "order by updated_at desc",
+          studentId, oaId, oaDcaId, classId, oaSubmissions.get(AJEntityOASubmissions.TASK_ID),
+          contentSource);
+    } else if (contentSource.equalsIgnoreCase(EventConstants.COURSEMAP)) {
+      duplicateRow = AJEntityOASubmissions.findFirst(
+          "student_id = ?::uuid AND oa_id = ?::uuid AND oa_dca_id IS NULL AND class_id = ?::uuid AND task_id = ? "
+              + " AND submission_info IS NOT NULL and submission_type = 'free-form-text' "
+              + "AND course_id = ?::uuid AND unit_id = ?::uuid AND lesson_id = ?::uuid and content_source = ? order by updated_at desc",
+          studentId, oaId, classId, oaSubmissions.get(AJEntityOASubmissions.TASK_ID), courseId,
+          unitId, lessonId, contentSource);
+    }
     if (duplicateRow == null && oaSubmissions.isValid()) {
       boolean result = oaSubmissions.insert();
       if (!result) {

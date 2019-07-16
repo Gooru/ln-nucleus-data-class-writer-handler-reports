@@ -8,8 +8,6 @@ import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageRe
 public interface OARepo {
 
   MessageResponse processOAEvent();
-
-  MessageResponse processOASelfGrades();
   
   MessageResponse storeSubmissionDetails();
 

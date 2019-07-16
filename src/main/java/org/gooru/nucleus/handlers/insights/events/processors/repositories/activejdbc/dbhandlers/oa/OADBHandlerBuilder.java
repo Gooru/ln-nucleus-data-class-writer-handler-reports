@@ -12,10 +12,6 @@ public final class OADBHandlerBuilder {
   public static DBHandler buildOAEventHandler(OAContext context) {
     return new OADCAEventHandler(context);
   }
-
-  public static DBHandler buildOASelfGradeHandler(OAContext context) {
-    return new OASelfGradingHandler(context);  
-  }
   
   public static DBHandler buildOASubmissionsHandler(OAContext context) {
     return new OASubmissionsHandler(context);
