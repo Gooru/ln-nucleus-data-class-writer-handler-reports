@@ -151,7 +151,7 @@ public class OASelfGradingHandler implements DBHandler {
     unitId = req.getString(EventConstants.UNIT_ID);
     lessonId = req.getString(EventConstants.LESSON_ID);
     collectionType = req.getString(MessageConstants.COLLECTION_TYPE);
-    pathId = req.getLong(EventConstants._PATH_ID);
+    pathId = req.getLong(EventConstants._PATH_ID, 0L);
     pathType = req.getString(EventConstants._PATH_TYPE);
   }
 
