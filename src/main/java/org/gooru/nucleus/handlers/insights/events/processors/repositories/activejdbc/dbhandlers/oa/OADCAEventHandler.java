@@ -62,7 +62,7 @@ public class OADCAEventHandler implements DBHandler {
     oaDcaId = context.request().getLong(AJEntityOASubmissions.OA_DCA_ID);
     users = context.request().getJsonArray(USERS);
     contentSource = context.request().getString(AJEntityOACompletionStatus.CONTENT_SOURCE);
-    pathId = context.request().getLong(EventConstants._PATH_ID);
+    pathId = context.request().getLong(EventConstants._PATH_ID, 0L);
     pathType = context.request().getString(EventConstants._PATH_TYPE);
     
     if (!ValidationUtils.isValidUUID(classId) || !ValidationUtils.isValidUUID(oaId)
