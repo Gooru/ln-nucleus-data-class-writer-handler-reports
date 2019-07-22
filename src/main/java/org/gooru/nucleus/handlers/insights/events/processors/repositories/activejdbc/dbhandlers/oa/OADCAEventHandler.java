@@ -47,6 +47,7 @@ public class OADCAEventHandler implements DBHandler {
   private long pathId = 0L;
   private String pathType = null;
   private JsonArray users;
+  private String timezone;
   List<String> selfGradedList = new ArrayList<>();
   List<String> oaStudentsList = new ArrayList<>();
 
@@ -64,6 +65,7 @@ public class OADCAEventHandler implements DBHandler {
     contentSource = context.request().getString(AJEntityOACompletionStatus.CONTENT_SOURCE);
     pathId = context.request().getLong(EventConstants._PATH_ID, 0L);
     pathType = context.request().getString(EventConstants._PATH_TYPE);
+    timezone = context.request().getString(AJEntityDailyClassActivity.TIME_ZONE, UTC);
     
     if (!ValidationUtils.isValidUUID(classId) || !ValidationUtils.isValidUUID(oaId)
         || oaDcaId == null || users == null || (StringUtil.isNullOrEmptyAfterTrim(contentSource)
@@ -169,7 +171,7 @@ public class OADCAEventHandler implements DBHandler {
     dcaModel.set(AJEntityDailyClassActivity.GRADING_TYPE, EventConstants.TEACHER); 
     dcaModel.set(AJEntityDailyClassActivity.SESSION_ID, UUID.randomUUID().toString());
     dcaModel.set(AJEntityDailyClassActivity.CONTENT_SOURCE, contentSource);
-    dcaModel.set(AJEntityDailyClassActivity.TIME_ZONE, UTC);
+    dcaModel.set(AJEntityDailyClassActivity.TIME_ZONE, timezone);
     dcaModel.set(AJEntityDailyClassActivity.RESOURCE_ATTEMPT_STATUS, EventConstants.ATTEMPTED);
     setDateInTimeZone();
     if (localeDate != null) {
@@ -227,7 +229,7 @@ public class OADCAEventHandler implements DBHandler {
   }
   
   private void setDateInTimeZone() {
-    localeDate = BaseUtil.UTCDate(ts);
+    localeDate = BaseUtil.UTCToLocale(ts, timezone);
   }
   
   

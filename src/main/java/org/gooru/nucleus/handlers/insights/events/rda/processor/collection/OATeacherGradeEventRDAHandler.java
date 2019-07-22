@@ -21,6 +21,7 @@ public class OATeacherGradeEventRDAHandler implements DBHandler {
 
   private static final Logger LOGGER = LoggerFactory
       .getLogger(OATeacherGradeEventRDAHandler.class);
+  private static final String UTC = "Etc/UTC";
   private final RDAProcessorContext context;
   private AJEntityCollectionPerformance collectionReport;
   private CollectionEventParser collectionEvent;
@@ -76,14 +77,15 @@ public class OATeacherGradeEventRDAHandler implements DBHandler {
       collectionReport.set("created_at", new Timestamp(collectionEvent.getActivityTime()));
       collectionReport.set("updated_at", new Timestamp(collectionEvent.getActivityTime()));
 
-      if (collectionEvent.getTimeZone() != null) {
-        String timeZone = collectionEvent.getTimeZone();
-        collectionReport.set("time_zone", timeZone);
-        String localeDate = BaseUtil.UTCToLocale(collectionEvent.getActivityTime(), timeZone);
+      if (collectionEvent.getTimeZone() == null) {
+        collectionEvent.setTimeZone(UTC);
+      }
+      String timeZone = collectionEvent.getTimeZone();
+      collectionReport.set("time_zone", timeZone);
+      String localeDate = BaseUtil.UTCToLocale(collectionEvent.getActivityTime(), timeZone);
 
-        if (localeDate != null) {
-          collectionReport.setDateinTZ(localeDate);
-        }
+      if (localeDate != null) {
+        collectionReport.setDateinTZ(localeDate);
       }
       collectionReport.set("score", collectionEvent.getScore());
       collectionReport.set("views", collectionEvent.getViews());
