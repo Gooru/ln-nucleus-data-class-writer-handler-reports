@@ -59,6 +59,7 @@ public class OATeacherGradingHandler implements DBHandler {
   private Long pathId;
   private String pathType;
   private String collectionType;
+  private String timezone;
   private long ts;
   
   public OATeacherGradingHandler(GradingContext context) {
@@ -67,7 +68,6 @@ public class OATeacherGradingHandler implements DBHandler {
 
   @Override
   public ExecutionResult<MessageResponse> checkSanity() {
-    
     if (context.request() != null || !context.request().isEmpty()) {
       initializeRequestParams();
       if (collectionType == null || (collectionType != null && !collectionType.equalsIgnoreCase(EventConstants.OFFLINE_ACTIVITY))
@@ -88,7 +88,6 @@ public class OATeacherGradingHandler implements DBHandler {
           MessageResponseFactory.createInvalidRequestResponse("Invalid Request Payload"),
           ExecutionStatus.FAILED);
     }
-
     LOGGER.debug("checkSanity() OK");
     return new ExecutionResult<>(null, ExecutionStatus.CONTINUE_PROCESSING);
   }
@@ -106,6 +105,9 @@ public class OATeacherGradingHandler implements DBHandler {
     lessonId = req.getString(EventConstants.LESSON_ID);
     pathId = req.getLong(EventConstants._PATH_ID, 0L);
     pathType = req.getString(EventConstants._PATH_TYPE);
+    score = req.getDouble(AJEntityRubricGrading.STUDENT_SCORE);
+    maxScore = req.getDouble(AJEntityRubricGrading.MAX_SCORE);
+    timezone = req.getString(AJEntityDailyClassActivity.TIME_ZONE, UTC);
   }
 
   @SuppressWarnings("rawtypes")
@@ -131,8 +133,6 @@ public class OATeacherGradingHandler implements DBHandler {
   @Override
   public ExecutionResult<MessageResponse> executeRequest() {
     rubricGrading = new AJEntityRubricGrading();
-    score = req.getDouble(AJEntityRubricGrading.STUDENT_SCORE);
-    maxScore = req.getDouble(AJEntityRubricGrading.MAX_SCORE);
     prune();
     
     new DefAJEntityDCAOATeacherGradingEntityBuilder()
@@ -265,29 +265,29 @@ public class OATeacherGradingHandler implements DBHandler {
   
   private Model setBaseReportsModel(AJEntityReporting model) {
     ts = System.currentTimeMillis();
-    model.set(AJEntityDailyClassActivity.GOORUUID, studentId);
-    model.set(AJEntityDailyClassActivity.IS_GRADED, true);
-    model.set(AJEntityDailyClassActivity.CLASS_GOORU_OID, classId);
-    model.set(AJEntityDailyClassActivity.COLLECTION_OID, collectionId);
-    model.set(AJEntityDailyClassActivity.COLLECTION_TYPE, EventConstants.OFFLINE_ACTIVITY);
-    model.set(AJEntityDailyClassActivity.RESOURCE_TYPE, EventConstants.NA);
-    model.set(AJEntityDailyClassActivity.QUESTION_TYPE, EventConstants.NA);
-    model.set(AJEntityDailyClassActivity.EVENTNAME, EventConstants.COLLECTION_PLAY);
-    model.set(AJEntityDailyClassActivity.EVENTTYPE, EventConstants.STOP);
-    model.set(AJEntityDailyClassActivity.CREATE_TIMESTAMP, new Timestamp(ts));
-    model.set(AJEntityDailyClassActivity.UPDATE_TIMESTAMP, new Timestamp(ts));
-    model.set(AJEntityDailyClassActivity.GRADING_TYPE, EventConstants.TEACHER);
-    model.set(AJEntityDailyClassActivity.SESSION_ID, UUID.randomUUID().toString());
-    model.set(AJEntityDailyClassActivity.CONTENT_SOURCE, contentSource);
-    model.set(AJEntityDailyClassActivity.TIME_ZONE, UTC);
-    model.set(AJEntityDailyClassActivity.RESOURCE_ATTEMPT_STATUS, EventConstants.ATTEMPTED);
-    model.set(AJEntityDailyClassActivity.COURSE_GOORU_OID, courseId);
-    model.set(AJEntityDailyClassActivity.UNIT_GOORU_OID, unitId);
-    model.set(AJEntityDailyClassActivity.LESSON_GOORU_OID, lessonId);
-    model.set(AJEntityDailyClassActivity.PATH_ID, pathId);
-    model.set(AJEntityDailyClassActivity.PATH_TYPE, pathType);
+    model.set(AJEntityReporting.GOORUUID, studentId);
+    model.set(AJEntityReporting.IS_GRADED, true);
+    model.set(AJEntityReporting.CLASS_GOORU_OID, classId);
+    model.set(AJEntityReporting.COLLECTION_OID, collectionId);
+    model.set(AJEntityReporting.COLLECTION_TYPE, EventConstants.OFFLINE_ACTIVITY);
+    model.set(AJEntityReporting.RESOURCE_TYPE, EventConstants.NA);
+    model.set(AJEntityReporting.QUESTION_TYPE, EventConstants.NA);
+    model.set(AJEntityReporting.EVENTNAME, EventConstants.COLLECTION_PLAY);
+    model.set(AJEntityReporting.EVENTTYPE, EventConstants.STOP);
+    model.set(AJEntityReporting.CREATE_TIMESTAMP, new Timestamp(ts));
+    model.set(AJEntityReporting.UPDATE_TIMESTAMP, new Timestamp(ts));
+    model.set(AJEntityReporting.GRADING_TYPE, EventConstants.TEACHER);
+    model.set(AJEntityReporting.SESSION_ID, UUID.randomUUID().toString());
+    model.set(AJEntityReporting.CONTENT_SOURCE, contentSource);
+    model.set(AJEntityReporting.TIME_ZONE, timezone);
+    model.set(AJEntityReporting.RESOURCE_ATTEMPT_STATUS, EventConstants.ATTEMPTED);
+    model.set(AJEntityReporting.COURSE_GOORU_OID, courseId);
+    model.set(AJEntityReporting.UNIT_GOORU_OID, unitId);
+    model.set(AJEntityReporting.LESSON_GOORU_OID, lessonId);
+    model.set(AJEntityReporting.PATH_ID, pathId);
+    model.set(AJEntityReporting.PATH_TYPE, pathType);
     
-    String localeDate = BaseUtil.UTCDate(ts);
+    String localeDate = BaseUtil.UTCToLocale(ts, timezone);
     if (localeDate != null) {
       model.setDateinTZ(localeDate);
     }
@@ -296,13 +296,12 @@ public class OATeacherGradingHandler implements DBHandler {
       scoreInPercent = ((score * 100) / maxScore);
       LOGGER.debug("Re-Computed total score {} ", scoreInPercent);
     }
-    model.set(AJEntityDailyClassActivity.SCORE, scoreInPercent);
-    model.set(AJEntityDailyClassActivity.MAX_SCORE, maxScore);
+    model.set(AJEntityReporting.SCORE, scoreInPercent);
+    model.set(AJEntityReporting.MAX_SCORE, maxScore);
     
     AJEntityOASelfGrading oaPerf = AJEntityOASelfGrading.findFirst(AJEntityOASelfGrading.GET_CM_OA_PERFORMANCE_FOR_STUDENT,
         collectionId, studentId, classId, courseId, unitId, lessonId, contentSource);
-    model.set(AJEntityDailyClassActivity.TIMESPENT, (oaPerf != null && oaPerf.get(AJEntityOASelfGrading.TIMESPENT) != null) ? Long.valueOf(oaPerf.get(AJEntityOASelfGrading.TIMESPENT).toString()) : 0L);
-
+    model.set(AJEntityReporting.TIMESPENT, (oaPerf != null && oaPerf.get(AJEntityOASelfGrading.TIMESPENT) != null) ? Long.valueOf(oaPerf.get(AJEntityOASelfGrading.TIMESPENT).toString()) : 0L);
     return model;
   }
   

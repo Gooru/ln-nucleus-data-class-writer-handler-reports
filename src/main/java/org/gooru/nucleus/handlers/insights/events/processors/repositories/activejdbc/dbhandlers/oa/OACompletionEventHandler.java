@@ -35,7 +35,6 @@ public class OACompletionEventHandler implements DBHandler {
   private String classId;
   private String oaId;
   private Long oaDcaId;
-  private String localeDate;
   private long ts;
   private long pathId = 0L;
   private String pathType = null;
@@ -45,6 +44,7 @@ public class OACompletionEventHandler implements DBHandler {
   private String courseId;
   private String unitId;
   private String lessonId;
+  private String timezone;
 
   public OACompletionEventHandler(OAContext context) {
     this.context = context;
@@ -84,6 +84,7 @@ public class OACompletionEventHandler implements DBHandler {
     lessonId = req.getString(EventConstants.LESSON_ID);
     pathId = req.getLong(EventConstants._PATH_ID, 0L);
     pathType = req.getString(EventConstants._PATH_TYPE);
+    timezone = req.getString(AJEntityDailyClassActivity.TIME_ZONE, UTC);
   }
 
   @Override
@@ -122,7 +123,7 @@ public class OACompletionEventHandler implements DBHandler {
   private ExecutionResult<MessageResponse> processCAData() {
     AJEntityDailyClassActivity dca = new AJEntityDailyClassActivity();
     dca = (AJEntityDailyClassActivity) setCoreReportsModel(dca);
-    String localeDate = BaseUtil.UTCDate(ts);
+    String localeDate = BaseUtil.UTCToLocale(ts, timezone);
     if (localeDate != null) {
       dca.setDateinTZ(localeDate);
     }
@@ -214,7 +215,7 @@ public class OACompletionEventHandler implements DBHandler {
     model.set(AJEntityDailyClassActivity.GRADING_TYPE, EventConstants.TEACHER);
     model.set(AJEntityDailyClassActivity.SESSION_ID, UUID.randomUUID().toString());
     model.set(AJEntityDailyClassActivity.CONTENT_SOURCE, contentSource);
-    model.set(AJEntityDailyClassActivity.TIME_ZONE, UTC);
+    model.set(AJEntityDailyClassActivity.TIME_ZONE, timezone);
     model.set(AJEntityDailyClassActivity.RESOURCE_ATTEMPT_STATUS, EventConstants.ATTEMPTED);
     if (contentSource.equalsIgnoreCase(EventConstants.DCA)) {
       model.set(AJEntityDailyClassActivity.DCA_CONTENT_ID, oaDcaId);
