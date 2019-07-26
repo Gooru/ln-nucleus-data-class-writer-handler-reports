@@ -191,7 +191,7 @@ public class RDAEventDispatcher {
     }
   }
   
-  public void sendOATeacherGradeEventFromDCAOATGHToRDA() {
+  public void sendOATeacherGradeEventFromOATGHToRDA() {
     try {
       JsonObject rdaEvent = createCollScoreUpdateEventFromRubricGrading(CollectionEventConstants.EventAttributes.OFFLINE_ACTIVITY_TEACHER_GRADE_EVENT);
       LOGGER.debug("RGH::The OA RDA Event is : {} ", rdaEvent);
@@ -416,7 +416,7 @@ public class RDAEventDispatcher {
     context.put(CollectionEventConstants.EventAttributes.PATH_TYPE, pathType);
     context.put(CollectionEventConstants.EventAttributes.CONTENT_SOURCE,
         rubricGrading.get(AJEntityReporting.CONTENT_SOURCE) != null ? rubricGrading.get(AJEntityReporting.CONTENT_SOURCE) : null);
-
+        
     context.put(CollectionEventConstants.EventAttributes.CLASS_ID,
         rubricGrading.get(AJEntityRubricGrading.CLASS_ID));
     context.put(CollectionEventConstants.EventAttributes.COURSE_ID,
@@ -428,6 +428,8 @@ public class RDAEventDispatcher {
     context.put(CollectionEventConstants.EventAttributes.SESSION_ID,
         rubricGrading.get(AJEntityRubricGrading.SESSION_ID));
     cpEvent.put(CollectionEventConstants.EventAttributes.CONTEXT, context);
+    cpEvent.put(CollectionEventConstants.EventAttributes.TIMEZONE,
+        rubricGrading.get(AJEntityReporting.TIME_ZONE) != null ? rubricGrading.get(AJEntityReporting.TIME_ZONE) : "Etc/UTC");
 
     if (this.isGraded != null) {
       result.put(CollectionEventConstants.EventAttributes.IS_GRADED, this.isGraded);
@@ -437,6 +439,10 @@ public class RDAEventDispatcher {
     }
     if (this.maxScore != null) {
       result.put(CollectionEventConstants.EventAttributes.MAX_SCORE, this.maxScore);
+    }
+    if (eventName.equalsIgnoreCase(
+        CollectionEventConstants.EventAttributes.OFFLINE_ACTIVITY_TEACHER_GRADE_EVENT)) {
+      result.put(CollectionEventConstants.EventAttributes.STATUS, true);
     }
     cpEvent.put(CollectionEventConstants.EventAttributes.RESULT, result);
 

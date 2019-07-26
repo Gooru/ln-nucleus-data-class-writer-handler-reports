@@ -19,12 +19,6 @@ public class AJOARepo implements OARepo {
     return TransactionExecutor
         .executeTransaction(OADBHandlerBuilder.buildOAEventHandler(context));
   }
-
-  @Override
-  public MessageResponse processOASelfGrades() {
-    return TransactionExecutor
-        .executeTransaction(OADBHandlerBuilder.buildOASelfGradeHandler(context));
-  }
   
   @Override
   public MessageResponse storeSubmissionDetails() {

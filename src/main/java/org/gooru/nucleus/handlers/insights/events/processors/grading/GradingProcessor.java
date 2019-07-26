@@ -53,24 +53,12 @@ public class GradingProcessor implements Processor {
   private MessageResponse processRubricGrades() {
     MessageResponse result;
     String grader = context.request().getString(MessageConstants.GRADER);
-    String type = context.request().getString(MessageConstants.COLLECTION_TYPE);
-    String contentSource = context.request().getString(MessageConstants.CONTENT_SOURCE);
     switch (grader) {
       case MessageConstants.GRADER_SELF:
-        if (type.equals(EventConstants.OFFLINE_ACTIVITY) && 
-            contentSource.equals(EventConstants.DCA)) {
-          result = processDCAOASelfGrades();           
-        } else {
-          return MessageResponseFactory.createInvalidRequestResponse();
-        }
+        result = processDCAOASelfGrades();
         break;
       case MessageConstants.GRADER_TEACHER:
-        if (type.equals(EventConstants.OFFLINE_ACTIVITY) && 
-            contentSource.equals(EventConstants.DCA)) {
-          result = processDCAOATeacherGrades();           
-        } else {
-          return MessageResponseFactory.createInvalidRequestResponse();
-        }
+        result = processDCAOATeacherGrades();
         break;
       case MessageConstants.GRADER_PEER:
         LOGGER.warn("Invalid Grading Type: '{}'", grader);

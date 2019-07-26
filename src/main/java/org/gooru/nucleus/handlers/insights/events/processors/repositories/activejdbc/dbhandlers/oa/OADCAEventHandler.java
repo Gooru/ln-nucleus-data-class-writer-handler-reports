@@ -41,11 +41,13 @@ public class OADCAEventHandler implements DBHandler {
   private String classId;
   private String oaId;
   private Long oaDcaId;
+  private String contentSource;
   private String localeDate;
   private long ts;
   private long pathId = 0L;
   private String pathType = null;
   private JsonArray users;
+  private String timezone;
   List<String> selfGradedList = new ArrayList<>();
   List<String> oaStudentsList = new ArrayList<>();
 
@@ -60,10 +62,14 @@ public class OADCAEventHandler implements DBHandler {
     oaId = context.request().getString(AJEntityOASubmissions.OA_ID);
     oaDcaId = context.request().getLong(AJEntityOASubmissions.OA_DCA_ID);
     users = context.request().getJsonArray(USERS);
-    
+    contentSource = context.request().getString(AJEntityOACompletionStatus.CONTENT_SOURCE);
+    pathId = context.request().getLong(EventConstants._PATH_ID, 0L);
+    pathType = context.request().getString(EventConstants._PATH_TYPE);
+    timezone = context.request().getString(AJEntityDailyClassActivity.TIME_ZONE, UTC);
     
     if (!ValidationUtils.isValidUUID(classId) || !ValidationUtils.isValidUUID(oaId)
-        || oaDcaId == null || users == null) {
+        || oaDcaId == null || users == null || (StringUtil.isNullOrEmptyAfterTrim(contentSource)
+            || (contentSource != null && !contentSource.equalsIgnoreCase(EventConstants.DCA)))) {
       LOGGER.warn("Invalid Json Payload");
       return new ExecutionResult<>(
           MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload"),
@@ -91,7 +97,7 @@ public class OADCAEventHandler implements DBHandler {
     //If studentList from the request is empty DO NOTHING
     if (!oaStudentsList.isEmpty()) {
       List<Map> oaPerfList = Base.findAll(AJEntityOASelfGrading.GET_OA_PERFORMANCE, 
-          UUID.fromString(oaId), oaDcaId, listToPostgresArrayString(oaStudentsList), UUID.fromString(classId));
+          UUID.fromString(oaId), oaDcaId, listToPostgresArrayString(oaStudentsList), UUID.fromString(classId), contentSource);
       if (!oaPerfList.isEmpty()) {
         for (Map m : oaPerfList ) {
           AJEntityDailyClassActivity dca = setDCAModel();
@@ -164,16 +170,13 @@ public class OADCAEventHandler implements DBHandler {
     dcaModel.set(AJEntityDailyClassActivity.UPDATE_TIMESTAMP, new Timestamp(ts));
     dcaModel.set(AJEntityDailyClassActivity.GRADING_TYPE, EventConstants.TEACHER); 
     dcaModel.set(AJEntityDailyClassActivity.SESSION_ID, UUID.randomUUID().toString());
-    dcaModel.set(AJEntityDailyClassActivity.CONTENT_SOURCE, EventConstants.DCA);
-    dcaModel.set(AJEntityDailyClassActivity.TIME_ZONE, UTC);
+    dcaModel.set(AJEntityDailyClassActivity.CONTENT_SOURCE, contentSource);
+    dcaModel.set(AJEntityDailyClassActivity.TIME_ZONE, timezone);
     dcaModel.set(AJEntityDailyClassActivity.RESOURCE_ATTEMPT_STATUS, EventConstants.ATTEMPTED);
     setDateInTimeZone();
     if (localeDate != null) {
       dcaModel.setDateinTZ(localeDate);      
     }    
-    //Since Offline-Activities are not designed to be Suggestions, path_id & path_type SHOULD be 0L & null resp.
-    pathId = context.request().containsKey(AJEntityDailyClassActivity.PATH_ID) ? context.request().getLong(AJEntityDailyClassActivity.PATH_ID) : 0L;
-    pathType = context.request().containsKey(AJEntityDailyClassActivity.PATH_TYPE) ? context.request().getString(AJEntityDailyClassActivity.PATH_TYPE) : null;
     dcaModel.set(AJEntityDailyClassActivity.PATH_ID, pathId);
     dcaModel.set(AJEntityDailyClassActivity.PATH_TYPE, pathType);    
     return dcaModel;
@@ -184,7 +187,7 @@ public class OADCAEventHandler implements DBHandler {
     duplicateRow = AJEntityDailyClassActivity.findFirst("actor_id = ? AND collection_id = ? "
         + "AND dca_content_id = ? AND collection_type = 'offline-activity' "
         + "AND event_name = 'collection.play' "
-        + "AND event_type = 'stop'", studentId, oaId, oaDcaId);
+        + "AND event_type = 'stop' AND content_source = ?", studentId, oaId, oaDcaId, contentSource);
     
     if (duplicateRow == null && dca.isValid()) {
       boolean result = dca.insert();
@@ -226,7 +229,7 @@ public class OADCAEventHandler implements DBHandler {
   }
   
   private void setDateInTimeZone() {
-    localeDate = BaseUtil.UTCDate(ts);
+    localeDate = BaseUtil.UTCToLocale(ts, timezone);
   }
   
   
@@ -257,8 +260,10 @@ public class OADCAEventHandler implements DBHandler {
         oacs.set(AJEntityOACompletionStatus.OA_DCA_ID, oaDcaId);
         oacs.set(AJEntityOACompletionStatus.STUDENT_ID, UUID.fromString(studentId));
         oacs.set(AJEntityOACompletionStatus.COLLECTION_TYPE, EventConstants.OFFLINE_ACTIVITY);
-        oacs.set(AJEntityOACompletionStatus.CONTENT_SOURCE, EventConstants.DCA);
+        oacs.set(AJEntityOACompletionStatus.CONTENT_SOURCE, contentSource);
         oacs.set(AJEntityOACompletionStatus.IS_MARKED_BY_TEACHER, true);
+        oacs.set(AJEntityOACompletionStatus.PATH_ID, pathId);
+        oacs.set(AJEntityOACompletionStatus.PATH_TYPE, pathType);
         if (!insertOrUpdateCompletionRecord(studentId, oacs)) {
          return new ExecutionResult<>(null, ExecutionStatus.FAILED);
         }
@@ -268,7 +273,7 @@ public class OADCAEventHandler implements DBHandler {
   }
   
   private boolean insertOrUpdateCompletionRecord(String studentId, AJEntityOACompletionStatus oacs) {
-    AJEntityOACompletionStatus duplicateRow = AJEntityOACompletionStatus.findFirst(AJEntityOACompletionStatus.GET_OA_COMPLETION_STATUS, studentId, oaId, oaDcaId, classId, EventConstants.DCA);
+    AJEntityOACompletionStatus duplicateRow = AJEntityOACompletionStatus.findFirst(AJEntityOACompletionStatus.GET_DCA_OA_COMPLETION_STATUS, studentId, oaId, oaDcaId, classId, contentSource);
     
     if (duplicateRow == null && oacs.isValid()) {
       boolean result = oacs.insert();
@@ -288,7 +293,7 @@ public class OADCAEventHandler implements DBHandler {
       long id = Long.valueOf(duplicateRow.get("id").toString());
       int res = 0;
       res = Base.exec(AJEntityOACompletionStatus.UPDATE_OA_COMPLETION_STATUS_BY_TEACHER, true,
-          new Timestamp(System.currentTimeMillis()), id, oacs.getString(AJEntityOACompletionStatus.CONTENT_SOURCE));
+          new Timestamp(System.currentTimeMillis()), id);
       if (res > 0) {
         LOGGER.info("Offline Activity Completion status updated into oacs table {} & OA {} ", studentId, oaId);
         return true;
