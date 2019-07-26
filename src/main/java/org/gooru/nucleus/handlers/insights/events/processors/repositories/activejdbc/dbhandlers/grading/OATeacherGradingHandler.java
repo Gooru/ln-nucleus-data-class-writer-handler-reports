@@ -76,7 +76,8 @@ public class OATeacherGradingHandler implements DBHandler {
           || !ValidationUtils.isValidUUID(studentId)
           || (dcaContentId == null && contentSource.equalsIgnoreCase(EventConstants.DCA))
           || (contentSource.equalsIgnoreCase(EventConstants.COURSEMAP) && !(ValidationUtils.isValidUUID(courseId)
-              && ValidationUtils.isValidUUID(unitId) && ValidationUtils.isValidUUID(lessonId)))) {
+              && ValidationUtils.isValidUUID(unitId) && ValidationUtils.isValidUUID(lessonId)))
+          || (score != null && maxScore != null && !validateScoreAndMaxScore(score, maxScore))) {
         LOGGER.warn("Invalid Json Payload");
         return new ExecutionResult<>(
             MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload"),
