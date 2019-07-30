@@ -2,14 +2,15 @@ package org.gooru.nucleus.handlers.insights.events.processors.grading;
 
 import java.util.ResourceBundle;
 import org.gooru.nucleus.handlers.insights.events.constants.MessageConstants;
-import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.Processor;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.RepoBuilder;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponse;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponseFactory;
+import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult.ExecutionStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.hazelcast.util.StringUtil;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.json.JsonObject;
 
@@ -52,6 +53,10 @@ public class GradingProcessor implements Processor {
   
   private MessageResponse processRubricGrades() {
     MessageResponse result;
+    if (!request.containsKey(MessageConstants.GRADER) || StringUtil.isNullOrEmptyAfterTrim(request.getString(MessageConstants.GRADER))) {
+      return MessageResponseFactory
+          .createInvalidRequestResponse(RESOURCE_BUNDLE.getString("invalid.payload"));
+    }
     String grader = context.request().getString(MessageConstants.GRADER);
     switch (grader) {
       case MessageConstants.GRADER_SELF:
