@@ -926,6 +926,8 @@ public class EventConstants {
   public static final String _PATH_TYPE = "path_type";
   
   public static final Pattern CM_DCA_CONTENT_SOURCE = Pattern.compile("coursemap|dailyclassactivity");
+  
+  public static final String STUDENT_RUBRIC_ID = "student_rubric_id";
     
   private EventConstants() {
     throw new AssertionError();
