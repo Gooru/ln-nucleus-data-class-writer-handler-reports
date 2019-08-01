@@ -61,6 +61,7 @@ public class OATeacherGradingHandler implements DBHandler {
   private String collectionType;
   private String timezone;
   private long ts;
+  private String sessionId;
   
   public OATeacherGradingHandler(GradingContext context) {
     this.context = context;
@@ -266,6 +267,7 @@ public class OATeacherGradingHandler implements DBHandler {
   
   private Model setBaseReportsModel(AJEntityReporting model) {
     ts = System.currentTimeMillis();
+    sessionId = UUID.randomUUID().toString();
     model.set(AJEntityReporting.GOORUUID, studentId);
     model.set(AJEntityReporting.IS_GRADED, true);
     model.set(AJEntityReporting.CLASS_GOORU_OID, classId);
@@ -278,7 +280,7 @@ public class OATeacherGradingHandler implements DBHandler {
     model.set(AJEntityReporting.CREATE_TIMESTAMP, new Timestamp(ts));
     model.set(AJEntityReporting.UPDATE_TIMESTAMP, new Timestamp(ts));
     model.set(AJEntityReporting.GRADING_TYPE, EventConstants.TEACHER);
-    model.set(AJEntityReporting.SESSION_ID, UUID.randomUUID().toString());
+    model.set(AJEntityReporting.SESSION_ID, sessionId);
     model.set(AJEntityReporting.CONTENT_SOURCE, contentSource);
     model.set(AJEntityReporting.TIME_ZONE, timezone);
     model.set(AJEntityReporting.RESOURCE_ATTEMPT_STATUS, EventConstants.ATTEMPTED);
@@ -428,9 +430,15 @@ public class OATeacherGradingHandler implements DBHandler {
       scoreInPercent = ((score * 100) / maxScore);
     }
     LOGGER.info("Sending OA Teacher grade Event to RDA");
-    RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(this.rubricGrading,
-        collectionType, scoreInPercent, maxScore, pathId, pathType, null, null,
-        true);
+    RDAEventDispatcher rdaEventDispatcher = null;
+    if (contentSource.equalsIgnoreCase(EventConstants.DCA)) {
+      rdaEventDispatcher = new RDAEventDispatcher(this.rubricGrading, collectionType,
+          scoreInPercent, maxScore, pathId, pathType, null, null, true);
+    } else {
+      this.rubricGrading.set(AJEntityReporting.SESSION_ID, this.sessionId);
+      rdaEventDispatcher = new RDAEventDispatcher(this.rubricGrading, collectionType,
+          scoreInPercent, maxScore, pathId, pathType, null, null, true);
+    }
     rdaEventDispatcher.sendOATeacherGradeEventFromOATGHToRDA();
   }
 
@@ -438,6 +446,8 @@ public class OATeacherGradingHandler implements DBHandler {
     String additionalContext = null;
     if (contentSource.equalsIgnoreCase(EventConstants.DCA)) {
       additionalContext = setBase64EncodedAdditionalContext();
+    } else {
+      this.rubricGrading.set(AJEntityReporting.SESSION_ID, this.sessionId);
     }
     if (validateScoreAndMaxScore(score, maxScore))  {      
       GEPEventDispatcher eventDispatcher = new GEPEventDispatcher(rubricGrading, 
