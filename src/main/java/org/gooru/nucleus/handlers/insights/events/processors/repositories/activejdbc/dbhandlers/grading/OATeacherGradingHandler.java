@@ -430,15 +430,11 @@ public class OATeacherGradingHandler implements DBHandler {
       scoreInPercent = ((score * 100) / maxScore);
     }
     LOGGER.info("Sending OA Teacher grade Event to RDA");
-    RDAEventDispatcher rdaEventDispatcher = null;
-    if (contentSource.equalsIgnoreCase(EventConstants.DCA)) {
-      rdaEventDispatcher = new RDAEventDispatcher(this.rubricGrading, collectionType,
-          scoreInPercent, maxScore, pathId, pathType, null, null, true);
-    } else {
+    if (!contentSource.equalsIgnoreCase(EventConstants.DCA)) {
       this.rubricGrading.set(AJEntityReporting.SESSION_ID, this.sessionId);
-      rdaEventDispatcher = new RDAEventDispatcher(this.rubricGrading, collectionType,
-          scoreInPercent, maxScore, pathId, pathType, null, null, true);
     }
+    RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(this.rubricGrading, collectionType,
+          scoreInPercent, maxScore, pathId, pathType, null, null, true);
     rdaEventDispatcher.sendOATeacherGradeEventFromOATGHToRDA();
   }
 
