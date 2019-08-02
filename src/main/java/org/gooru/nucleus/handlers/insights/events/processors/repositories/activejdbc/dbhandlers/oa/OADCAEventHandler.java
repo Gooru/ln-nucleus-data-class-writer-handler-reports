@@ -204,7 +204,12 @@ public class OADCAEventHandler implements DBHandler {
         LOGGER.info("Offline Activity Record Inserted into dca for student {} & OA {} ", studentId, oaId);
         return true;
       }
-    } else if (duplicateRow != null && dca.isValid() && !duplicateRow.getBoolean(AJEntityDailyClassActivity.IS_GRADED)){
+    } else if (duplicateRow != null && dca.isValid()) {
+      if (duplicateRow.getBoolean(AJEntityDailyClassActivity.IS_GRADED)) {
+        // The duplicate might be already graded by teacher for this particular student
+        // from student OA completion flow, so no need to override score, we can safely ignore
+        return true;
+      }
       long id = Long.valueOf(duplicateRow.get("id").toString());
       int res = Base.exec(AJEntityDailyClassActivity.UPDATE_OA_RECORD_FOR_THIS_STUDENT,
           dca.get(AJEntityDailyClassActivity.TIMESPENT),
@@ -219,8 +224,6 @@ public class OADCAEventHandler implements DBHandler {
         return false;
       }  
     } else { //catchAll
-      // The duplicate might be already graded by teacher for this particular student
-      // from student OA completion flow, so no need to override score, we can safely ignore
       return false;
     }
   }
