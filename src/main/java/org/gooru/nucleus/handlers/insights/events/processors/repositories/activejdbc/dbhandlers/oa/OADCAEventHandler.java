@@ -48,6 +48,7 @@ public class OADCAEventHandler implements DBHandler {
   private String pathType = null;
   private JsonArray users;
   private String timezone;
+  private String studentRubricId;
   List<String> selfGradedList = new ArrayList<>();
   List<String> oaStudentsList = new ArrayList<>();
 
@@ -66,6 +67,7 @@ public class OADCAEventHandler implements DBHandler {
     pathId = context.request().getLong(EventConstants._PATH_ID, 0L);
     pathType = context.request().getString(EventConstants._PATH_TYPE);
     timezone = context.request().getString(AJEntityDailyClassActivity.TIME_ZONE, UTC);
+    studentRubricId = context.request().getString(EventConstants.STUDENT_RUBRIC_ID);
     
     if (!ValidationUtils.isValidUUID(classId) || !ValidationUtils.isValidUUID(oaId)
         || oaDcaId == null || users == null || (StringUtil.isNullOrEmptyAfterTrim(contentSource)
@@ -183,8 +185,7 @@ public class OADCAEventHandler implements DBHandler {
   }
   
   private boolean insertOrUpdateRecord(String studentId, AJEntityDailyClassActivity dca) {
-    AJEntityDailyClassActivity duplicateRow = null;
-    duplicateRow = AJEntityDailyClassActivity.findFirst("actor_id = ? AND collection_id = ? "
+    AJEntityDailyClassActivity duplicateRow = AJEntityDailyClassActivity.findFirst("actor_id = ? AND collection_id = ? "
         + "AND dca_content_id = ? AND collection_type = 'offline-activity' "
         + "AND event_name = 'collection.play' "
         + "AND event_type = 'stop' AND content_source = ?", studentId, oaId, oaDcaId, contentSource);
@@ -203,7 +204,12 @@ public class OADCAEventHandler implements DBHandler {
         LOGGER.info("Offline Activity Record Inserted into dca for student {} & OA {} ", studentId, oaId);
         return true;
       }
-    } else if (duplicateRow != null && dca.isValid()){
+    } else if (duplicateRow != null && dca.isValid()) {
+      if (duplicateRow.getBoolean(AJEntityDailyClassActivity.IS_GRADED)) {
+        // The duplicate might be already graded by teacher for this particular student
+        // from student OA completion flow, so no need to override score, we can safely ignore
+        return true;
+      }
       long id = Long.valueOf(duplicateRow.get("id").toString());
       int res = Base.exec(AJEntityDailyClassActivity.UPDATE_OA_RECORD_FOR_THIS_STUDENT,
           dca.get(AJEntityDailyClassActivity.TIMESPENT),
@@ -264,6 +270,9 @@ public class OADCAEventHandler implements DBHandler {
         oacs.set(AJEntityOACompletionStatus.IS_MARKED_BY_TEACHER, true);
         oacs.set(AJEntityOACompletionStatus.PATH_ID, pathId);
         oacs.set(AJEntityOACompletionStatus.PATH_TYPE, pathType);
+        if (studentRubricId != null) {
+          oacs.set(AJEntityOACompletionStatus.HAS_STUDENT_RUBRIC, true);
+        }
         if (!insertOrUpdateCompletionRecord(studentId, oacs)) {
          return new ExecutionResult<>(null, ExecutionStatus.FAILED);
         }
@@ -292,7 +301,11 @@ public class OADCAEventHandler implements DBHandler {
     } else if (duplicateRow != null && oacs.isValid()){
       long id = Long.valueOf(duplicateRow.get("id").toString());
       int res = 0;
-      res = Base.exec(AJEntityOACompletionStatus.UPDATE_OA_COMPLETION_STATUS_BY_TEACHER, true,
+      boolean hasStudentRubric = false;
+      if (studentRubricId != null) {
+        hasStudentRubric = true;
+      }
+      res = Base.exec(AJEntityOACompletionStatus.UPDATE_OA_COMPLETION_STATUS_BY_TEACHER, true, hasStudentRubric,
           new Timestamp(System.currentTimeMillis()), id);
       if (res > 0) {
         LOGGER.info("Offline Activity Completion status updated into oacs table {} & OA {} ", studentId, oaId);

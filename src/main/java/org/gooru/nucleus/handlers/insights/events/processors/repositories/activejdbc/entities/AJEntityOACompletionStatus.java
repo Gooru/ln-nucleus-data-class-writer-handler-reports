@@ -31,16 +31,17 @@ public class AJEntityOACompletionStatus extends Model {
   public static final String IS_MARKED_BY_TEACHER = "is_marked_by_teacher";
   public static final String IS_STUDENT_GRADED = "is_student_graded";
   public static final String IS_TEACHER_GRADED = "is_teacher_graded";
+  public static final String HAS_STUDENT_RUBRIC = "has_student_rubric";
   public static final String CREATED_AT = "created_at";
   public static final String UPDATED_AT = "updated_at";  
   public static final String PATH_ID = "path_id";
   public static final String PATH_TYPE = "path_type";
  
   public static final String UPDATE_OA_COMPLETION_STATUS_BY_STUDENT =
-      "UPDATE offline_activity_completion_status SET is_marked_by_student = ?, updated_at = ? WHERE id = ?";
+      "UPDATE offline_activity_completion_status SET is_marked_by_student = ?, has_student_rubric = ?, updated_at = ? WHERE id = ?";
 
   public static final String UPDATE_OA_COMPLETION_STATUS_BY_TEACHER =
-      "UPDATE offline_activity_completion_status SET is_marked_by_teacher = ?, updated_at = ? WHERE id = ?";
+      "UPDATE offline_activity_completion_status SET is_marked_by_teacher = ?, has_student_rubric = ?, updated_at = ? WHERE id = ?";
 
   public static final String GET_DCA_OA_COMPLETION_STATUS =
       "student_id = ?::uuid AND oa_id = ?::uuid AND oa_dca_id = ? AND class_id = ?::uuid AND content_source = ?";

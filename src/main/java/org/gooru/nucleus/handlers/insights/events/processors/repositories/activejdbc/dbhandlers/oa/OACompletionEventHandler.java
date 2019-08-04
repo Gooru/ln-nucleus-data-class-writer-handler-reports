@@ -45,6 +45,7 @@ public class OACompletionEventHandler implements DBHandler {
   private String unitId;
   private String lessonId;
   private String timezone;
+  private String studentRubricId;
 
   public OACompletionEventHandler(OAContext context) {
     this.context = context;
@@ -85,6 +86,7 @@ public class OACompletionEventHandler implements DBHandler {
     pathId = req.getLong(EventConstants._PATH_ID, 0L);
     pathType = req.getString(EventConstants._PATH_TYPE);
     timezone = req.getString(AJEntityDailyClassActivity.TIME_ZONE, UTC);
+    studentRubricId = req.getString(EventConstants.STUDENT_RUBRIC_ID);
   }
 
   @Override
@@ -246,6 +248,9 @@ public class OACompletionEventHandler implements DBHandler {
       oacs.set(EventConstants.UNIT_ID, UUID.fromString(unitId));
       oacs.set(EventConstants.LESSON_ID, UUID.fromString(lessonId));
     }
+    if (studentRubricId != null) {
+      oacs.set(AJEntityOACompletionStatus.HAS_STUDENT_RUBRIC, true);
+    }
     return oacs;
   }
 
@@ -282,11 +287,15 @@ public class OACompletionEventHandler implements DBHandler {
     } else if (duplicateRow != null && oacs.isValid()) {
       long id = Long.valueOf(duplicateRow.get("id").toString());
       int res = 0;
+      boolean hasStudentRubric = false;
+      if (studentRubricId != null) {
+        hasStudentRubric = true;
+      }
       if (markedBy.equalsIgnoreCase(EventConstants.STUDENT)) {
-        res = Base.exec(AJEntityOACompletionStatus.UPDATE_OA_COMPLETION_STATUS_BY_STUDENT, true,
+        res = Base.exec(AJEntityOACompletionStatus.UPDATE_OA_COMPLETION_STATUS_BY_STUDENT, true, hasStudentRubric,
             new Timestamp(System.currentTimeMillis()), id);
       } else {
-        res = Base.exec(AJEntityOACompletionStatus.UPDATE_OA_COMPLETION_STATUS_BY_TEACHER, true,
+        res = Base.exec(AJEntityOACompletionStatus.UPDATE_OA_COMPLETION_STATUS_BY_TEACHER, true, hasStudentRubric,
             new Timestamp(System.currentTimeMillis()), id);
       }
       if (res > 0) {
