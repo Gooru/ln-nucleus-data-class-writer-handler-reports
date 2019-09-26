@@ -24,6 +24,7 @@ public class NotificationConstants {
   public static final String REACTION = "reaction";
   public static final String TIMESPENT = "timeSpent";
   public static final String ANSWER_STATUS = "answerStatus";
+  public static final String CONTENT_SOURCE = "contentSource";
 
   public static final String COLLECTION = "collection";
   public static final String EXT_COLLECTION = "collection-external";

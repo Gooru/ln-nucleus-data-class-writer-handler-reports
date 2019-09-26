@@ -1,7 +1,5 @@
 package org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers;
 
-import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -25,6 +23,8 @@ import org.javalite.activejdbc.Base;
 import org.javalite.activejdbc.LazyList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 
 
 /**
@@ -113,7 +113,11 @@ public class ScoreUpdateHandler implements DBHandler {
 
     new DefAJEntityReportingBuilder()
         .build(baseReports, req, AJEntityReporting.getConverterRegistry());
-
+    baseReports.set(AJEntityReporting.CONTENT_SOURCE,
+        (req.containsKey(AJEntityReporting.CONTENT_SOURCE)
+            && req.getString(AJEntityReporting.CONTENT_SOURCE) != null)
+                ? req.getString(AJEntityReporting.CONTENT_SOURCE)
+                : EventConstants.COURSEMAP);
     //TODO: Create a Validator functions to add validations for attributes
     if (baseReports.get(AJEntityReporting.CLASS_GOORU_OID) == null
         || baseReports.get(AJEntityReporting.SESSION_ID) == null

@@ -14,13 +14,12 @@ import org.gooru.nucleus.handlers.insights.events.processors.repositories.active
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.RubricGradingEventDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityClassAuthorizedUsers;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityDailyClassActivity;
-import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityReporting;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityRubricGrading;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.EntityBuilder;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult;
+import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult.ExecutionStatus;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponse;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponseFactory;
-import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult.ExecutionStatus;
 import org.javalite.activejdbc.Base;
 import org.javalite.activejdbc.LazyList;
 import org.slf4j.Logger;
@@ -33,7 +32,7 @@ import io.vertx.core.json.JsonObject;
  */
 public class DCARubricGradingHandler implements DBHandler {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(RubricGradingHandler.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(DCARubricGradingHandler.class);
   // TODO: This Kafka Topic name needs to be picked up from config
   public static final String TOPIC_GEP_USAGE_EVENTS = "org.gooru.da.sink.logW.usage.events";
   //public static final String TOPIC_NOTIFICATIONS = "notifications";
@@ -113,6 +112,11 @@ public class DCARubricGradingHandler implements DBHandler {
 
     new DefAJEntityDCARubricGradingEntityBuilder()
     .build(rubricGrading, req, AJEntityRubricGrading.getConverterRegistry());
+    rubricGrading.set(AJEntityRubricGrading.CONTENT_SOURCE,
+        (req.containsKey(AJEntityRubricGrading.CONTENT_SOURCE)
+            && req.getString(AJEntityRubricGrading.CONTENT_SOURCE) != null)
+                ? req.getString(AJEntityRubricGrading.CONTENT_SOURCE)
+                : EventConstants.DCA);
     String collType = rubricGrading.getString(AJEntityRubricGrading.COLLECTION_TYPE);
     LOGGER.debug("Collection Type " + collType);
     Object sessionId = rubricGrading.get(AJEntityRubricGrading.SESSION_ID);
