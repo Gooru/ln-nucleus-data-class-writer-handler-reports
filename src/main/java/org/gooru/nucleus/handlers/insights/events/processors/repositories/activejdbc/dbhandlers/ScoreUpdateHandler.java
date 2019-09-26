@@ -114,10 +114,9 @@ public class ScoreUpdateHandler implements DBHandler {
     new DefAJEntityReportingBuilder()
         .build(baseReports, req, AJEntityReporting.getConverterRegistry());
     baseReports.set(AJEntityReporting.CONTENT_SOURCE,
-        (req.containsKey(AJEntityReporting.CONTENT_SOURCE)
-            && req.getString(AJEntityReporting.CONTENT_SOURCE) != null)
-                ? req.getString(AJEntityReporting.CONTENT_SOURCE)
-                : EventConstants.COURSEMAP);
+        req.getString(AJEntityReporting.CONTENT_SOURCE, null) != null
+            ? req.getString(AJEntityReporting.CONTENT_SOURCE)
+            : EventConstants.COURSEMAP);
     //TODO: Create a Validator functions to add validations for attributes
     if (baseReports.get(AJEntityReporting.CLASS_GOORU_OID) == null
         || baseReports.get(AJEntityReporting.SESSION_ID) == null

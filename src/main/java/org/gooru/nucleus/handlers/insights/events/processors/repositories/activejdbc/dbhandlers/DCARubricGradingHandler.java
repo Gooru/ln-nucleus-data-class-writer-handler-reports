@@ -113,10 +113,9 @@ public class DCARubricGradingHandler implements DBHandler {
     new DefAJEntityDCARubricGradingEntityBuilder()
     .build(rubricGrading, req, AJEntityRubricGrading.getConverterRegistry());
     rubricGrading.set(AJEntityRubricGrading.CONTENT_SOURCE,
-        (req.containsKey(AJEntityRubricGrading.CONTENT_SOURCE)
-            && req.getString(AJEntityRubricGrading.CONTENT_SOURCE) != null)
-                ? req.getString(AJEntityRubricGrading.CONTENT_SOURCE)
-                : EventConstants.DCA);
+        req.getString(AJEntityRubricGrading.CONTENT_SOURCE, null) != null
+            ? req.getString(AJEntityRubricGrading.CONTENT_SOURCE)
+            : EventConstants.DCA);
     String collType = rubricGrading.getString(AJEntityRubricGrading.COLLECTION_TYPE);
     LOGGER.debug("Collection Type " + collType);
     Object sessionId = rubricGrading.get(AJEntityRubricGrading.SESSION_ID);

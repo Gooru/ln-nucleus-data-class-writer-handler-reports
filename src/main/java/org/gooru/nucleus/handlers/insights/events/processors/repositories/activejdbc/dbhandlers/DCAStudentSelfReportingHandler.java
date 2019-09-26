@@ -3,7 +3,6 @@ package org.gooru.nucleus.handlers.insights.events.processors.repositories.activ
 import static org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.validators.ValidationUtils.validateScoreAndMaxScore;
 import java.sql.Timestamp;
 import java.util.Map;
-
 import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.insights.events.processors.exceptions.MessageResponseWrapperException;
@@ -18,9 +17,7 @@ import org.javalite.activejdbc.Base;
 import org.javalite.activejdbc.LazyList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import com.hazelcast.util.StringUtil;
-
 import io.vertx.core.json.JsonObject;
 
 public class DCAStudentSelfReportingHandler implements DBHandler {
@@ -144,6 +141,10 @@ public class DCAStudentSelfReportingHandler implements DBHandler {
 
     new DefAJEntityReportingBuilder()
         .build(dcaReport, req, AJEntityDailyClassActivity.getConverterRegistry());
+    dcaReport.set(AJEntityDailyClassActivity.CONTENT_SOURCE,
+        req.getString(AJEntityDailyClassActivity.CONTENT_SOURCE, null) != null
+            ? req.getString(AJEntityDailyClassActivity.CONTENT_SOURCE)
+            : EventConstants.DCA);
     if (dcaReport.get(AJEntityDailyClassActivity.CLASS_GOORU_OID) == null ||
         dcaReport.get(AJEntityDailyClassActivity.SESSION_ID) == null) {
       return new ExecutionResult<>(

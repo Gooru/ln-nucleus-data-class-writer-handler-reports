@@ -105,10 +105,9 @@ public class RubricGradingHandler implements DBHandler {
     new DefAJEntityRubricGradingEntityBuilder()
         .build(rubricGrading, req, AJEntityRubricGrading.getConverterRegistry());
     rubricGrading.set(AJEntityRubricGrading.CONTENT_SOURCE,
-        (req.containsKey(AJEntityRubricGrading.CONTENT_SOURCE)
-            && req.getString(AJEntityRubricGrading.CONTENT_SOURCE) != null)
-                ? req.getString(AJEntityRubricGrading.CONTENT_SOURCE)
-                : EventConstants.COURSEMAP);
+        req.getString(AJEntityRubricGrading.CONTENT_SOURCE, null) != null
+            ? req.getString(AJEntityRubricGrading.CONTENT_SOURCE)
+            : EventConstants.COURSEMAP);
 
     Object collType = Base.firstCell(AJEntityReporting.FIND_COLLECTION_TYPE,
         rubricGrading.get(AJEntityRubricGrading.CLASS_ID),

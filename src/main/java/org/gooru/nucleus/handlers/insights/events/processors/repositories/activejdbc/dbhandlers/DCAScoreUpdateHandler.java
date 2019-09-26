@@ -136,10 +136,9 @@ public class DCAScoreUpdateHandler implements DBHandler {
     new DefAJEntityDailyClassActivityBuilder()
         .build(dcaReports, ctxt2Relay, AJEntityDailyClassActivity.getConverterRegistry());
     dcaReports.set(AJEntityDailyClassActivity.CONTENT_SOURCE,
-        (ctxt2Relay.containsKey(AJEntityDailyClassActivity.CONTENT_SOURCE)
-            && ctxt2Relay.getString(AJEntityDailyClassActivity.CONTENT_SOURCE) != null)
-                ? ctxt2Relay.getString(AJEntityDailyClassActivity.CONTENT_SOURCE)
-                : EventConstants.DCA);
+        ctxt2Relay.getString(AJEntityDailyClassActivity.CONTENT_SOURCE, null) != null
+            ? ctxt2Relay.getString(AJEntityDailyClassActivity.CONTENT_SOURCE)
+            : EventConstants.DCA);
     // Update data at resource / question level and Send Events to GEP
     updateResourceLevelDataAndSendEventsToGEP();
     
