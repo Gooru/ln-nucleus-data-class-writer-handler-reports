@@ -1,11 +1,11 @@
 package org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher;
 
-import io.vertx.core.json.JsonObject;
 import org.gooru.nucleus.handlers.insights.events.constants.NotificationConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.MessageDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityReporting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import io.vertx.core.json.JsonObject;
 
 /**
  * Created by mukul@gooru
@@ -49,6 +49,10 @@ public class StudentSelfReportingEventDispatcher {
         .put(NotificationConstants.LESSON_ID, baseReports.get(AJEntityReporting.LESSON_GOORU_OID));
     selfReportEvent.put(NotificationConstants.COLLECTION_ID,
         baseReports.get(AJEntityReporting.COLLECTION_OID));
+
+    String contentSource = (String) baseReports.get(AJEntityReporting.CONTENT_SOURCE);
+    selfReportEvent.put(NotificationConstants.CONTENT_SOURCE,
+        CoreContentSourceFinder.findContentSource(contentSource));
 
     //TODO: update the CURRENT_ITEM_ID and CURRENT_ITEM_TYPE with contextCollectionId and contextCollectionType
     //Once these attributes are available (currently they are not)

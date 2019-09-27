@@ -1,12 +1,12 @@
 package org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher;
 
-import io.vertx.core.json.JsonObject;
 import org.gooru.nucleus.handlers.insights.events.constants.NotificationConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.MessageDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.RubricGradingHandler;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityRubricGrading;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import io.vertx.core.json.JsonObject;
 
 /**
  * Created by mukul@gooru
@@ -78,10 +78,13 @@ public class RubricGradingEventDispatcher {
         rubricGrading.get(AJEntityRubricGrading.COLLECTION_ID));
     selfReportEvent.put(NotificationConstants.CURRENT_ITEM_TYPE,
         rubricGrading.get(AJEntityRubricGrading.COLLECTION_TYPE));
-
     selfReportEvent.put(NotificationConstants.PATH_ID, pathId);
     selfReportEvent.put(NotificationConstants.PATH_TYPE, pathType);
 
+    String contentSource = (String) rubricGrading.get(AJEntityRubricGrading.CONTENT_SOURCE);
+    selfReportEvent.put(NotificationConstants.CONTENT_SOURCE,
+        CoreContentSourceFinder.findContentSource(contentSource));
+    
     selfReportEvent.put(NotificationConstants.ACTION, NotificationConstants.INITIATE);
 
     return selfReportEvent;
@@ -114,7 +117,10 @@ public class RubricGradingEventDispatcher {
     selfReportEvent.put(NotificationConstants.PATH_ID, pathId);
     selfReportEvent.put(NotificationConstants.PATH_TYPE, pathType);
     selfReportEvent.put(NotificationConstants.ACTION, NotificationConstants.COMPLETE);
-
+    
+    String contentSource = (String) rubricGrading.get(AJEntityRubricGrading.CONTENT_SOURCE);
+    selfReportEvent.put(NotificationConstants.CONTENT_SOURCE,
+        CoreContentSourceFinder.findContentSource(contentSource));
     return selfReportEvent;
   }
 
