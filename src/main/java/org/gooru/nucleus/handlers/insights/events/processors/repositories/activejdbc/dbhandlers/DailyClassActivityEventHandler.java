@@ -1,16 +1,13 @@
 package org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers;
 
-import com.hazelcast.util.StringUtil;
-import io.vertx.core.json.JsonObject;
 import java.sql.Timestamp;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.TimeZone;
 import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.insights.events.processors.events.EventParser;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.GEPEventDispatcher;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.RDAEventDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityDailyClassActivity;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.utils.BaseUtil;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.ExecutionResult.ExecutionStatus;
 import org.gooru.nucleus.handlers.insights.events.processors.responses.MessageResponse;
@@ -19,6 +16,8 @@ import org.javalite.activejdbc.Base;
 import org.javalite.activejdbc.LazyList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.hazelcast.util.StringUtil;
+import io.vertx.core.json.JsonObject;
 
 /**
  * created by mukul@gooru
@@ -36,7 +35,13 @@ public class DailyClassActivityEventHandler implements DBHandler {
   Double maxScoreObj;
   Long tsObj;
 
-
+  Long views;
+  Long reaction;
+  Long timespent;
+  Double maxScore;
+  Double score;
+  Boolean isGraded;
+  
   public DailyClassActivityEventHandler(ProcessorContext context) {
     this.context = context;
   }
@@ -107,11 +112,16 @@ public class DailyClassActivityEventHandler implements DBHandler {
     dcaReport.set("event_id", event.getEventId());
     dcaReport.set("content_source", event.getContentSource());
 
+    this.timespent = event.getTimespent();
+    this.views = event.getViews();
+    this.maxScore = event.getMaxScore();
+    this.reaction = event.getReaction();
+    
     if (event.getTimeZone() != null) {
       String timeZone = event.getTimeZone();
       LOGGER.debug("Timezone is " + timeZone);
       dcaReport.set("time_zone", timeZone);
-      String localeDate = UTCToLocale(event.getEndTime(), timeZone);
+      String localeDate = BaseUtil.UTCToLocale(event.getEndTime(), timeZone);
 
       if (localeDate != null) {
         dcaReport.setDateinTZ(localeDate);
@@ -134,6 +144,7 @@ public class DailyClassActivityEventHandler implements DBHandler {
       dcaReport.set("question_count", event.getQuestionCount());
       if (event.getEventType().equalsIgnoreCase(EventConstants.START)) {
         dcaReport.set("score", event.getScore());
+        score = event.getScore();
       }
 
       if (event.getEventType().equalsIgnoreCase(EventConstants.STOP)) {
@@ -156,10 +167,13 @@ public class DailyClassActivityEventHandler implements DBHandler {
           if (maxScoreObj != null && maxScoreObj != 0.0 && scoreObj != null) {
             dcaReport.set("score", ((scoreObj * 100) / maxScoreObj));
             dcaReport.set("max_score", maxScoreObj);
+            maxScore = maxScoreObj;
+            score = ((scoreObj * 100) / maxScoreObj);
           }
 
           if (event.getCollectionType().equalsIgnoreCase(EventConstants.ASSESSMENT)) {
             dcaReport.set("time_spent", (tsObj != null ? tsObj : 0));
+            timespent = (tsObj != null ? tsObj : 0);
           }
         }
       }
@@ -188,6 +202,8 @@ public class DailyClassActivityEventHandler implements DBHandler {
         } else if (event.getEventType().equalsIgnoreCase(EventConstants.START)) {
           dcaReport.set("score", event.getScore());
           dcaReport.setBoolean("is_graded", true);
+          this.score = event.getScore();
+          this.isGraded = true;
         }
         if (event.getEventType().equalsIgnoreCase(EventConstants.STOP) && (
             event.getAnswerStatus().equalsIgnoreCase(EventConstants.INCORRECT)
@@ -196,10 +212,13 @@ public class DailyClassActivityEventHandler implements DBHandler {
           //Grading Type is set by default to "system", so no need to update the grading_type here.
           dcaReport.set("score", event.getScore());
           dcaReport.setBoolean("is_graded", true);
+          this.score = event.getScore();
+          this.isGraded = true;
         } else if (event.getEventType().equalsIgnoreCase(EventConstants.STOP) &&
             (event.getAnswerStatus().equalsIgnoreCase(EventConstants.ATTEMPTED))) {
           dcaReport.set("grading_type", event.getGradeType());
           dcaReport.setBoolean("is_graded", false);
+          this.isGraded = false;
         }
       }
     }
@@ -230,19 +249,22 @@ public class DailyClassActivityEventHandler implements DBHandler {
             long view = (Long.valueOf(dup.get("views").toString()) + event.getViews());
             long ts = (Long.valueOf(dup.get("time_spent").toString()) + event.getTimespent());
             long react = event.getReaction() != 0 ? event.getReaction() : 0;
-            //update the Answer Object and Answer Status from the latest event
-            //Rubrics - if the Answer Status is attempted then the default score that should be set is null
-            if (event.getResourceType().equals(EventConstants.QUESTION) && event.getEventType()
-                .equalsIgnoreCase(EventConstants.STOP)
+            Double score = event.getScore();
+            // update the Answer Object and Answer Status from the latest event
+            // Rubrics - if the Answer Status is attempted then the default score that should be set
+            // is null
+            if (event.getResourceType().equals(EventConstants.QUESTION)
+                && event.getEventType().equalsIgnoreCase(EventConstants.STOP)
                 && event.getAnswerStatus().equalsIgnoreCase(EventConstants.ATTEMPTED)) {
-              Base.exec(AJEntityDailyClassActivity.UPDATE_RESOURCE_EVENT, view, ts, null,
-                  new Timestamp(event.getEndTime()),
-                  react, event.getAnswerStatus(), event.getAnswerObject().toString(), id);
-            } else {
-              Base.exec(AJEntityDailyClassActivity.UPDATE_RESOURCE_EVENT, view, ts,
-                  event.getScore(), new Timestamp(event.getEndTime()),
-                  react, event.getAnswerStatus(), event.getAnswerObject().toString(), id);
+              score = null;
             }
+            Base.exec(AJEntityDailyClassActivity.UPDATE_RESOURCE_EVENT, view, ts, score,
+                new Timestamp(event.getEndTime()), react, event.getAnswerStatus(),
+                event.getAnswerObject().toString(), id);
+            this.score = score;
+            this.timespent = ts;
+            this.views = view;
+            this.reaction = react;
           });
 
         }
@@ -252,15 +274,24 @@ public class DailyClassActivityEventHandler implements DBHandler {
             long view = (Long.valueOf(dup.get("views").toString()) + event.getViews());
             long ts = (Long.valueOf(dup.get("time_spent").toString()) + event.getTimespent());
             long react = event.getReaction() != 0 ? event.getReaction() : 0;
+            double maxSco = event.getMaxScore();
+            Double sco = event.getScore();
             if (event.getEventType().equalsIgnoreCase(EventConstants.STOP)) {
-              Base.exec(AJEntityDailyClassActivity.UPDATE_COLLECTION_EVENT, view, ts, scoreObj,
-                  maxScoreObj,
-                  new Timestamp(event.getEndTime()), react, id);
-            } else {
-              Base.exec(AJEntityDailyClassActivity.UPDATE_COLLECTION_EVENT, view, ts,
-                  event.getScore(), event.getMaxScore(),
-                  new Timestamp(event.getEndTime()), react, id);
+              if (maxScoreObj != null && maxScoreObj > 0.0 && scoreObj != null) {
+                maxSco = maxScoreObj;
+                sco = (scoreObj * 100) / maxSco;
+              } else {
+                sco = null;
+              }
             }
+            Base.exec(AJEntityDailyClassActivity.UPDATE_COLLECTION_EVENT, view, ts,
+                sco, maxSco,
+                new Timestamp(event.getEndTime()), react, id);
+            this.score = sco;
+            this.timespent = ts;
+            this.views = view;
+            this.reaction = react;
+            this.maxScore = maxSco;
           });
         }
       }
@@ -273,16 +304,28 @@ public class DailyClassActivityEventHandler implements DBHandler {
     if ((event.getEventName().equals(EventConstants.COLLECTION_PLAY)) && event.getEventType()
         .equalsIgnoreCase(EventConstants.START)) {
       sendCPStartEventToGEP(dcaReport);
+      RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(dcaReport, this.views,
+          this.reaction, this.timespent, this.maxScore, this.score, this.isGraded,
+          this.event.getEndTime());
+      rdaEventDispatcher.sendCollectionStartDCAEventToRDA();
     }
 
     if ((event.getEventName().equals(EventConstants.COLLECTION_PLAY)) && event.getEventType()
         .equalsIgnoreCase(EventConstants.STOP)) {
       sendCPStopEventToGEP(dcaReport);
+      RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(dcaReport, this.views,
+          this.reaction, (tsObj != null ? tsObj : 0), this.maxScore, this.score, this.isGraded,
+          this.event.getEndTime());
+      rdaEventDispatcher.sendCollectionStopDCAEventToRDA();
     }
 
     if ((event.getEventName().equals(EventConstants.COLLECTION_RESOURCE_PLAY)) && event
         .getEventType().equalsIgnoreCase(EventConstants.STOP)) {
       sendCRPEventToGEP(dcaReport);
+      RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(dcaReport, this.views,
+          this.reaction, this.timespent, this.maxScore, this.score, this.isGraded,
+          this.event.getEndTime());
+      rdaEventDispatcher.sendCollectionResourcePlayDCAEventToRDA();
     }
     
     return new ExecutionResult<>(MessageResponseFactory.createCreatedResponse(),
@@ -344,29 +387,5 @@ public class DailyClassActivityEventHandler implements DBHandler {
   @Override
   public boolean handlerReadOnly() {
     return false;
-  }
-
-  private String UTCToLocale(Long strUtcDate, String timeZone) {
-
-    String strLocaleDate = null;
-    try {
-      Long epohTime = strUtcDate;
-      Date utcDate = new Date(epohTime);
-
-      SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
-      simpleDateFormat.setTimeZone(TimeZone.getTimeZone("Etc/UTC"));
-      String strUTCDate = simpleDateFormat.format(utcDate);
-      simpleDateFormat.setTimeZone(TimeZone.getTimeZone(timeZone));
-
-      strLocaleDate = simpleDateFormat.format(utcDate);
-
-      LOGGER.debug("UTC Date String: " + strUTCDate);
-      LOGGER.debug("Locale Date String: " + strLocaleDate);
-
-    } catch (Exception e) {
-      LOGGER.error(e.getMessage());
-    }
-
-    return strLocaleDate;
   }
 }

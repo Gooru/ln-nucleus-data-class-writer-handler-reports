@@ -94,7 +94,7 @@ public class RDAEventDispatcher {
 
   public void sendCollectionStartEventToRDA() {
     try {
-      JsonObject rdaEvent = createCollectionStartEvent();
+      JsonObject rdaEvent = createCollectionStartEvent(baseReports);
       LOGGER.debug("PEH::Collection Start RDA Event : {} ", rdaEvent);
       MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_RDA, rdaEvent);
       LOGGER.info("PEH::Successfully dispatched Collection Start RDA Event..");
@@ -105,7 +105,7 @@ public class RDAEventDispatcher {
 
   public void sendCollectionStopEventToRDA() {
     try {
-      JsonObject rdaEvent = createCollectionStopEvent();
+      JsonObject rdaEvent = createCollectionStopEvent(baseReports);
       LOGGER.debug("PEH::Collection Stop RDA Event : {} ", rdaEvent);
       MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_RDA, rdaEvent);
       LOGGER.info("PEH::Successfully dispatched Collection Perf RDA Event..");
@@ -114,9 +114,31 @@ public class RDAEventDispatcher {
     }
   }
 
-  public void sendCollectionResourcePlayEventToRDA() {
+  public void sendCollectionStartDCAEventToRDA() {
     try {
-      JsonObject rdaEvent = createCollectionResourcePlayEvent();
+      JsonObject rdaEvent = createCollectionStartEvent(dcaReports);
+      LOGGER.debug("PEH::Collection Start RDA Event : {} ", rdaEvent);
+      MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_RDA, rdaEvent);
+      LOGGER.info("PEH::Successfully dispatched Collection Start RDA Event..");
+    } catch (Exception e) {
+      LOGGER.error("PEH::Error while dispatching Collection Start RDA Event ", e);
+    }
+  }
+
+  public void sendCollectionStopDCAEventToRDA() {
+    try {
+      JsonObject rdaEvent = createCollectionStopEvent(baseReports);
+      LOGGER.debug("PEH::Collection Stop RDA Event : {} ", rdaEvent);
+      MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_RDA, rdaEvent);
+      LOGGER.info("PEH::Successfully dispatched Collection Perf RDA Event..");
+    } catch (Exception e) {
+      LOGGER.error("PEH::Error while dispatching Collection Perf RDA Event ", e);
+    }
+  }
+  
+  public void sendCollectionResourcePlayDCAEventToRDA() {
+    try {
+      JsonObject rdaEvent = createCollectionResourcePlayEvent(dcaReports);
       LOGGER.debug("PEH::Collection Resource RDA Event : {} ", rdaEvent);
       MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_RDA, rdaEvent);
       LOGGER.info("PEH::Successfully dispatched Collection Resource RDA Event..");
@@ -125,6 +147,16 @@ public class RDAEventDispatcher {
     }
   }
 
+  public void sendCollectionResourcePlayEventToRDA() {
+    try {
+      JsonObject rdaEvent = createCollectionResourcePlayEvent(dcaReports);
+      LOGGER.debug("PEH::Collection Resource RDA Event : {} ", rdaEvent);
+      MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_RDA, rdaEvent);
+      LOGGER.info("PEH::Successfully dispatched Collection Resource RDA Event..");
+    } catch (Exception e) {
+      LOGGER.error("PEH::Error while dispatching Collection Resource RDA Event ", e);
+    }
+  }
   public void sendCollScoreUpdateEventFromSUHToRDA() {
     try {
       JsonObject rdaEvent = createCollScoreUpdateEventFromBRorDCA(baseReports);
@@ -202,12 +234,12 @@ public class RDAEventDispatcher {
     }
   }
 
-  private JsonObject createCollectionStartEvent() {
+  private JsonObject createCollectionStartEvent(Model reports) {
     JsonObject cpEvent = new JsonObject();
     JsonObject context = new JsonObject();
     cpEvent.put(CollectionEventConstants.EventAttributes.EVENT_NAME,
         CollectionEventConstants.EventAttributes.COLLECTION_START_EVENT);
-    createCollectionContext(baseReports, cpEvent, context);
+    createCollectionContext(reports, cpEvent, context);
 
     JsonObject result = new JsonObject();
     result.put(CollectionEventConstants.EventAttributes.TIMESPENT, 0);
@@ -218,12 +250,12 @@ public class RDAEventDispatcher {
     return cpEvent;
   }
 
-  private JsonObject createCollectionStopEvent() {
+  private JsonObject createCollectionStopEvent(Model reports) {
     JsonObject cpEvent = new JsonObject();
     JsonObject context = new JsonObject();
     cpEvent.put(CollectionEventConstants.EventAttributes.EVENT_NAME,
         CollectionEventConstants.EventAttributes.COLLECTION_PERF_EVENT);
-    createCollectionContext(baseReports, cpEvent, context);
+    createCollectionContext(reports, cpEvent, context);
     JsonObject result = new JsonObject();
     if (views != null) {
       result.put(CollectionEventConstants.EventAttributes.VIEWS, views);
@@ -247,47 +279,49 @@ public class RDAEventDispatcher {
     return cpEvent;
   }
 
-  private JsonObject createCollectionResourcePlayEvent() {
+  private JsonObject createCollectionResourcePlayEvent(Model reports) {
     JsonObject resEvent = new JsonObject();
     JsonObject context = new JsonObject();
 
     resEvent.put(CollectionEventConstants.EventAttributes.USER_ID,
-        baseReports.get(AJEntityReporting.GOORUUID));
+        reports.get(AJEntityReporting.GOORUUID));
     resEvent.put(CollectionEventConstants.EventAttributes.ACTIVITY_TIME, this.activityTime);
     resEvent.put(CollectionEventConstants.EventAttributes.EVENT_NAME,
         ResourceEventConstants.EventAttributes.RESOURCE_PERF_EVENT);
     resEvent.put(CollectionEventConstants.EventAttributes.RESOURCE_ID,
-        baseReports.get(AJEntityReporting.RESOURCE_ID));
+        reports.get(AJEntityReporting.RESOURCE_ID));
     resEvent.put(CollectionEventConstants.EventAttributes.RESOURCE_TYPE,
-        baseReports.get(AJEntityReporting.RESOURCE_TYPE));
+        reports.get(AJEntityReporting.RESOURCE_TYPE));
 
     context.put(CollectionEventConstants.EventAttributes.CLASS_ID,
-        baseReports.get(AJEntityReporting.CLASS_GOORU_OID));
+        reports.get(AJEntityReporting.CLASS_GOORU_OID));
     context.put(CollectionEventConstants.EventAttributes.COURSE_ID,
-        baseReports.get(AJEntityReporting.COURSE_GOORU_OID));
+        reports.get(AJEntityReporting.COURSE_GOORU_OID));
     context.put(CollectionEventConstants.EventAttributes.UNIT_ID,
-        baseReports.get(AJEntityReporting.UNIT_GOORU_OID));
+        reports.get(AJEntityReporting.UNIT_GOORU_OID));
     context.put(CollectionEventConstants.EventAttributes.LESSON_ID,
-        baseReports.get(AJEntityReporting.LESSON_GOORU_OID));
+        reports.get(AJEntityReporting.LESSON_GOORU_OID));
     context.put(CollectionEventConstants.EventAttributes.COLLECTION_ID,
-        baseReports.get(AJEntityReporting.COLLECTION_OID));
+        reports.get(AJEntityReporting.COLLECTION_OID));
     context.put(CollectionEventConstants.EventAttributes.COLLECTION_TYPE,
-        baseReports.get(AJEntityReporting.COLLECTION_TYPE));
+        reports.get(AJEntityReporting.COLLECTION_TYPE));
     context.put(CollectionEventConstants.EventAttributes.CONTEXT_COLLECTION_ID,
-        baseReports.get(AJEntityReporting.CONTEXT_COLLECTION_ID));
+        reports.get(AJEntityReporting.CONTEXT_COLLECTION_ID));
     context.put(CollectionEventConstants.EventAttributes.CONTEXT_COLLECTION_TYPE,
-        baseReports.get(AJEntityReporting.CONTEXT_COLLECTION_TYPE));
+        reports.get(AJEntityReporting.CONTEXT_COLLECTION_TYPE));
     context.put(CollectionEventConstants.EventAttributes.PATH_ID,
-        baseReports.get(AJEntityReporting.PATH_ID));
+        reports.get(AJEntityReporting.PATH_ID));
     context.put(CollectionEventConstants.EventAttributes.SESSION_ID,
-        baseReports.get(AJEntityReporting.SESSION_ID));
+        reports.get(AJEntityReporting.SESSION_ID));
     context.put(CollectionEventConstants.EventAttributes.PARTNER_ID,
-        baseReports.get(AJEntityReporting.PARTNER_ID));
+        reports.get(AJEntityReporting.PARTNER_ID));
     context.put(CollectionEventConstants.EventAttributes.TENANT_ID,
-        baseReports.get(AJEntityReporting.TENANT_ID));
-
+        reports.get(AJEntityReporting.TENANT_ID));
+    context.put(CollectionEventConstants.EventAttributes.CONTENT_SOURCE,
+        reports.get(AJEntityReporting.CONTENT_SOURCE));
+    
     context.put(CollectionEventConstants.EventAttributes.PATH_TYPE,
-        baseReports.get(AJEntityReporting.PATH_TYPE));
+        reports.get(AJEntityReporting.PATH_TYPE));
     resEvent.put(CollectionEventConstants.EventAttributes.CONTEXT, context);
     resEvent.put(CollectionEventConstants.EventAttributes.EVENT_NAME,
         ResourceEventConstants.EventAttributes.RESOURCE_PERF_EVENT);
