@@ -279,7 +279,7 @@ public class DCAScoreUpdateHandler implements DBHandler {
                            this.studentId, 
                            this.score, 
                            this.max_score, 
-                           this.isGraded).sendCollScoreUpdateEventFromDCAToRDA();
+                           this.isGraded, null).sendCollScoreUpdateEventFromDCAToRDA();
   }
 
   /*

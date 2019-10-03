@@ -44,6 +44,7 @@ public class CollectionEventConstants {
     public static final String COLLECTION_PERF_EVENT = "rda.collection.performance";
     public static final String COLLECTION_START_EVENT = "rda.collection.start";
     public static final String COLLECTION_SCORE_UPDATE_EVENT = "rda.collection.score.update";
+    public static final String COLLECTION_TIMESPENT_UPDATE_EVENT = "rda.collection.timepspent.update";
     public static final String COLLECTION_SELF_GRADE_EVENT = "rda.collection.self.grade";
     public static final String OFFLINE_STUDENT_COLLECTION_PERF_EVENT = "rda.collection.offline.student.perf";
     public static final String OFFLINE_ACTIVITY_TEACHER_GRADE_EVENT = "rda.collection.oa.teacher.grade";

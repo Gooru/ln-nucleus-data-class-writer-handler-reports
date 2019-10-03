@@ -450,7 +450,7 @@ public class DCAPerfUpdateHandler implements DBHandler {
         if (dcaModel.insert()) {
           LOGGER.info("collection.play event successfully updated into DCA" +
               context.request().toString());
-          // sendCPEventToGEPAndRDA(dcaModel, ts);
+           sendCPEventToRDA(dcaModel, this.totalResTS);
         } else {
           LOGGER.error("Error while inserting collection summary into DCA" +
               context.request().toString());
@@ -461,6 +461,7 @@ public class DCAPerfUpdateHandler implements DBHandler {
         Long id = duplicateCPEvent.getLong(AJEntityDailyClassActivity.ID);
         //Only TS is updated currently. score/max_score updates are not sent for the collection
         Base.exec(AJEntityDailyClassActivity.UPDATE_OVERALL_COLLECTION_TS, totalResTS, id);
+        sendCPEventToRDA(dcaModel, this.totalResTS);
       }
     } else {
       LOGGER.warn("Event validation error");
@@ -473,4 +474,11 @@ public class DCAPerfUpdateHandler implements DBHandler {
 
   }
 
+  private void sendCPEventToRDA(AJEntityDailyClassActivity dcaModel, Long totalResTS) {
+    RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(dcaModel, this.studentId,
+        null, null, null, this.totalResTS);
+    rdaEventDispatcher.sendCollTimespentUpdateEventFromDCAToRDA();    
+  }
+
+  
 }

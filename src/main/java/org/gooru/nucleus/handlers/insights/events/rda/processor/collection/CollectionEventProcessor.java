@@ -53,6 +53,10 @@ public class CollectionEventProcessor implements Processor {
           result = processCollScoreUpdateDataForRDA();
           LOGGER.info("RDA: Collection Score Update Event successfully processed");
           break;
+        case CollectionEventConstants.EventAttributes.COLLECTION_TIMESPENT_UPDATE_EVENT:
+          result = processCollTimespentUpdateDataForRDA();
+          LOGGER.info("RDA: Collection Timespent Update Event successfully processed");
+          break;
         case CollectionEventConstants.EventAttributes.COLLECTION_SELF_GRADE_EVENT:
           result = processStudentSelfGradeDataForRDA();
           LOGGER.info("RDA: Student Self Grade Event successfully processed");
@@ -105,6 +109,15 @@ public class CollectionEventProcessor implements Processor {
     }
   }
 
+  private MessageResponse processCollTimespentUpdateDataForRDA() {
+    try {
+      return RepoBuilder.buildReportDataAggregateRepo(context).processCollTimespentUpdateDataForRDA();
+    } catch (Throwable t) {
+      LOGGER.error("Exception while processing Collection stop event for RDA ", t.getMessage());
+      return MessageResponseFactory.createInternalErrorResponse(t.getMessage());
+    }
+  }
+  
   private MessageResponse processStudentSelfGradeDataForRDA() {
     try {
       return RepoBuilder.buildReportDataAggregateRepo(context).processStudentSelfGradeDataForRDA();
