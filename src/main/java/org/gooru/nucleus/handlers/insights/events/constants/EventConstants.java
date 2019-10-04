@@ -887,6 +887,12 @@ public class EventConstants {
 
   public static final Pattern PATH_TYPES = Pattern.compile("system|teacher|route0|ca.system|ca.teacher|proficiency.system|proficiency.teacher");
 
+  public static final Pattern CM_PATH_TYPES = Pattern.compile("system|teacher|route0");
+
+  public static final Pattern CA_PATH_TYPES = Pattern.compile("ca.system|ca.teacher");
+  
+  public static final Pattern PF_PATH_TYPES = Pattern.compile("proficiency.system|proficiency.teacher");
+
   public static final String ILACTIVITY = "ilactivity";
 
   public static final String COURSEMAP = "coursemap";

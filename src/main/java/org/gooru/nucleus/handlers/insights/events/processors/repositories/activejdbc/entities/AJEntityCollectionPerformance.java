@@ -1,6 +1,7 @@
 package org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities;
 
 import java.sql.SQLException;
+import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.javalite.activejdbc.Model;
 import org.javalite.activejdbc.annotations.Table;
 import org.postgresql.util.PGobject;
@@ -33,6 +34,19 @@ public class AJEntityCollectionPerformance extends Model {
 
   public static final String UPDATE_CA_COLLECTION_TIMESPENT = "UPDATE collection_performance SET timespent = ? WHERE id = ?";
 
+  public Boolean isPathTypeValidForContentSource(String contentSource, String pathType) {
+    switch (contentSource) {
+      case EventConstants.COURSEMAP:
+        return EventConstants.CM_PATH_TYPES.matcher(pathType).matches();
+      case EventConstants.DCA:
+        return EventConstants.CA_PATH_TYPES.matcher(pathType).matches();
+      case EventConstants.COMPETENCY_MASTERY:
+        return EventConstants.PF_PATH_TYPES.matcher(pathType).matches();
+      default:
+        return false;
+    }
+  }
+  
   private void setPGObject(String field, String type, String value) {
     PGobject pgObject = new PGobject();
     pgObject.setType(type);

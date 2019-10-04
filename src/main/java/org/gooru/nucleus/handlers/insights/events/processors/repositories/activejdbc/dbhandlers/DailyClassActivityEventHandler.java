@@ -101,7 +101,7 @@ public class DailyClassActivityEventHandler implements DBHandler {
     if (event.getPathId() != 0L) {
       dcaReport.set("path_id", event.getPathId());
       if (!StringUtil.isNullOrEmpty(event.getPathType())) {
-        if (EventConstants.PATH_TYPES.matcher(event.getPathType()).matches()) {
+        if (EventConstants.CA_PATH_TYPES.matcher(event.getPathType()).matches()) {
           dcaReport.set("path_type", event.getPathType());
         } else {
           LOGGER.warn("Invalid Path Type passed in event : {}", event.getPathType());
@@ -312,16 +312,28 @@ public class DailyClassActivityEventHandler implements DBHandler {
 
     if ((event.getEventName().equals(EventConstants.COLLECTION_PLAY)) && event.getEventType()
         .equalsIgnoreCase(EventConstants.STOP)) {
-      sendCPStopEventToGEP(dcaReport);
-      RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(dcaReport, this.views,
-          this.reaction, (tsObj != null ? tsObj : 0), this.maxScore, this.score, this.isGraded,
-          this.event.getEndTime());
+      // Send Collection Performance Event to GEP only if ALL the questions have been GRADED
+      LazyList<AJEntityDailyClassActivity> allGraded =
+          AJEntityDailyClassActivity.findBySQL(AJEntityDailyClassActivity.IS_COLLECTION_GRADED,
+              event.getGooruUUID(), event.getSessionId(), event.getContentGooruId(),
+              EventConstants.COLLECTION_RESOURCE_PLAY, EventConstants.STOP, false);
+      if (allGraded == null || allGraded.isEmpty()) {
+        sendCPStopEventToGEP(dcaReport);
+        this.isGraded = true;
+      } else {
+        this.isGraded = false;
+      }
+      RDAEventDispatcher rdaEventDispatcher =
+          new RDAEventDispatcher(dcaReport, this.views, this.reaction, (tsObj != null ? tsObj : 0),
+              this.maxScore, this.score, this.isGraded, this.event.getEndTime());
       rdaEventDispatcher.sendCollectionStopDCAEventToRDA();
     }
 
     if ((event.getEventName().equals(EventConstants.COLLECTION_RESOURCE_PLAY)) && event
         .getEventType().equalsIgnoreCase(EventConstants.STOP)) {
-      sendCRPEventToGEP(dcaReport);
+      if (this.isGraded == true) {
+        sendCRPEventToGEP(dcaReport);
+      }
       RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(dcaReport, this.views,
           this.reaction, this.timespent, this.maxScore, this.score, this.isGraded,
           this.event.getEndTime());
