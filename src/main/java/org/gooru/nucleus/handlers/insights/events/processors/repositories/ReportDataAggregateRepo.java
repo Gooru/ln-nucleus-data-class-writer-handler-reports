@@ -20,4 +20,6 @@ public interface ReportDataAggregateRepo {
   MessageResponse processOfflineStudentPerfForRDA();
 
   MessageResponse processOATeacherGradeForRDA();
+
+  MessageResponse processCollTimespentUpdateDataForRDA();
 }

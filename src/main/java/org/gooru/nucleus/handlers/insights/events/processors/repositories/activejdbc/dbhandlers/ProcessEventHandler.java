@@ -1,15 +1,11 @@
 package org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers;
 
-import com.hazelcast.util.StringUtil;
-import io.vertx.core.json.JsonObject;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
-
-import org.gooru.nucleus.handlers.insights.events.bootstrap.EBSendVerticle;
 import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.constants.GEPConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.MessageDispatcher;
@@ -28,6 +24,8 @@ import org.javalite.activejdbc.Base;
 import org.javalite.activejdbc.LazyList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.hazelcast.util.StringUtil;
+import io.vertx.core.json.JsonObject;
 
 /**
  * Created by mukul@gooru Modified by daniel
@@ -116,7 +114,10 @@ class ProcessEventHandler implements DBHandler {
     if (event.getPathId() != 0L) {
       baseReport.set("path_id", event.getPathId());
       if (!StringUtil.isNullOrEmpty(event.getPathType())) {
-        if (EventConstants.PATH_TYPES.matcher(event.getPathType()).matches()) {
+        if ((event.getContentSource().equalsIgnoreCase(EventConstants.COURSEMAP)
+            && EventConstants.CM_PATH_TYPES.matcher(event.getPathType()).matches())
+            || (event.getContentSource().equalsIgnoreCase(EventConstants.COMPETENCY_MASTERY)
+                && EventConstants.PF_PATH_TYPES.matcher(event.getPathType()).matches())) {
           baseReport.set("path_type", event.getPathType());
         } else {
           LOGGER.warn("Invalid Path Type is passed in event : {}", event.getPathType());
@@ -337,12 +338,7 @@ class ProcessEventHandler implements DBHandler {
 
     if ((event.getEventName().equals(EventConstants.COLLECTION_PLAY)) && event.getEventType()
         .equalsIgnoreCase(EventConstants.START)) {
-    	//For Inspect Competencies, there is no in-progress status. Its either "mastered" or nothing 
-    	if (event.getContentSource() != null && !event.getContentSource().equalsIgnoreCase(EventConstants.COMPETENCY_MASTERY)) {
-    	      sendCollStartEventtoGEP();    		
-    	} else if (event.getContentSource() == null) {
-    		sendCollStartEventtoGEP();
-    	}
+      sendCollStartEventtoGEP();    		
       RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(baseReport, this.views,
           this.reaction, this.timespent, this.maxScore, this.score, this.isGraded,
           this.event.getEndTime());
@@ -358,11 +354,7 @@ class ProcessEventHandler implements DBHandler {
               event.getContentGooruId(), EventConstants.COLLECTION_RESOURCE_PLAY,
               EventConstants.STOP, false);
       if (allGraded == null || allGraded.isEmpty()) { 
-    	  if (event.getContentSource() != null && !event.getContentSource().equalsIgnoreCase(EventConstants.COMPETENCY_MASTERY)) {
-    		  sendCPEventtoGEP();
-    	  } else if (event.getContentSource() == null) {
-    		  sendCPEventtoGEP();
-    	  }
+        sendCPEventtoGEP();
         this.isGraded = true;
       } else {
         this.isGraded = false;
@@ -386,19 +378,14 @@ class ProcessEventHandler implements DBHandler {
         		  (event.getContentGooruId(), event.getSessionId(), event.getGooruUUID(), 
         				  event.getClassGooruId(), score, toList(questions));
           diagnosticEventDispatcher.dispatchDiagnosticEvent();          
-          }
-      //The onus to ensure if this Assessment is a signature Item lies on the upstream systems.
-      //Writer assumes that since the contentSource is "competencyMastery", assessment is a verified signature assessment,
-      //& so if the score is >= 80% then the event should flow to DAP for skyline updation.
-      if (event.getContentSource() != null && event.getContentSource().equalsIgnoreCase(EventConstants.COMPETENCY_MASTERY) && score >= 80.00) {
-    	  sendCPEventtoGEP();
       }
     }
 
     if ((event.getEventName().equals(EventConstants.COLLECTION_RESOURCE_PLAY)) && event
-        .getEventType().equalsIgnoreCase(EventConstants.STOP) &&
-        (isGraded == true)) {
-      sendCRPEventtoGEP();
+        .getEventType().equalsIgnoreCase(EventConstants.STOP)) {
+      if (isGraded == true) {
+        sendCRPEventtoGEP();
+      }
       RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(baseReport, this.views,
           this.reaction, this.timespent, this.maxScore, this.score, this.isGraded,
           this.event.getEndTime());

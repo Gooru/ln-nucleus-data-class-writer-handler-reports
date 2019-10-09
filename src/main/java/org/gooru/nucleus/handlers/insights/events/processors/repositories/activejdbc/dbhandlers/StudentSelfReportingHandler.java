@@ -94,7 +94,6 @@ public class StudentSelfReportingHandler implements DBHandler {
     return new ExecutionResult<>(null, ExecutionStatus.CONTINUE_PROCESSING);
   }
 
-
   @Override
   public ExecutionResult<MessageResponse> executeRequest() {
 
@@ -109,37 +108,17 @@ public class StudentSelfReportingHandler implements DBHandler {
     baseReports.set(AJEntityReporting.COLLECTION_OID, extCollectionId);
     baseReports.set(AJEntityDailyClassActivity.VIEWS, view);
     this.views = view;
-    percentScore = (req.getValue(PERCENT_SCORE) != null) ? Double
-        .valueOf(req.getValue(PERCENT_SCORE).toString()) : null;
+    
     if (percentScore != null) {
-      if ((percentScore.compareTo(100.00) > 0) || (percentScore.compareTo(0.00) < 0)) {
-        return new ExecutionResult<>(MessageResponseFactory
-            .createInvalidRequestResponse("Numeric Field Overflow - Invalid Percent Score"),
-            ExecutionResult.ExecutionStatus.FAILED);
-      } else {
-        baseReports.set(AJEntityReporting.SCORE, percentScore);
-        baseReports.set(AJEntityReporting.MAX_SCORE, 100);
-        this.finalScore = percentScore;
-        this.finalMaxScore = 100.0;
-      }
-    } else if (req.getValue(AJEntityDailyClassActivity.SCORE) != null
-        && req.getValue(AJEntityDailyClassActivity.MAX_SCORE) != null) {
-      rawScore = Double.valueOf(req.getValue(SCORE).toString());
-      maxScore = Double.valueOf(req.getValue(MAX_SCORE).toString());
-      //the value 0 if anotherDouble is numerically equal to this Double;
-      //a value less than 0 if this Double is numerically less than anotherDouble;
-      //and a value greater than 0 if this Double is numerically greater than anotherDouble.
-      if (!validateScoreAndMaxScore(rawScore, maxScore)) {
-        return new ExecutionResult<>(MessageResponseFactory
-            .createInvalidRequestResponse("Numeric Field Overflow - Invalid Fraction Score"),
-            ExecutionResult.ExecutionStatus.FAILED);
-      }
+      this.finalScore = percentScore;
+      this.finalMaxScore = 100.0;
+    } else if (rawScore != null && maxScore != null) {
       score = (rawScore * 100) / maxScore;
-      baseReports.set(AJEntityReporting.SCORE, score);
-      baseReports.set(AJEntityReporting.MAX_SCORE, maxScore);
       this.finalScore = score;
       this.finalMaxScore = maxScore;
     }
+    baseReports.set(AJEntityReporting.SCORE, this.finalScore);
+    baseReports.set(AJEntityReporting.MAX_SCORE, this.finalMaxScore);
 
     //Remove ALL the values from the Request that needed processing, so that the rest of the values from
     // the request can be mapped to model
@@ -224,7 +203,7 @@ public class StudentSelfReportingHandler implements DBHandler {
       LOGGER.info("Student Self report for ext-asmt/ext-coll stored successfully " + req);
 
       eventDispatcher.sendSelfReportEventtoNotifications();
-      rdaEventDispatcher.sendSelfGradeEventToRDA();
+      rdaEventDispatcher.sendSelfGradeBREventToRDA();
       return new ExecutionResult<>(MessageResponseFactory.createOkayResponse(),
           ExecutionStatus.SUCCESSFUL);
     } else {
@@ -257,7 +236,7 @@ public class StudentSelfReportingHandler implements DBHandler {
       eventDispatcher.sendSelfReportEventtoNotifications();
       rdaEventDispatcher = new RDAEventDispatcher(baseReports, this.views, null,
           req.getLong(TIME_SPENT), this.finalMaxScore, this.finalScore, true, this.eventTime);
-      rdaEventDispatcher.sendSelfGradeEventToRDA();
+      rdaEventDispatcher.sendSelfGradeBREventToRDA();
       return new ExecutionResult<>(MessageResponseFactory.createOkayResponse(),
           ExecutionStatus.SUCCESSFUL);
 
@@ -285,11 +264,34 @@ public class StudentSelfReportingHandler implements DBHandler {
           }
       }
       
-      if ((collectionType.equalsIgnoreCase(EventConstants.EXTERNAL_ASSESSMENT)) 
-          && (context.request().getValue(PERCENT_SCORE) == null && (context.request().getValue(SCORE) == null || context.request().getValue(MAX_SCORE) == null))) {
-          throw new MessageResponseWrapperException(
-            MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload. Required score data missing for " +collectionType));
+    if ((collectionType.equalsIgnoreCase(EventConstants.EXTERNAL_ASSESSMENT))) {
+      if (context.request().getValue(PERCENT_SCORE) == null
+          && (context.request().getValue(SCORE) == null
+              || context.request().getValue(MAX_SCORE) == null)) {
+        throw new MessageResponseWrapperException(
+            MessageResponseFactory.createInvalidRequestResponse(
+                "Invalid Json Payload. Required score data missing for " + collectionType));
+      } 
+      percentScore = (context.request().getValue(PERCENT_SCORE) != null) ? Double
+          .valueOf(context.request().getValue(PERCENT_SCORE).toString()) : null;
+      if (percentScore != null) {
+        if ((percentScore.compareTo(100.00) > 0) || (percentScore.compareTo(0.00) < 0)) {
+          throw new MessageResponseWrapperException(MessageResponseFactory
+              .createInvalidRequestResponse("Numeric Field Overflow - Invalid Percent Score"));
+        }
+      } else if (context.request().getValue(AJEntityDailyClassActivity.SCORE) != null
+          && context.request().getValue(AJEntityDailyClassActivity.MAX_SCORE) != null) {
+        rawScore = Double.valueOf(context.request().getValue(SCORE).toString());
+        maxScore = Double.valueOf(context.request().getValue(MAX_SCORE).toString());
+        // the value 0 if anotherDouble is numerically equal to this Double;
+        // a value less than 0 if this Double is numerically less than anotherDouble;
+        // and a value greater than 0 if this Double is numerically greater than anotherDouble.
+        if (!validateScoreAndMaxScore(rawScore, maxScore)) {
+          throw new MessageResponseWrapperException(MessageResponseFactory
+              .createInvalidRequestResponse("Numeric Field Overflow - Invalid Fraction Score"));
+        }
       }
+    }
   }
   
   private static class DefAJEntityReportingBuilder implements EntityBuilder<AJEntityReporting> {
