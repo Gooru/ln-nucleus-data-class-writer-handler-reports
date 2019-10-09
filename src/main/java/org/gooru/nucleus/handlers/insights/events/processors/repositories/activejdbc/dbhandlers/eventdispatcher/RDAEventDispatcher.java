@@ -477,8 +477,6 @@ public class RDAEventDispatcher {
     cpEvent.put(CollectionEventConstants.EventAttributes.CONTEXT, context);
     cpEvent.put(CollectionEventConstants.EventAttributes.TIMEZONE,
         rubricGrading.get(AJEntityReporting.TIME_ZONE) != null ? rubricGrading.get(AJEntityReporting.TIME_ZONE) : "Etc/UTC");
-    cpEvent.put(CollectionEventConstants.EventAttributes.DCA_CONTENT_ID,
-        rubricGrading.get(AJEntityDailyClassActivity.DCA_CONTENT_ID) != null ? rubricGrading.get(AJEntityDailyClassActivity.DCA_CONTENT_ID) : null);
 
     if (this.isGraded != null) {
       result.put(CollectionEventConstants.EventAttributes.IS_GRADED, this.isGraded);
