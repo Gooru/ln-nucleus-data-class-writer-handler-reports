@@ -150,7 +150,7 @@ public class RDAEventDispatcher {
 
   public void sendCollectionResourcePlayEventToRDA() {
     try {
-      JsonObject rdaEvent = createCollectionResourcePlayEvent(dcaReports);
+      JsonObject rdaEvent = createCollectionResourcePlayEvent(baseReports);
       LOGGER.debug("PEH::Collection Resource RDA Event : {} ", rdaEvent);
       MessageDispatcher.getInstance().sendEvent2Kafka(TOPIC_RDA, rdaEvent);
       LOGGER.info("PEH::Successfully dispatched Collection Resource RDA Event..");
