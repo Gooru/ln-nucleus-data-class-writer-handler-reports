@@ -70,6 +70,7 @@ public class DailyClassActivityEventHandler implements DBHandler {
   @SuppressWarnings("rawtypes")
   public ExecutionResult<MessageResponse> executeRequest() {
     dcaReport = new AJEntityDailyClassActivity();
+    boolean isQuestionGraded = true;
     event = context.getEvent();
     LazyList<AJEntityDailyClassActivity> duplicateRow = null;
     LazyList<AJEntityDailyClassActivity> scoreTS = null;
@@ -213,11 +214,13 @@ public class DailyClassActivityEventHandler implements DBHandler {
           dcaReport.set("score", event.getScore());
           dcaReport.setBoolean("is_graded", true);
           this.score = event.getScore();
+          isQuestionGraded = true;
           this.isGraded = true;
         } else if (event.getEventType().equalsIgnoreCase(EventConstants.STOP) &&
             (event.getAnswerStatus().equalsIgnoreCase(EventConstants.ATTEMPTED))) {
           dcaReport.set("grading_type", event.getGradeType());
           dcaReport.setBoolean("is_graded", false);
+          isQuestionGraded = false;
           this.isGraded = false;
         }
       }
@@ -331,7 +334,7 @@ public class DailyClassActivityEventHandler implements DBHandler {
 
     if ((event.getEventName().equals(EventConstants.COLLECTION_RESOURCE_PLAY)) && event
         .getEventType().equalsIgnoreCase(EventConstants.STOP)) {
-      if (this.isGraded == true) {
+      if (isQuestionGraded) {
         sendCRPEventToGEP(dcaReport);
       }
       RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(dcaReport, this.views,
