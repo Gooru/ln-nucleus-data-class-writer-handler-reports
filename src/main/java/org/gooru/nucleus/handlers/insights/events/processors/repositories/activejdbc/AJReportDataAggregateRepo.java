@@ -42,6 +42,12 @@ class AJReportDataAggregateRepo implements ReportDataAggregateRepo {
   }
 
   @Override
+  public MessageResponse processCollTimespentUpdateDataForRDA() {
+    return TransactionExecutor
+        .executeTransaction(DBHandlerBuilder.buildCollTimespentUpdateRDAHandler(context));
+  }
+  
+  @Override
   public MessageResponse processStudentSelfGradeDataForRDA() {
     return TransactionExecutor
         .executeTransaction(DBHandlerBuilder.buildStudentSelfGradeRDAHandler(context));

@@ -81,7 +81,8 @@ public class StudentSelfGradeEventRDAHandler implements DBHandler {
       if (collectionEvent.getPathId() != 0L) {
         collectionReport.set("path_id", collectionEvent.getPathId());
         if (!StringUtil.isNullOrEmpty(collectionEvent.getPathType())) {
-          if (EventConstants.PATH_TYPES.matcher(collectionEvent.getPathType()).matches()) {
+          if (collectionReport.isPathTypeValidForContentSource(collectionEvent.getContentSource(),
+              collectionEvent.getPathType())) {
             collectionReport.set("path_type", collectionEvent.getPathType());
           } else {
             LOGGER.warn("Invalid Path Type is passed in event : {}", collectionEvent.getPathType());

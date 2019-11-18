@@ -1,6 +1,5 @@
 package org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher;
 
-import io.vertx.core.json.JsonObject;
 import org.gooru.nucleus.handlers.insights.events.constants.NotificationConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.MessageDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityDailyClassActivity;
@@ -8,6 +7,7 @@ import org.gooru.nucleus.handlers.insights.events.processors.repositories.active
 import org.javalite.activejdbc.Model;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import io.vertx.core.json.JsonObject;
 
 /**
  * Created by mukul@gooru
@@ -80,7 +80,10 @@ public class TeacherScoreOverideEventDispatcher {
     teacherScoreUpdateEvent
         .put(NotificationConstants.PATH_TYPE, reports.get(AJEntityReporting.PATH_TYPE));
     teacherScoreUpdateEvent.put(NotificationConstants.ACTION, NotificationConstants.INITIATE);
-
+    
+    String contentSource = (String) reports.get(AJEntityReporting.CONTENT_SOURCE);
+    teacherScoreUpdateEvent.put(NotificationConstants.CONTENT_SOURCE,
+        CoreContentSourceFinder.findContentSource(contentSource));
     return teacherScoreUpdateEvent;
   }
 }

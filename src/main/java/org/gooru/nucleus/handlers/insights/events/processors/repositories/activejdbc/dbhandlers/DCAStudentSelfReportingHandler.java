@@ -3,10 +3,10 @@ package org.gooru.nucleus.handlers.insights.events.processors.repositories.activ
 import static org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.validators.ValidationUtils.validateScoreAndMaxScore;
 import java.sql.Timestamp;
 import java.util.Map;
-
 import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.insights.events.processors.exceptions.MessageResponseWrapperException;
+import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher.RDAEventDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityDailyClassActivity;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.EntityBuilder;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.utils.BaseUtil;
@@ -18,9 +18,7 @@ import org.javalite.activejdbc.Base;
 import org.javalite.activejdbc.LazyList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import com.hazelcast.util.StringUtil;
-
 import io.vertx.core.json.JsonObject;
 
 public class DCAStudentSelfReportingHandler implements DBHandler {
@@ -45,6 +43,10 @@ public class DCAStudentSelfReportingHandler implements DBHandler {
   private String extCollectionId;
   private String collectionType;
   private String userId;
+  private Double finalScore;
+  private Double finalMaxScore;
+  private Long views;
+  private Long eventTime;
 
   public DCAStudentSelfReportingHandler(ProcessorContext context) {
     this.context = context;
@@ -103,29 +105,18 @@ public class DCAStudentSelfReportingHandler implements DBHandler {
     dcaReport.set(AJEntityDailyClassActivity.GOORUUID, userId);
     dcaReport.set(AJEntityDailyClassActivity.COLLECTION_OID, extCollectionId);
     dcaReport.set(AJEntityDailyClassActivity.VIEWS, view);
-    percentScore = (req.getValue(PERCENT_SCORE) != null) ? Double
-        .valueOf(req.getValue(PERCENT_SCORE).toString()) : null;
+    this.views = view;
+
     if (percentScore != null) {
-      if ((percentScore.compareTo(100.00) > 0) || (percentScore.compareTo(0.00) < 0)) {
-        return new ExecutionResult<>(MessageResponseFactory
-            .createInvalidRequestResponse("Numeric Field Overflow - Invalid Percent Score"),
-            ExecutionResult.ExecutionStatus.FAILED);
-      } else {
-        dcaReport.set(AJEntityDailyClassActivity.SCORE, percentScore);
-        dcaReport.set(AJEntityDailyClassActivity.MAX_SCORE, 100);
-      }
-    } else if (req.getValue(SCORE) != null || req.getValue(MAX_SCORE) != null) {
-      rawScore = Double.valueOf(req.getValue(SCORE).toString());
-      maxScore = Double.valueOf(req.getValue(MAX_SCORE).toString());
-      if (!validateScoreAndMaxScore(rawScore, maxScore)) {
-        return new ExecutionResult<>(MessageResponseFactory
-            .createInvalidRequestResponse("Numeric Field Overflow - Invalid Fraction Score"),
-            ExecutionResult.ExecutionStatus.FAILED);
-      }
+      this.finalScore = percentScore;
+      this.finalMaxScore = 100.0;
+    } else if (rawScore != null && maxScore != null) {
       score = (rawScore * 100) / maxScore;
-      dcaReport.set(AJEntityDailyClassActivity.SCORE, score);
-      dcaReport.set(AJEntityDailyClassActivity.MAX_SCORE, maxScore);
+      this.finalScore = score;
+      this.finalMaxScore = maxScore;
     }
+    dcaReport.set(AJEntityDailyClassActivity.SCORE, this.finalScore);
+    dcaReport.set(AJEntityDailyClassActivity.MAX_SCORE, this.finalMaxScore);
 
     //Remove ALL the values from the Request that needed processing, so that the rest of the values from
     // the request can be mapped to model
@@ -144,6 +135,10 @@ public class DCAStudentSelfReportingHandler implements DBHandler {
 
     new DefAJEntityReportingBuilder()
         .build(dcaReport, req, AJEntityDailyClassActivity.getConverterRegistry());
+    dcaReport.set(AJEntityDailyClassActivity.CONTENT_SOURCE,
+        req.getString(AJEntityDailyClassActivity.CONTENT_SOURCE, null) != null
+            ? req.getString(AJEntityDailyClassActivity.CONTENT_SOURCE)
+            : EventConstants.DCA);
     if (dcaReport.get(AJEntityDailyClassActivity.CLASS_GOORU_OID) == null ||
         dcaReport.get(AJEntityDailyClassActivity.SESSION_ID) == null) {
       return new ExecutionResult<>(
@@ -152,6 +147,7 @@ public class DCAStudentSelfReportingHandler implements DBHandler {
     }
 
     long eventTime = System.currentTimeMillis();
+    this.eventTime = eventTime;
     dcaReport.set(AJEntityDailyClassActivity.CREATE_TIMESTAMP, new Timestamp(eventTime));
     dcaReport.set(AJEntityDailyClassActivity.UPDATE_TIMESTAMP, new Timestamp(eventTime));
 
@@ -172,6 +168,9 @@ public class DCAStudentSelfReportingHandler implements DBHandler {
             dcaReport.get(AJEntityDailyClassActivity.SESSION_ID), EventConstants.COLLECTION_PLAY,
             EventConstants.STOP);
 
+    RDAEventDispatcher rdaEventDispatcher = new RDAEventDispatcher(dcaReport, this.views, null,
+        req.getLong(TIME_SPENT), this.finalMaxScore, this.finalScore, true, this.eventTime);
+
     if (duplicateRow == null || duplicateRow.isEmpty()) {
       boolean result = dcaReport.save();
 
@@ -188,30 +187,35 @@ public class DCAStudentSelfReportingHandler implements DBHandler {
         }
       }
       LOGGER.info("Student DCA Self report for ext-asmt/ext-coll stored successfully " + req);
+      
+      rdaEventDispatcher.sendSelfGradeDCAEventToRDA();
       return new ExecutionResult<>(MessageResponseFactory.createOkayResponse(),
           ExecutionStatus.SUCCESSFUL);
     } else {
       LOGGER.info("Duplicate record exists. Updating the Self reported data ");
       duplicateRow.forEach(dup -> {
         int id = Integer.valueOf(dup.get(AJEntityDailyClassActivity.ID).toString());
-        long views = ((dup.get(AJEntityDailyClassActivity.VIEWS) != null ? Long
+        this.views = ((dup.get(AJEntityDailyClassActivity.VIEWS) != null ? Long
             .valueOf(dup.get(AJEntityDailyClassActivity.VIEWS).toString()) : 1) + view);
         long ts = ((dup.get(AJEntityDailyClassActivity.TIMESPENT) != null ? Long.valueOf(dup.get(AJEntityDailyClassActivity.TIMESPENT).toString()) : 0) + timespent);
         if (percentScore != null) {
-          Base.exec(AJEntityDailyClassActivity.UPDATE_SELF_GRADED_EXT_ASSESSMENT, views, ts,
-              percentScore, 100, new Timestamp(eventTime),
-              dcaReport.get(AJEntityDailyClassActivity.TIME_ZONE),
-              dcaReport.get(AJEntityDailyClassActivity.DATE_IN_TIME_ZONE), id);
+          this.finalScore = percentScore;
+          this.finalMaxScore = 100.0;
         } else {
-          Base.exec(AJEntityDailyClassActivity.UPDATE_SELF_GRADED_EXT_ASSESSMENT, views, ts, score,
-              maxScore, new Timestamp(eventTime),
-              dcaReport.get(AJEntityDailyClassActivity.TIME_ZONE),
-              dcaReport.get(AJEntityDailyClassActivity.DATE_IN_TIME_ZONE), id);
+          this.finalScore = score;
+          this.finalMaxScore = maxScore;
         }
-
+        Base.exec(AJEntityDailyClassActivity.UPDATE_SELF_GRADED_EXT_ASSESSMENT, this.views, ts,
+            this.finalScore, this.finalMaxScore, new Timestamp(eventTime),
+            dcaReport.get(AJEntityDailyClassActivity.TIME_ZONE),
+            dcaReport.get(AJEntityDailyClassActivity.DATE_IN_TIME_ZONE), id);
       });
 
       LOGGER.info("Student DCA Self report for ext-asmt/ext-coll stored successfully " + req);
+      
+      rdaEventDispatcher = new RDAEventDispatcher(dcaReport, this.views, null,
+          req.getLong(TIME_SPENT), this.finalMaxScore, this.finalScore, true, this.eventTime);
+      rdaEventDispatcher.sendSelfGradeDCAEventToRDA();
       return new ExecutionResult<>(MessageResponseFactory.createOkayResponse(),
           ExecutionStatus.SUCCESSFUL);
 
@@ -239,11 +243,34 @@ public class DCAStudentSelfReportingHandler implements DBHandler {
           }
       }
       
-      if ((collectionType.equalsIgnoreCase(EventConstants.EXTERNAL_ASSESSMENT)) 
-          && (context.request().getValue(PERCENT_SCORE) == null && (context.request().getValue(SCORE) == null || context.request().getValue(MAX_SCORE) == null))) {
-          throw new MessageResponseWrapperException(
-            MessageResponseFactory.createInvalidRequestResponse("Invalid Json Payload. Required score data missing for " +collectionType));
+    if (collectionType.equalsIgnoreCase(EventConstants.EXTERNAL_ASSESSMENT)) {
+      if (context.request().getValue(PERCENT_SCORE) == null
+          && (context.request().getValue(SCORE) == null
+              || context.request().getValue(MAX_SCORE) == null)) {
+        throw new MessageResponseWrapperException(
+            MessageResponseFactory.createInvalidRequestResponse(
+                "Invalid Json Payload. Required score data missing for " + collectionType));
+      } 
+      percentScore = (context.request().getValue(PERCENT_SCORE) != null) ? Double
+          .valueOf(context.request().getValue(PERCENT_SCORE).toString()) : null;
+      if (percentScore != null) {
+        if ((percentScore.compareTo(100.00) > 0) || (percentScore.compareTo(0.00) < 0)) {
+          throw new MessageResponseWrapperException(MessageResponseFactory
+              .createInvalidRequestResponse("Numeric Field Overflow - Invalid Percent Score"));
+        }
+      } else if (context.request().getValue(AJEntityDailyClassActivity.SCORE) != null
+          && context.request().getValue(AJEntityDailyClassActivity.MAX_SCORE) != null) {
+        rawScore = Double.valueOf(context.request().getValue(SCORE).toString());
+        maxScore = Double.valueOf(context.request().getValue(MAX_SCORE).toString());
+        // the value 0 if anotherDouble is numerically equal to this Double;
+        // a value less than 0 if this Double is numerically less than anotherDouble;
+        // and a value greater than 0 if this Double is numerically greater than anotherDouble.
+        if (!validateScoreAndMaxScore(rawScore, maxScore)) {
+          throw new MessageResponseWrapperException(MessageResponseFactory
+              .createInvalidRequestResponse("Numeric Field Overflow - Invalid Fraction Score"));
+        }
       }
+    }
   }
   
   private static class DefAJEntityReportingBuilder implements

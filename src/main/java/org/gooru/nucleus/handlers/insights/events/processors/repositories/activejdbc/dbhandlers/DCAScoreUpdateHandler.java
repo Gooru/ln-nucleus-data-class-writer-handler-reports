@@ -135,7 +135,10 @@ public class DCAScoreUpdateHandler implements DBHandler {
 
     new DefAJEntityDailyClassActivityBuilder()
         .build(dcaReports, ctxt2Relay, AJEntityDailyClassActivity.getConverterRegistry());
-
+    dcaReports.set(AJEntityDailyClassActivity.CONTENT_SOURCE,
+        ctxt2Relay.getString(AJEntityDailyClassActivity.CONTENT_SOURCE, null) != null
+            ? ctxt2Relay.getString(AJEntityDailyClassActivity.CONTENT_SOURCE)
+            : EventConstants.DCA);
     // Update data at resource / question level and Send Events to GEP
     updateResourceLevelDataAndSendEventsToGEP();
     
@@ -276,7 +279,7 @@ public class DCAScoreUpdateHandler implements DBHandler {
                            this.studentId, 
                            this.score, 
                            this.max_score, 
-                           this.isGraded).sendCollScoreUpdateEventFromDCAToRDA();
+                           this.isGraded, null).sendCollScoreUpdateEventFromDCAToRDA();
   }
 
   /*

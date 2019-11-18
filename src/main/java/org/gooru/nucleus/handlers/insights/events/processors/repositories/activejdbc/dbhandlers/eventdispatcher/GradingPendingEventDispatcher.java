@@ -1,12 +1,12 @@
 package org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers.eventdispatcher;
 
-import io.vertx.core.json.JsonObject;
 import org.gooru.nucleus.handlers.insights.events.constants.NotificationConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.MessageDispatcher;
 import org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.entities.AJEntityReporting;
 import org.javalite.activejdbc.Model;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import io.vertx.core.json.JsonObject;
 
 public class GradingPendingEventDispatcher {
 
@@ -58,7 +58,9 @@ public class GradingPendingEventDispatcher {
         .put(NotificationConstants.PATH_TYPE, reports.get(AJEntityReporting.PATH_TYPE));
 
     pendingGradingEvent.put(NotificationConstants.ACTION, NotificationConstants.INITIATE);
-
+    String contentSource = (String) reports.get(AJEntityReporting.CONTENT_SOURCE);
+    pendingGradingEvent.put(NotificationConstants.CONTENT_SOURCE,
+        CoreContentSourceFinder.findContentSource(contentSource));
     return pendingGradingEvent;
   }
 
