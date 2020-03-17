@@ -1,6 +1,8 @@
 package org.gooru.nucleus.handlers.insights.events.processors.repositories.activejdbc.dbhandlers;
 
+import java.io.IOException;
 import java.sql.Timestamp;
+import java.util.Base64;
 import org.gooru.nucleus.handlers.insights.events.constants.EventConstants;
 import org.gooru.nucleus.handlers.insights.events.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.insights.events.processors.events.EventParser;
@@ -16,6 +18,8 @@ import org.javalite.activejdbc.Base;
 import org.javalite.activejdbc.LazyList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hazelcast.util.StringUtil;
 import io.vertx.core.json.JsonObject;
 
@@ -86,7 +90,6 @@ public class DailyClassActivityEventHandler implements DBHandler {
     dcaReport.set("question_type", event.getQuestionType());
     dcaReport.set("resource_type", event.getResourceType());
     dcaReport.set("reaction", event.getReaction());
-
     dcaReport.set("resource_attempt_status", event.getAnswerStatus());
     dcaReport.set("views", event.getViews());
     dcaReport.set("time_spent", event.getTimespent());
@@ -113,6 +116,10 @@ public class DailyClassActivityEventHandler implements DBHandler {
     dcaReport.set("event_id", event.getEventId());
     dcaReport.set("content_source", event.getContentSource());
 
+    String decodeAdditionalContext = decodeAdditionalContext();
+    if (!StringUtil.isNullOrEmpty(decodeAdditionalContext)) {
+      dcaReport.set("dca_content_id",getDCAContentId(decodeAdditionalContext));
+    }
     this.timespent = event.getTimespent();
     this.views = event.getViews();
     this.maxScore = event.getMaxScore();
@@ -346,7 +353,33 @@ public class DailyClassActivityEventHandler implements DBHandler {
     return new ExecutionResult<>(MessageResponseFactory.createCreatedResponse(),
         ExecutionStatus.SUCCESSFUL);
   }
-
+  private String decodeAdditionalContext() {
+    String base64decodeString = null;
+    String dcaContent = event.getAdditionalContext();
+    if(!StringUtil.isNullOrEmpty(dcaContent)) {
+      try {
+        base64decodeString = new String(Base64.getDecoder().decode(dcaContent));
+        LOGGER.info("Decoded Additional Context is {}", dcaContent);       
+      } catch (IllegalArgumentException e) {
+        LOGGER.error("Unable to decode Additional Context ", e);
+        return null;
+    } 
+   }
+    return base64decodeString;
+  }
+  private Long getDCAContentId(String decodeAdditionalContext) {
+    Long dcaContentId = null;
+    try {
+      ObjectMapper mapper = new ObjectMapper();
+      JsonNode jsonNode = mapper.readTree(decodeAdditionalContext);
+      dcaContentId = jsonNode.get(EventConstants.DCA_CONTENT_ID).asLong();
+        LOGGER.info("Additional Context Object {}", dcaContentId);
+    } catch (IOException e) {
+      LOGGER.error("Unable to parse the additionalContext Json", e);
+      return null;
+    }
+    return dcaContentId;
+  }
   private void sendCPStopEventToGEP(AJEntityDailyClassActivity dcaReport) {  
     if (maxScoreObj != null && maxScoreObj > 0.0 && scoreObj != null) {
       GEPEventDispatcher eventDispatcher = new GEPEventDispatcher(dcaReport, (tsObj != null ? tsObj : 0),
