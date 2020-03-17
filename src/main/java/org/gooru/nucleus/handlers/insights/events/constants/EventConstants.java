@@ -815,6 +815,8 @@ public class EventConstants {
   public static final String COLLECTION_RESOURCE_PLAY = "collection.resource.play";
 
   public static final String RESOURCE_PLAY = "resource.play";
+  
+  public static final String DCA_CONTENT_ID = "dcaContentId";
 
   public static final String REACTION_CREATE = "reaction.create";
 
